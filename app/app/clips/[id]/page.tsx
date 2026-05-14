@@ -106,6 +106,26 @@ function ClipDetail() {
     };
   }, [id, identityToken]);
 
+  // Hooks must run on every render — keep this above the early returns.
+  const chartData = useMemo(() => {
+    if (!clip) return [];
+    if (snapshots.length === 0) {
+      // Anchor with submission row so the chart isn't empty for pending clips.
+      return [
+        {
+          t: new Date(clip.createdAt).getTime(),
+          label: shortTime(clip.createdAt),
+          views: 0,
+        },
+      ];
+    }
+    return snapshots.map((s) => ({
+      t: new Date(s.scrapedAt).getTime(),
+      label: shortTime(s.scrapedAt),
+      views: s.views,
+    }));
+  }, [snapshots, clip]);
+
   if (notFoundFlag) notFound();
 
   if (loading || !clip) {
@@ -120,18 +140,6 @@ function ClipDetail() {
 
   const badge = statusBadge(clip.status);
   const pendingPayoutUsd = Math.max(0, clip.earningsUsd - clip.paidOutUsd);
-
-  const chartData = useMemo(() => {
-    if (snapshots.length === 0) {
-      // Anchor with submission row so the chart isn't empty for pending clips.
-      return [{ t: new Date(clip.createdAt).getTime(), label: shortTime(clip.createdAt), views: 0 }];
-    }
-    return snapshots.map((s) => ({
-      t: new Date(s.scrapedAt).getTime(),
-      label: shortTime(s.scrapedAt),
-      views: s.views,
-    }));
-  }, [snapshots, clip.createdAt]);
 
   return (
     <main className="flex min-h-dvh flex-col px-6 py-6 md:px-12">

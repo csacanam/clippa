@@ -387,8 +387,8 @@ function CampaignDetail() {
                   <p className="mt-1 text-xs text-ink/80">
                     Paste this somewhere in your caption so we know the post is yours.
                   </p>
-                  <div className="mt-3 flex items-center gap-3">
-                    <code className="flex-1 truncate rounded-md border-2 border-ink bg-cream px-3 py-2 font-mono text-base font-bold tracking-wider">
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+                    <code className="w-full truncate rounded-md border-2 border-ink bg-cream px-3 py-2 font-mono text-base font-bold tracking-wider sm:flex-1">
                       {displayCode || "..."}
                     </code>
                     <Button
@@ -397,6 +397,7 @@ function CampaignDetail() {
                       variant="outline"
                       size="default"
                       disabled={!trackingCode}
+                      className="w-full sm:w-auto"
                     >
                       {copied ? (
                         <>
