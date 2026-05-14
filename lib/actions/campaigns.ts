@@ -1,7 +1,8 @@
 "use server";
 
 import { createServerClient } from "@/lib/supabase/server";
-import type { Campaign, Platform } from "@/lib/campaigns";
+import type { Campaign, CampaignChainState, Platform } from "@/lib/campaigns";
+import { getCampaignChainState } from "@/lib/payments/celo";
 
 type CampaignRow = {
   id: string;
@@ -78,6 +79,17 @@ export async function getCampaignIdBySlug(slug: string): Promise<string> {
   if (error) throw error;
   if (!data) throw new Error(`Campaign not found: ${slug}`);
   return (data as { id: string }).id;
+}
+
+/**
+ * Reads the campaign's real budget state from the on-chain escrow contract.
+ * This is the source of truth for funded / available / paid amounts.
+ */
+export async function getCampaignChainStateBySlug(
+  slug: string
+): Promise<CampaignChainState> {
+  const campaignId = await getCampaignIdBySlug(slug);
+  return getCampaignChainState(campaignId);
 }
 
 export type CampaignStats = {

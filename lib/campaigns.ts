@@ -21,13 +21,30 @@ export type Campaign = {
   status: "active" | "paused" | "ended";
 };
 
-export function budgetRemaining(c: Campaign): number {
-  return Math.max(0, c.totalBudgetUsd - c.spentUsd);
-}
+/**
+ * The real budget state, read from the on-chain escrow contract — the single
+ * source of truth for money. `total_budget_usd` / `spent_usd` in the DB are
+ * not used for display (they can drift from on-chain).
+ */
+export type CampaignChainState = {
+  /** Whether the campaign exists on-chain yet. */
+  exists: boolean;
+  /** Total USDT ever funded into the campaign. */
+  totalFundedUsd: number;
+  /** USDT still available for payouts. */
+  balanceUsd: number;
+  /** USDT already paid out to creators. */
+  totalPaidOutUsd: number;
+  /** 0 = Active, 1 = Paused, 2 = Ended. */
+  status: number;
+};
 
-export function budgetPercentSpent(c: Campaign): number {
-  if (c.totalBudgetUsd <= 0) return 0;
-  return Math.min(100, Math.round((c.spentUsd / c.totalBudgetUsd) * 100));
+export function budgetPercentSpent(chain: CampaignChainState): number {
+  if (chain.totalFundedUsd <= 0) return 0;
+  return Math.min(
+    100,
+    Math.round((chain.totalPaidOutUsd / chain.totalFundedUsd) * 100)
+  );
 }
 
 export function formatUsd(n: number, opts?: { decimals?: number }): string {

@@ -11,6 +11,7 @@ import { CampaignCard } from "@/components/campaign-card";
 import { ClippaLogo } from "@/components/clippa-logo";
 import { MyClipCard } from "@/components/my-clip-card";
 import { PayoutHistoryDialog } from "@/components/payout-history-dialog";
+import { WithdrawDialog } from "@/components/withdraw-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
@@ -161,7 +162,7 @@ function AppHome() {
           className="mt-6"
         >
           <Card className="bg-lime">
-            <CardContent className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <CardContent className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
               <div>
                 <p className="font-display text-xs font-bold uppercase tracking-wider">
                   Your balance
@@ -170,16 +171,27 @@ function AppHome() {
                   {balance === null ? "—" : formatUsd(balance)}
                 </p>
               </div>
-              <PayoutHistoryDialog
-                load={() => listMyPayouts(identityToken!)}
-                title="Your payouts"
-                description="Every payment you've received, with its receipt."
-                trigger={
-                  <button className="font-display text-xs font-bold uppercase tracking-wider underline-offset-4 hover:underline">
-                    History →
-                  </button>
-                }
-              />
+              <div className="flex items-center gap-3">
+                <PayoutHistoryDialog
+                  load={() => listMyPayouts(identityToken!)}
+                  title="Your payouts"
+                  description="Every payment you've received, with its receipt."
+                  trigger={
+                    <button className="font-display text-xs font-bold uppercase tracking-wider underline-offset-4 hover:underline">
+                      History →
+                    </button>
+                  }
+                />
+                <WithdrawDialog
+                  balance={balance ?? 0}
+                  onDone={reloadClips}
+                  trigger={
+                    <Button variant="outline" size="default">
+                      Withdraw
+                    </Button>
+                  }
+                />
+              </div>
             </CardContent>
           </Card>
         </motion.div>

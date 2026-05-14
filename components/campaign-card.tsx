@@ -1,19 +1,35 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
+import { getCampaignChainStateBySlug } from "@/lib/actions/campaigns";
 import {
   budgetPercentSpent,
-  budgetRemaining,
   formatUsd,
   type Campaign,
+  type CampaignChainState,
 } from "@/lib/campaigns";
 
 export function CampaignCard({ campaign }: { campaign: Campaign }) {
-  const remaining = budgetRemaining(campaign);
-  const percentSpent = budgetPercentSpent(campaign);
+  // Budget comes from the on-chain escrow — the source of truth for money.
+  const [chain, setChain] = useState<CampaignChainState | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getCampaignChainStateBySlug(campaign.slug)
+      .then((c) => {
+        if (!cancelled) setChain(c);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [campaign.slug]);
+
+  const percentSpent = chain ? budgetPercentSpent(chain) : 0;
 
   return (
     <Link
@@ -41,15 +57,19 @@ export function CampaignCard({ campaign }: { campaign: Campaign }) {
             </div>
           </div>
 
-          {/* Budget bar */}
+          {/* Budget bar — on-chain */}
           <div>
             <div className="flex items-baseline justify-between text-xs">
               <span className="font-display font-bold uppercase tracking-wider">
-                {formatUsd(remaining, { decimals: 0 })} budget left
+                {chain
+                  ? `${formatUsd(chain.balanceUsd, { decimals: 2 })} budget left`
+                  : "Loading budget…"}
               </span>
-              <span className="text-ink-soft">
-                of {formatUsd(campaign.totalBudgetUsd, { decimals: 0 })}
-              </span>
+              {chain && (
+                <span className="text-ink-soft">
+                  of {formatUsd(chain.totalFundedUsd, { decimals: 2 })}
+                </span>
+              )}
             </div>
             <div className="mt-2 h-2 w-full overflow-hidden rounded-full border-2 border-ink bg-cream">
               <div

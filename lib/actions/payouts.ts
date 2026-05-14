@@ -2,6 +2,7 @@
 
 import { requireAdmin, requireCreator } from "@/lib/auth-server";
 import {
+  ensureGasStipend,
   explorerTxUrl,
   getUsdtBalance,
   recordPayout,
@@ -72,6 +73,8 @@ export async function runPayouts(
   let skippedForCap = 0;
   let totalPaidUsd = 0;
   let firstError: string | undefined;
+  // Campaigns touched this run — their spent_usd is recomputed at the end.
+  const touchedCampaigns = new Set<string>();
 
   for (const clip of clips) {
     const earned = n(clip.earnings_usd);
@@ -138,6 +141,19 @@ export async function runPayouts(
         .eq("id", clip.id);
       paidCount++;
       totalPaidUsd += delta;
+      touchedCampaigns.add(clip.campaign_id);
+
+      // Best-effort gas stipend so the creator can sign their own withdrawal.
+      // Privy embedded wallets can't pay gas in USDT, so they need a little
+      // native CELO. A failure here must NOT undo the payout above.
+      try {
+        await ensureGasStipend(recipient);
+      } catch (e) {
+        console.error(
+          `Gas stipend failed for ${recipient}:`,
+          (e as Error).message
+        );
+      }
     } else {
       await sb
         .from("payouts")
@@ -146,6 +162,21 @@ export async function runPayouts(
       failedCount++;
       if (!firstError) firstError = res.error;
     }
+  }
+
+  // Recompute spent_usd for every campaign we paid into — it's just the sum
+  // of paid_out_usd across that campaign's clips. Doing it as a recompute
+  // (rather than an increment) keeps it correct even if a run is retried.
+  for (const campaignId of touchedCampaigns) {
+    const { data: clipRows } = await sb
+      .from("clips")
+      .select("paid_out_usd")
+      .eq("campaign_id", campaignId);
+    const spent = (clipRows ?? []).reduce(
+      (sum, r) => sum + n((r as { paid_out_usd: string | number }).paid_out_usd),
+      0
+    );
+    await sb.from("campaigns").update({ spent_usd: spent }).eq("id", campaignId);
   }
 
   return {

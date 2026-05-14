@@ -20,8 +20,11 @@ import {
   rejectClip,
   type OperatorStats,
 } from "@/lib/actions/clips";
-import { listAllPayouts, runPayouts } from "@/lib/actions/payouts";
-import { PayoutHistoryDialog } from "@/components/payout-history-dialog";
+import {
+  listAllPayouts,
+  runPayouts,
+  type PayoutHistoryRow,
+} from "@/lib/actions/payouts";
 import { formatUsd } from "@/lib/campaigns";
 import { type Clip, type ClipStatus } from "@/lib/clips";
 import { useAccessToken } from "@/lib/hooks/use-access-token";
@@ -205,6 +208,7 @@ function AdminDashboard() {
 
   const [pending, setPending] = useState<Clip[]>([]);
   const [allClips, setAll] = useState<Clip[]>([]);
+  const [payouts, setPayouts] = useState<PayoutHistoryRow[]>([]);
   const [stats, setStats] = useState<OperatorStats | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
   const [scraping, setScraping] = useState(false);
@@ -215,14 +219,16 @@ function AdminDashboard() {
   const refresh = useCallback(async () => {
     if (!identityToken) return;
     try {
-      const [p, a, s] = await Promise.all([
+      const [p, a, s, py] = await Promise.all([
         listPendingClips(identityToken),
         listAllClips(identityToken),
         getOperatorStats(identityToken),
+        listAllPayouts(identityToken),
       ]);
       setPending(p);
       setAll(a);
       setStats(s);
+      setPayouts(py);
     } catch (err) {
       console.error("Failed to refresh:", err);
     }
@@ -361,17 +367,6 @@ function AdminDashboard() {
               <Coins className={`size-4 ${paying ? "animate-pulse" : ""}`} />
               {paying ? "Paying out..." : "Run payouts"}
             </Button>
-            <PayoutHistoryDialog
-              load={() => listAllPayouts(identityToken!)}
-              showCreator
-              title="Payout history"
-              description="Every payout across all creators, with on-chain receipts."
-              trigger={
-                <button className="font-display text-xs font-bold uppercase tracking-wider text-ink-soft underline-offset-4 hover:underline">
-                  History →
-                </button>
-              }
-            />
             {payMsg && (
               <p className="font-body text-xs text-ink-soft">{payMsg}</p>
             )}
@@ -519,6 +514,115 @@ function AdminDashboard() {
                         </td>
                         <td className="px-4 py-3 text-right text-xs text-ink-soft">
                           {timeAgo(c.createdAt)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+          )}
+        </motion.div>
+
+        {/* Payout history — inline, full width for trazabilidad */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut", delay: 0.15 }}
+          className="mt-12 mb-16"
+        >
+          <h2 className="font-display text-xl font-bold tracking-tight">
+            Payout history
+          </h2>
+          <p className="mt-1 font-body text-xs text-ink-soft">
+            Every payout across all creators, with on-chain receipts.
+          </p>
+
+          {payouts.length === 0 ? (
+            <Card className="mt-3 bg-peach">
+              <CardContent className="py-6 text-center text-sm text-ink-soft">
+                No payouts yet.
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="mt-3 bg-cream">
+              <CardContent className="overflow-x-auto p-0">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b-2 border-ink text-left">
+                      <th className="px-4 py-3 font-display text-xs font-bold uppercase tracking-wider">
+                        When
+                      </th>
+                      <th className="px-4 py-3 font-display text-xs font-bold uppercase tracking-wider">
+                        Creator
+                      </th>
+                      <th className="px-4 py-3 font-display text-xs font-bold uppercase tracking-wider">
+                        Campaign
+                      </th>
+                      <th className="px-4 py-3 text-right font-display text-xs font-bold uppercase tracking-wider">
+                        Views paid
+                      </th>
+                      <th className="px-4 py-3 text-right font-display text-xs font-bold uppercase tracking-wider">
+                        Amount
+                      </th>
+                      <th className="px-4 py-3 font-display text-xs font-bold uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-4 py-3 text-right font-display text-xs font-bold uppercase tracking-wider">
+                        Receipt
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {payouts.map((p) => (
+                      <tr
+                        key={p.id}
+                        className="border-b border-ink/10 last:border-0"
+                      >
+                        <td className="px-4 py-3 text-xs text-ink-soft">
+                          {timeAgo(p.createdAt)}
+                        </td>
+                        <td className="px-4 py-3 text-xs">{p.creatorEmail}</td>
+                        <td className="px-4 py-3">
+                          {p.campaignName}{" "}
+                          <span className="capitalize text-ink-soft">
+                            · {p.platform}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right font-mono">
+                          {p.viewsPaid.toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3 text-right font-display font-bold">
+                          {formatUsd(p.amountUsd)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <Badge
+                            variant={
+                              p.status === "sent" || p.status === "confirmed"
+                                ? "live"
+                                : p.status === "failed"
+                                  ? "rejected"
+                                  : "review"
+                            }
+                            className="px-2 py-0.5 text-[0.6rem]"
+                          >
+                            {p.status}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          {p.explorerUrl ? (
+                            <a
+                              href={p.explorerUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-indigo hover:underline"
+                            >
+                              View
+                              <ArrowUpRight className="size-3" />
+                            </a>
+                          ) : (
+                            <span className="text-xs text-ink-soft">—</span>
+                          )}
                         </td>
                       </tr>
                     ))}

@@ -15,6 +15,7 @@ import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   findCampaignBySlug,
+  getCampaignChainStateBySlug,
   getCampaignStats,
   type CampaignStats,
 } from "@/lib/actions/campaigns";
@@ -22,9 +23,9 @@ import { submitClip } from "@/lib/actions/clips";
 import { getOrCreateTrackingCode } from "@/lib/actions/tracking-codes";
 import {
   budgetPercentSpent,
-  budgetRemaining,
   formatUsd,
   type Campaign,
+  type CampaignChainState,
   type Platform,
 } from "@/lib/campaigns";
 import { validatePostUrl } from "@/lib/clips";
@@ -40,6 +41,7 @@ function CampaignDetail() {
   const identityToken = useAccessToken();
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
+  const [chain, setChain] = useState<CampaignChainState | null>(null);
   const [stats, setStats] = useState<CampaignStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [platform, setPlatform] = useState<Platform | null>(null);
@@ -62,6 +64,12 @@ function CampaignDetail() {
           return;
         }
         setCampaign(c);
+        // Budget comes from the on-chain escrow — the source of truth for money.
+        getCampaignChainStateBySlug(slug)
+          .then((s) => {
+            if (!cancelled) setChain(s);
+          })
+          .catch(() => {});
         // Stats are non-critical — don't block the page on them.
         getCampaignStats(slug)
           .then((s) => {
@@ -118,8 +126,7 @@ function CampaignDetail() {
     }
   };
 
-  const remaining = budgetRemaining(campaign);
-  const percentSpent = budgetPercentSpent(campaign);
+  const percentSpent = chain ? budgetPercentSpent(chain) : 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -271,11 +278,15 @@ function CampaignDetail() {
               </p>
               <div className="mt-2 flex items-baseline gap-2">
                 <span className="font-display text-2xl font-bold tracking-tight">
-                  {formatUsd(remaining, { decimals: 0 })} left
+                  {chain
+                    ? `${formatUsd(chain.balanceUsd, { decimals: 2 })} left`
+                    : "Loading…"}
                 </span>
-                <span className="font-body text-sm text-ink-soft">
-                  of {formatUsd(campaign.totalBudgetUsd, { decimals: 0 })} total
-                </span>
+                {chain && (
+                  <span className="font-body text-sm text-ink-soft">
+                    of {formatUsd(chain.totalFundedUsd, { decimals: 2 })} total
+                  </span>
+                )}
               </div>
               <div className="mt-3 h-2 w-full overflow-hidden rounded-full border-2 border-ink bg-cream">
                 <div
