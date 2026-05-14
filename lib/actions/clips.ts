@@ -342,17 +342,24 @@ export async function refreshAllViews(
   await requireAdmin(identityToken);
   const sb = createServerClient();
 
+  // Join campaign rate + cap so we can compute earnings on the fly.
   const { data: rows, error } = await sb
     .from("clips")
-    .select("id, platform, post_url, verified_views")
+    .select(
+      "id, platform, post_url, verified_views, campaigns!inner(rate_per_view_usd, max_payout_per_clip_usd)"
+    )
     .eq("status", "tracking");
   if (error) throw error;
 
-  const live = (rows ?? []) as Array<{
+  const live = (rows ?? []) as unknown as Array<{
     id: string;
     platform: Platform;
     post_url: string;
     verified_views: number;
+    campaigns: {
+      rate_per_view_usd: string | number;
+      max_payout_per_clip_usd: string | number;
+    };
   }>;
 
   if (live.length === 0) return { ok: true, updated: 0, failed: 0 };
@@ -370,11 +377,18 @@ export async function refreshAllViews(
         return;
       }
       const newViews = Math.max(c.verified_views, result.views);
+
+      // earnings = views * rate, capped at the campaign's max payout per clip.
+      const rate = n(c.campaigns.rate_per_view_usd);
+      const maxPayout = n(c.campaigns.max_payout_per_clip_usd);
+      const earnings = Math.min(newViews * rate, maxPayout);
+
       const now = new Date().toISOString();
       const upd = await sb
         .from("clips")
         .update({
           verified_views: newViews,
+          earnings_usd: earnings,
           last_scraped_at: now,
           last_caption: result.caption,
         })
@@ -401,14 +415,44 @@ export async function refreshAllViews(
 // Stats helpers
 // ============================================================
 
+export type OperatorStats = {
+  pendingCount: number;
+  liveClipsCount: number;
+  /** Sum of earnings_usd across all clips — what we owe creators so far. */
+  totalEarnedUsd: number;
+  /** Sum of paid_out_usd — what's actually been transferred (0 until Phase 8). */
+  totalPaidUsd: number;
+};
+
 export async function getOperatorStats(
   identityToken: string
-): Promise<{ pendingCount: number }> {
+): Promise<OperatorStats> {
   await requireAdmin(identityToken);
   const sb = createServerClient();
-  const { count } = await sb
-    .from("clips")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "pending");
-  return { pendingCount: count ?? 0 };
+
+  const [pending, live, all] = await Promise.all([
+    sb
+      .from("clips")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending"),
+    sb
+      .from("clips")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "tracking"),
+    sb.from("clips").select("earnings_usd, paid_out_usd"),
+  ]);
+
+  const rows = (all.data ?? []) as {
+    earnings_usd: string | number;
+    paid_out_usd: string | number;
+  }[];
+  const totalEarnedUsd = rows.reduce((sum, r) => sum + n(r.earnings_usd), 0);
+  const totalPaidUsd = rows.reduce((sum, r) => sum + n(r.paid_out_usd), 0);
+
+  return {
+    pendingCount: pending.count ?? 0,
+    liveClipsCount: live.count ?? 0,
+    totalEarnedUsd,
+    totalPaidUsd,
+  };
 }

@@ -1,17 +1,16 @@
 "use client";
 
 import { usePrivy } from "@privy-io/react-auth";
-
-import { useAccessToken } from "@/lib/hooks/use-access-token";
 import { motion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { AuthGuard } from "@/components/auth-guard";
 import { CampaignCard } from "@/components/campaign-card";
 import { ClippaLogo } from "@/components/clippa-logo";
 import { MyClipCard } from "@/components/my-clip-card";
+import { PayoutHistoryDialog } from "@/components/payout-history-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
@@ -19,13 +18,10 @@ import { isAdmin } from "@/lib/admin";
 import { listActiveCampaigns } from "@/lib/actions/campaigns";
 import { listMyClips, getOperatorStats } from "@/lib/actions/clips";
 import { getMyOnboarding } from "@/lib/actions/onboarding";
+import { getMyWalletBalance, listMyPayouts } from "@/lib/actions/payouts";
 import { formatUsd, type Campaign } from "@/lib/campaigns";
 import { type Clip } from "@/lib/clips";
-
-function truncateAddress(address: string | undefined) {
-  if (!address) return "";
-  return `${address.slice(0, 6)}…${address.slice(-4)}`;
-}
+import { useAccessToken } from "@/lib/hooks/use-access-token";
 
 function AppHome() {
   const router = useRouter();
@@ -35,23 +31,23 @@ function AppHome() {
   const [clips, setClips] = useState<Clip[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [balance, setBalance] = useState<number | null>(null);
 
   const email = user?.email?.address;
-  const wallet = useMemo(() => {
-    return user?.wallet?.address ?? user?.linkedAccounts?.find((a) => a.type === "wallet")?.address;
-  }, [user]);
   const showAdminBanner = isAdmin(email);
 
   const reloadClips = useCallback(async () => {
     if (!identityToken) return;
-    const [myClips, opStats] = await Promise.all([
+    const [myClips, opStats, walletBalance] = await Promise.all([
       listMyClips(identityToken),
       showAdminBanner
         ? getOperatorStats(identityToken).catch(() => ({ pendingCount: 0 }))
         : Promise.resolve({ pendingCount: 0 }),
+      getMyWalletBalance(identityToken).catch(() => null),
     ]);
     setClips(myClips);
     setPendingCount(opStats.pendingCount);
+    setBalance(walletBalance);
   }, [identityToken, showAdminBanner]);
 
   // Onboarding gate + initial load
@@ -80,11 +76,6 @@ function AppHome() {
       cancelled = true;
     };
   }, [identityToken, reloadClips, router]);
-
-  const totalEarnings = useMemo(
-    () => clips.reduce((sum, c) => sum + c.earningsUsd, 0),
-    [clips]
-  );
 
   if (checking) {
     return (
@@ -176,15 +167,19 @@ function AppHome() {
                   Your balance
                 </p>
                 <p className="mt-1 font-display text-5xl font-bold tracking-tight md:text-6xl">
-                  {formatUsd(totalEarnings)}
+                  {balance === null ? "—" : formatUsd(balance)}
                 </p>
               </div>
-              <div className="flex items-center gap-2 text-xs text-ink-soft">
-                <span className="font-display uppercase tracking-wider">
-                  Get paid at:
-                </span>
-                <span className="font-mono">{truncateAddress(wallet)}</span>
-              </div>
+              <PayoutHistoryDialog
+                load={() => listMyPayouts(identityToken!)}
+                title="Your payouts"
+                description="Every payment you've received, with its receipt."
+                trigger={
+                  <button className="font-display text-xs font-bold uppercase tracking-wider underline-offset-4 hover:underline">
+                    History →
+                  </button>
+                }
+              />
             </CardContent>
           </Card>
         </motion.div>
@@ -218,7 +213,7 @@ function AppHome() {
           className="mt-10"
         >
           <h2 className="font-display text-xl font-bold tracking-tight">
-            Earn money
+            Live campaigns
           </h2>
 
           {campaigns.length === 0 ? (

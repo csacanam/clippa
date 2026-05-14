@@ -13,7 +13,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { findCampaignBySlug } from "@/lib/actions/campaigns";
+import {
+  findCampaignBySlug,
+  getCampaignStats,
+  type CampaignStats,
+} from "@/lib/actions/campaigns";
 import { submitClip } from "@/lib/actions/clips";
 import { getOrCreateTrackingCode } from "@/lib/actions/tracking-codes";
 import {
@@ -36,6 +40,7 @@ function CampaignDetail() {
   const identityToken = useAccessToken();
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
+  const [stats, setStats] = useState<CampaignStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [platform, setPlatform] = useState<Platform | null>(null);
   const [postUrl, setPostUrl] = useState("");
@@ -57,6 +62,12 @@ function CampaignDetail() {
           return;
         }
         setCampaign(c);
+        // Stats are non-critical — don't block the page on them.
+        getCampaignStats(slug)
+          .then((s) => {
+            if (!cancelled) setStats(s);
+          })
+          .catch(() => {});
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -213,45 +224,80 @@ function CampaignDetail() {
           </div>
         </motion.div>
 
-        {/* Budget + terms */}
+        {/* Payout terms — what the creator earns */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: "easeOut", delay: 0.05 }}
           className="mt-6"
         >
-          <Card className="bg-peach">
-            <CardContent className="flex flex-col gap-4">
-              <div>
-                <div className="flex items-baseline justify-between text-sm">
-                  <span className="font-display font-bold uppercase tracking-wider">
-                    {formatUsd(remaining, { decimals: 0 })} budget left
-                  </span>
-                  <span className="text-xs text-ink-soft">
-                    of {formatUsd(campaign.totalBudgetUsd, { decimals: 0 })}
-                  </span>
-                </div>
-                <div className="mt-2 h-2 w-full overflow-hidden rounded-full border-2 border-ink bg-cream">
-                  <div
-                    className="h-full bg-lime"
-                    style={{ width: `${percentSpent}%` }}
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">
-                <span className="font-display text-lg font-bold">
-                  {formatUsd(campaign.ratePerViewUsd, { decimals: 2 })} per view
+          <Card className="bg-lime">
+            <CardContent>
+              <p className="font-display text-xs font-bold uppercase tracking-wider">
+                What you earn
+              </p>
+              <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                <span className="font-display text-3xl font-bold tracking-tight md:text-4xl">
+                  {formatUsd(campaign.ratePerViewUsd, { decimals: 2 })}
                 </span>
-                <span className="text-ink-soft">
-                  up to {formatUsd(campaign.maxPayoutPerClipUsd, { decimals: 0 })} per clip
+                <span className="font-body text-sm text-ink-soft">per view</span>
+                <span className="mx-1 text-ink-soft">·</span>
+                <span className="font-display text-lg font-bold">
+                  {formatUsd(campaign.maxPayoutPerClipUsd, { decimals: 0 })}
+                </span>
+                <span className="font-body text-sm text-ink-soft">
+                  max per clip
                 </span>
               </div>
             </CardContent>
           </Card>
         </motion.div>
 
-        {/* About */}
+        {/* Campaign budget — how much the campaign has left */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut", delay: 0.08 }}
+          className="mt-3"
+        >
+          <Card className="bg-peach">
+            <CardContent>
+              <p className="font-display text-xs font-bold uppercase tracking-wider">
+                Campaign budget
+              </p>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="font-display text-2xl font-bold tracking-tight">
+                  {formatUsd(remaining, { decimals: 0 })} left
+                </span>
+                <span className="font-body text-sm text-ink-soft">
+                  of {formatUsd(campaign.totalBudgetUsd, { decimals: 0 })} total
+                </span>
+              </div>
+              <div className="mt-3 h-2 w-full overflow-hidden rounded-full border-2 border-ink bg-cream">
+                <div
+                  className="h-full bg-ink"
+                  style={{ width: `${percentSpent}%` }}
+                />
+              </div>
+              <p className="mt-1.5 font-body text-xs text-ink-soft">
+                {stats && (stats.paidCreatorsCount > 0 || stats.liveClipsCount > 0)
+                  ? [
+                      stats.paidCreatorsCount > 0
+                        ? `${stats.paidCreatorsCount} creator${stats.paidCreatorsCount === 1 ? "" : "s"} earning`
+                        : null,
+                      stats.liveClipsCount > 0
+                        ? `${stats.liveClipsCount} clip${stats.liveClipsCount === 1 ? "" : "s"} live`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")
+                  : "Be the first to clip this."}
+              </p>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* About this campaign */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -259,7 +305,7 @@ function CampaignDetail() {
           className="mt-10"
         >
           <h2 className="font-display text-lg font-bold uppercase tracking-wider">
-            About
+            About this campaign
           </h2>
           <p className="mt-2 font-body text-sm md:text-base">
             {campaign.longDescription}
@@ -285,7 +331,7 @@ function CampaignDetail() {
           </Card>
         </motion.div>
 
-        {/* Instructions */}
+        {/* Campaign-specific rules — comes from the campaigns row */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -293,11 +339,29 @@ function CampaignDetail() {
           className="mt-10"
         >
           <h2 className="font-display text-lg font-bold uppercase tracking-wider">
-            Tips
+            Rules
           </h2>
           <RichText className="mt-2 text-sm md:text-base">
             {campaign.instructionsMarkdown}
           </RichText>
+        </motion.div>
+
+        {/* Common Clippa reminders — same across every campaign, hardcoded */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut", delay: 0.22 }}
+          className="mt-10"
+        >
+          <h2 className="font-display text-lg font-bold uppercase tracking-wider">
+            How Clippa works
+          </h2>
+          <ul className="mt-2 flex flex-col gap-1.5 font-body text-sm md:text-base">
+            <li>· Make it feel like you, not an ad.</li>
+            <li>· Hook in the first 2 seconds.</li>
+            <li>· Drop your unique code in the caption — that&apos;s how we know the post is yours.</li>
+            <li>· We track views every hour. Your balance updates on its own.</li>
+          </ul>
         </motion.div>
 
         {/* Submit form */}

@@ -79,3 +79,40 @@ export async function getCampaignIdBySlug(slug: string): Promise<string> {
   if (!data) throw new Error(`Campaign not found: ${slug}`);
   return (data as { id: string }).id;
 }
+
+export type CampaignStats = {
+  liveClipsCount: number;
+  paidCreatorsCount: number;
+};
+
+/**
+ * Public social-proof stats for a campaign:
+ *  - liveClipsCount: clips currently tracking
+ *  - paidCreatorsCount: distinct creators who've received at least one payout
+ */
+export async function getCampaignStats(slug: string): Promise<CampaignStats> {
+  const sb = createServerClient();
+  const campaignId = await getCampaignIdBySlug(slug);
+
+  const liveClips = await sb
+    .from("clips")
+    .select("id", { count: "exact", head: true })
+    .eq("campaign_id", campaignId)
+    .eq("status", "tracking");
+  if (liveClips.error) throw liveClips.error;
+
+  // Distinct creators with payouts on clips of this campaign.
+  const paid = await sb
+    .from("payouts")
+    .select("creator_id, clips!inner(campaign_id)")
+    .eq("clips.campaign_id", campaignId);
+  if (paid.error) throw paid.error;
+  const distinctCreators = new Set(
+    ((paid.data ?? []) as { creator_id: string }[]).map((r) => r.creator_id)
+  );
+
+  return {
+    liveClipsCount: liveClips.count ?? 0,
+    paidCreatorsCount: distinctCreators.size,
+  };
+}

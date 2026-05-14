@@ -1,9 +1,7 @@
 "use client";
 
 import { usePrivy } from "@privy-io/react-auth";
-
-import { useAccessToken } from "@/lib/hooks/use-access-token";
-import { ArrowUpRight, Check, RefreshCw, X } from "lucide-react";
+import { ArrowUpRight, Check, Coins, RefreshCw, X } from "lucide-react";
 import { motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -15,13 +13,18 @@ import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   approveClip,
+  getOperatorStats,
   listAllClips,
   listPendingClips,
   refreshAllViews,
   rejectClip,
+  type OperatorStats,
 } from "@/lib/actions/clips";
+import { listAllPayouts, runPayouts } from "@/lib/actions/payouts";
+import { PayoutHistoryDialog } from "@/components/payout-history-dialog";
 import { formatUsd } from "@/lib/campaigns";
 import { type Clip, type ClipStatus } from "@/lib/clips";
+import { useAccessToken } from "@/lib/hooks/use-access-token";
 
 function timeAgo(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
@@ -202,19 +205,24 @@ function AdminDashboard() {
 
   const [pending, setPending] = useState<Clip[]>([]);
   const [allClips, setAll] = useState<Clip[]>([]);
+  const [stats, setStats] = useState<OperatorStats | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
   const [scraping, setScraping] = useState(false);
   const [scrapeMsg, setScrapeMsg] = useState<string | null>(null);
+  const [paying, setPaying] = useState(false);
+  const [payMsg, setPayMsg] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (!identityToken) return;
     try {
-      const [p, a] = await Promise.all([
+      const [p, a, s] = await Promise.all([
         listPendingClips(identityToken),
         listAllClips(identityToken),
+        getOperatorStats(identityToken),
       ]);
       setPending(p);
       setAll(a);
+      setStats(s);
     } catch (err) {
       console.error("Failed to refresh:", err);
     }
@@ -232,7 +240,7 @@ function AdminDashboard() {
       const r = await refreshAllViews(identityToken);
       await refresh();
       if (r.updated === 0 && r.failed === 0) {
-        setScrapeMsg("No live clips to refresh.");
+        setScrapeMsg("No live clips to sync.");
       } else if (r.failed === 0) {
         setScrapeMsg(`Updated ${r.updated} clip${r.updated === 1 ? "" : "s"}.`);
       } else {
@@ -244,6 +252,35 @@ function AdminDashboard() {
       setScrapeMsg(`Failed: ${(err as Error).message}`);
     } finally {
       setScraping(false);
+    }
+  };
+
+  const handleRunPayouts = async () => {
+    if (!identityToken) return;
+    setPaying(true);
+    setPayMsg(null);
+    try {
+      const r = await runPayouts(identityToken);
+      await refresh();
+      const parts: string[] = [];
+      if (r.paidCount > 0) {
+        parts.push(
+          `Paid ${r.paidCount} clip${r.paidCount === 1 ? "" : "s"} (${formatUsd(
+            r.totalPaidUsd
+          )})`
+        );
+      }
+      if (r.failedCount > 0) {
+        parts.push(`${r.failedCount} failed${r.firstError ? `: ${r.firstError}` : ""}`);
+      }
+      if (r.skippedForCap > 0) {
+        parts.push(`${r.skippedForCap} skipped (daily cap)`);
+      }
+      setPayMsg(parts.length ? parts.join(" · ") : "Nothing to pay out.");
+    } catch (err) {
+      setPayMsg(`Failed: ${(err as Error).message}`);
+    } finally {
+      setPaying(false);
     }
   };
 
@@ -281,23 +318,23 @@ function AdminDashboard() {
             <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div>
                 <p className="font-display text-xs font-bold uppercase tracking-wider opacity-90">
-                  Operator balance
+                  Owed to creators
                 </p>
                 <p className="mt-1 font-display text-3xl font-bold tracking-tight">
-                  {formatUsd(382.4)}
+                  {stats ? formatUsd(stats.totalEarnedUsd) : "—"}
                 </p>
-                <p className="mt-1 text-xs opacity-80">USDT on Celo</p>
+                <p className="mt-1 text-xs opacity-80">
+                  earned from verified views
+                </p>
               </div>
               <div>
                 <p className="font-display text-xs font-bold uppercase tracking-wider opacity-90">
-                  Paid today
+                  Paid out
                 </p>
                 <p className="mt-1 font-display text-3xl font-bold tracking-tight">
-                  {formatUsd(12.33)}
+                  {stats ? formatUsd(stats.totalPaidUsd) : "—"}
                 </p>
-                <p className="mt-1 text-xs opacity-80">
-                  of {formatUsd(500, { decimals: 0 })} daily cap
-                </p>
+                <p className="mt-1 text-xs opacity-80">USDT sent on Celo</p>
               </div>
               <div>
                 <p className="font-display text-xs font-bold uppercase tracking-wider opacity-90">
@@ -312,6 +349,33 @@ function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Run payouts */}
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <Button
+              onClick={handleRunPayouts}
+              disabled={paying || !identityToken}
+              variant="default"
+              size="default"
+            >
+              <Coins className={`size-4 ${paying ? "animate-pulse" : ""}`} />
+              {paying ? "Paying out..." : "Run payouts"}
+            </Button>
+            <PayoutHistoryDialog
+              load={() => listAllPayouts(identityToken!)}
+              showCreator
+              title="Payout history"
+              description="Every payout across all creators, with on-chain receipts."
+              trigger={
+                <button className="font-display text-xs font-bold uppercase tracking-wider text-ink-soft underline-offset-4 hover:underline">
+                  History →
+                </button>
+              }
+            />
+            {payMsg && (
+              <p className="font-body text-xs text-ink-soft">{payMsg}</p>
+            )}
+          </div>
         </motion.div>
 
         <motion.div
@@ -361,7 +425,7 @@ function AdminDashboard() {
               size="default"
             >
               <RefreshCw className={`size-4 ${scraping ? "animate-spin" : ""}`} />
-              {scraping ? "Refreshing..." : "Refresh views"}
+              {scraping ? "Syncing..." : "Sync now"}
             </Button>
           </div>
 

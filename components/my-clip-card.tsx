@@ -115,13 +115,17 @@ export function MyClipCard({
         </div>
 
         {clip.status === "tracking" && (
-          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm">
             <span className="font-mono">
               {clip.verifiedViews.toLocaleString()} views
             </span>
             <span className="text-ink-soft">·</span>
             <span className="font-display font-bold">
               {formatUsd(clip.earningsUsd)} earned
+            </span>
+            <span className="text-ink-soft">·</span>
+            <span className="font-display font-bold text-ink-soft">
+              {formatUsd(clip.paidOutUsd)} paid
             </span>
           </div>
         )}

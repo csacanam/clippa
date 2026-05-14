@@ -158,13 +158,13 @@ insert into campaigns (
   'nerdos-fun',
   'Nerdos.fun',
   'A daily game where curious people compete and win rewards.',
-  'Nerdos.fun is a daily game for nerds. You answer quick questions, compete with other players and earn real rewards. New questions drop every day.',
-  E'I found a daily game for nerds where you answer quick questions, compete with other players and earn real rewards.\n\nIt''s called **Nerdos.fun**.\n\nYou can play once a day, and if you''re sharp enough, you can win.',
-  E'1. Make it feel like you, not an ad.\n2. Hook in the first 2 seconds.\n3. We''ll give you a unique code to drop in your caption — that''s how we link the post to you.\n4. Post on Instagram or TikTok, then drop the link.',
+  'Nerdos.fun is a daily game where players answer quick questions and win real money. We want creators to show the game in action — make viewers curious enough to try it. The best clips feel like a personal discovery: "wait, I just won money playing this".',
+  E'**[hook · 0–3s]**\n\nThis might be the only game on the internet that pays you for actually using your brain.\n\n**[gameplay · 3–15s]**\n\nOpen Nerdos.fun.\nAnswer a few questions live.\nShow the timer, the pressure, your reactions, your score climbing, the rewards.\n\n"This is harder than I expected."\n"No way people are this fast."\n\n**[outro · 15–20s]**\n\nFree to play.\nDaily rewards.\nOnly for nerdos.\n\nTry it now at **Nerdos.fun**.',
+  E'**1. Mention Nerdos.fun on screen at least once.**\nName, URL, logo, or "play on Nerdos.fun".\n\n**2. Show real gameplay.**\nCapture the timer, questions, rankings, pressure, reactions, or rewards.\n\n**3. Don''t talk about crypto.**\nSay "money", "cash", "USD", or "rewards" instead.\n\n**4. Don''t fake earnings or unrealistic results.**\nKeep it authentic.\n\n**5. The best videos feel competitive, surprising, or stressful.**\nThink: "How are people this fast?" · "This is harder than it looks." · "I thought this would be easy."',
   0.010000,
   20.00,
   100.00,
-  24.00,
+  0.00,
   array['instagram', 'tiktok']::text[],
   'active'
 )
