@@ -33,8 +33,23 @@ export type Clip = {
 // ---- URL validation ---------------------------------------------------
 
 const IG_REGEX = /^https?:\/\/(www\.)?instagram\.com\/(reel|p|tv)\/[A-Za-z0-9_-]+\/?/i;
-const TT_REGEX =
-  /^https?:\/\/(www\.|vm\.|m\.)?tiktok\.com\/(@[^/]+\/video\/\d+|t\/[A-Za-z0-9]+|v\/\d+)/i;
+
+// TikTok has two link shapes:
+//  - full:  www.tiktok.com/@user/video/123 , www.tiktok.com/t/CODE , .../v/123
+//  - short: vt.tiktok.com/CODE , vm.tiktok.com/CODE  (app "share" links — redirects)
+const TT_FULL_REGEX =
+  /^https?:\/\/(www\.|m\.)?tiktok\.com\/(@[^/]+\/video\/\d+|t\/[A-Za-z0-9]+|v\/\d+)/i;
+const TT_SHORT_REGEX =
+  /^https?:\/\/(vt|vm)\.tiktok\.com\/[A-Za-z0-9]+/i;
+const TT_REGEX = new RegExp(
+  `(${TT_FULL_REGEX.source})|(${TT_SHORT_REGEX.source})`,
+  "i"
+);
+
+/** True when the URL is a TikTok app short link that needs redirect-resolving. */
+export function isTikTokShortLink(url: string): boolean {
+  return TT_SHORT_REGEX.test(url.trim());
+}
 
 export function validatePostUrl(
   platform: Platform,

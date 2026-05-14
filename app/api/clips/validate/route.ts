@@ -19,6 +19,9 @@ type Ok = {
   views: number;
   caption: string;
   authorHandle?: string;
+  /** Canonical post URL — short links (vt.tiktok.com) resolve to the full
+   *  form. The frontend should submit THIS, not the raw pasted URL. */
+  canonicalUrl?: string;
   /** When true, scraping couldn't verify the post (e.g. Instagram).
    *  Frontend should still let it through but flag for admin review. */
   needsManualReview?: boolean;
@@ -97,5 +100,6 @@ export async function POST(req: Request): Promise<NextResponse<Ok | Err>> {
     views: result.views,
     caption: result.caption,
     authorHandle: result.authorHandle,
+    canonicalUrl: result.canonicalUrl,
   });
 }

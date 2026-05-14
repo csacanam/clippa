@@ -88,5 +88,7 @@ export async function scrapeTiktok(url: string): Promise<ScrapeResult> {
     views: typeof item.playCount === "number" ? item.playCount : 0,
     caption: (item.text ?? "").trim(),
     authorHandle: item.authorMeta?.name?.replace(/^@/, ""),
+    // Apify resolves short links (vt.tiktok.com) to the full video URL.
+    canonicalUrl: item.webVideoUrl ?? undefined,
   };
 }

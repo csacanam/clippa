@@ -146,6 +146,9 @@ function CampaignDetail() {
     setSubmitting(true);
 
     // Pre-validate: post is reachable, video, caption contains the code.
+    // The endpoint also returns a canonical URL — short links (vt.tiktok.com)
+    // resolve to the full www.tiktok.com/@user/video/123 form.
+    let finalUrl = postUrl.trim();
     try {
       const res = await fetch("/api/clips/validate", {
         method: "POST",
@@ -157,13 +160,14 @@ function CampaignDetail() {
         }),
       });
       const data = (await res.json()) as
-        | { ok: true; warning?: string }
+        | { ok: true; canonicalUrl?: string; warning?: string }
         | { ok: false; error: string };
       if (!data.ok) {
         setError(data.error);
         setSubmitting(false);
         return;
       }
+      if (data.canonicalUrl) finalUrl = data.canonicalUrl;
     } catch {
       setError("Couldn't verify the post. Check your connection and try again.");
       setSubmitting(false);
@@ -173,7 +177,7 @@ function CampaignDetail() {
     const result = await submitClip(identityToken, {
       campaignSlug: campaign.slug,
       platform,
-      postUrl: postUrl.trim(),
+      postUrl: finalUrl,
       trackingCode,
     });
     setSubmitting(false);
