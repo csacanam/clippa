@@ -5,6 +5,8 @@ import { scrapePost } from "@/lib/scrapers";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+// Scrapes the post via Apify before validating — can take 10-60s.
+export const maxDuration = 60;
 
 type Body = {
   platform: Platform;

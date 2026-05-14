@@ -5,6 +5,8 @@ import { scrapePost } from "@/lib/scrapers";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+// Apify actor runs can take 10-60s (cold start). Give the function room.
+export const maxDuration = 60;
 
 type Body = { platform: Platform; postUrl: string };
 
