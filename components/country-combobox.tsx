@@ -11,6 +11,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { useTranslation } from "@/components/locale-provider";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { COUNTRIES, findCountry, type Country } from "@/lib/countries";
 import { cn } from "@/lib/utils";
@@ -24,10 +25,12 @@ type Props = {
 export function CountryCombobox({
   value,
   onChange,
-  placeholder = "Search your country...",
+  placeholder,
 }: Props) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const selected: Country | undefined = value ? findCountry(value) : undefined;
+  const inputPlaceholder = placeholder ?? t("onboarding.countryPlaceholder");
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -48,7 +51,7 @@ export function CountryCombobox({
             <span className="font-medium">{selected.name}</span>
           </span>
         ) : (
-          <span className="text-ink-soft/60">{placeholder}</span>
+          <span className="text-ink-soft/60">{inputPlaceholder}</span>
         )}
 
         <div className="flex items-center gap-1">
@@ -91,9 +94,12 @@ export function CountryCombobox({
             return 0;
           }}
         >
-          <CommandInput placeholder={placeholder} className="font-body" />
+          <CommandInput
+            placeholder={t("onboarding.countrySearch")}
+            className="font-body"
+          />
           <CommandList className="max-h-72">
-            <CommandEmpty>No country found.</CommandEmpty>
+            <CommandEmpty>{t("onboarding.countryEmpty")}</CommandEmpty>
 
             <CommandGroup>
               {COUNTRIES.map((c) => (

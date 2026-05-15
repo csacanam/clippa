@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, Inter } from "next/font/google";
+import { headers } from "next/headers";
 import "./globals.css";
+
+import { LocaleProvider } from "@/components/locale-provider";
+import { localeFromAcceptLanguage } from "@/lib/i18n/types";
 
 import { Providers } from "./providers";
 
@@ -22,18 +26,28 @@ export const metadata: Metadata = {
     "Short videos for products on Instagram or TikTok. Drop the link. Earn for every view.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Pick the page's initial language from the browser's Accept-Language so
+  // the server-rendered HTML is already localized. Users can override with
+  // the EN/ES toggle (persisted in localStorage by LocaleProvider).
+  const headersList = await headers();
+  const initialLocale = localeFromAcceptLanguage(
+    headersList.get("accept-language")
+  );
+
   return (
     <html
-      lang="en"
+      lang={initialLocale}
       className={`${display.variable} ${body.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-cream text-ink font-body">
-        <Providers>{children}</Providers>
+        <LocaleProvider initialLocale={initialLocale}>
+          <Providers>{children}</Providers>
+        </LocaleProvider>
       </body>
     </html>
   );

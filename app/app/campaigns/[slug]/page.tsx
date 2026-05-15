@@ -8,6 +8,8 @@ import { useEffect, useState } from "react";
 
 import { AuthGuard } from "@/components/auth-guard";
 import { ClippaLogo } from "@/components/clippa-logo";
+import { LocaleToggle } from "@/components/locale-toggle";
+import { useTranslation } from "@/components/locale-provider";
 import { RichText } from "@/components/rich-text";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,6 +40,7 @@ type FormState =
 function CampaignDetail() {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
+  const { t } = useTranslation();
   const identityToken = useAccessToken();
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
@@ -106,7 +109,7 @@ function CampaignDetail() {
     return (
       <div className="flex min-h-dvh items-center justify-center">
         <div className="font-display text-sm uppercase tracking-wider text-ink-soft">
-          Loading...
+          {t("common.loading")}
         </div>
       </div>
     );
@@ -133,7 +136,7 @@ function CampaignDetail() {
     setError(null);
 
     if (!platform) {
-      setError("Pick a platform first.");
+      setError(t("campaign.errPickPlatform"));
       return;
     }
     const v = validatePostUrl(platform, postUrl);
@@ -142,11 +145,11 @@ function CampaignDetail() {
       return;
     }
     if (!trackingCode) {
-      setError("Your code is still loading — try again in a sec.");
+      setError(t("campaign.errCodeLoading"));
       return;
     }
     if (!identityToken) {
-      setError("Auth not ready yet — try again in a sec.");
+      setError(t("campaign.errAuthNotReady"));
       return;
     }
 
@@ -176,7 +179,7 @@ function CampaignDetail() {
       }
       if (data.canonicalUrl) finalUrl = data.canonicalUrl;
     } catch {
-      setError("Couldn't verify the post. Check your connection and try again.");
+      setError(t("campaign.errCouldntVerify"));
       setSubmitting(false);
       return;
     }
@@ -201,13 +204,16 @@ function CampaignDetail() {
     <main className="flex min-h-dvh flex-col px-6 py-6 md:px-12">
       <header className="flex items-center justify-between">
         <ClippaLogo />
-        <Link
-          href="/app"
-          className="flex items-center gap-1 font-body text-sm font-medium text-ink hover:underline"
-        >
-          <ChevronLeft className="size-4" />
-          Back
-        </Link>
+        <div className="flex items-center gap-4">
+          <LocaleToggle />
+          <Link
+            href="/app"
+            className="flex items-center gap-1 font-body text-sm font-medium text-ink hover:underline"
+          >
+            <ChevronLeft className="size-4" />
+            {t("common.back")}
+          </Link>
+        </div>
       </header>
 
       <section className="mx-auto mt-8 w-full max-w-2xl">
@@ -245,19 +251,21 @@ function CampaignDetail() {
           <Card className="bg-lime">
             <CardContent>
               <p className="font-display text-xs font-bold uppercase tracking-wider">
-                What you earn
+                {t("campaign.whatYouEarn")}
               </p>
               <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
                 <span className="font-display text-3xl font-bold tracking-tight md:text-4xl">
                   {formatUsd(campaign.ratePerViewUsd, { decimals: 2 })}
                 </span>
-                <span className="font-body text-sm text-ink-soft">per view</span>
+                <span className="font-body text-sm text-ink-soft">
+                  {t("campaign.perView")}
+                </span>
                 <span className="mx-1 text-ink-soft">·</span>
                 <span className="font-display text-lg font-bold">
                   {formatUsd(campaign.maxPayoutPerClipUsd, { decimals: 0 })}
                 </span>
                 <span className="font-body text-sm text-ink-soft">
-                  max per clip
+                  {t("campaign.maxPerClip")}
                 </span>
               </div>
             </CardContent>
@@ -274,17 +282,21 @@ function CampaignDetail() {
           <Card className="bg-peach">
             <CardContent>
               <p className="font-display text-xs font-bold uppercase tracking-wider">
-                Campaign budget
+                {t("campaign.budgetLabel")}
               </p>
               <div className="mt-2 flex items-baseline gap-2">
                 <span className="font-display text-2xl font-bold tracking-tight">
                   {chain
-                    ? `${formatUsd(chain.balanceUsd, { decimals: 2 })} left`
-                    : "Loading…"}
+                    ? t("campaign.budgetLeft", {
+                        amount: formatUsd(chain.balanceUsd, { decimals: 2 }),
+                      })
+                    : t("campaign.budgetLoading")}
                 </span>
                 {chain && (
                   <span className="font-body text-sm text-ink-soft">
-                    of {formatUsd(chain.totalFundedUsd, { decimals: 2 })} total
+                    {t("campaign.budgetOf", {
+                      total: formatUsd(chain.totalFundedUsd, { decimals: 2 }),
+                    })}
                   </span>
                 )}
               </div>
@@ -298,15 +310,25 @@ function CampaignDetail() {
                 {stats && (stats.paidCreatorsCount > 0 || stats.liveClipsCount > 0)
                   ? [
                       stats.paidCreatorsCount > 0
-                        ? `${stats.paidCreatorsCount} creator${stats.paidCreatorsCount === 1 ? "" : "s"} earning`
+                        ? t(
+                            stats.paidCreatorsCount === 1
+                              ? "campaign.creatorsEarningOne"
+                              : "campaign.creatorsEarningMany",
+                            { n: stats.paidCreatorsCount }
+                          )
                         : null,
                       stats.liveClipsCount > 0
-                        ? `${stats.liveClipsCount} clip${stats.liveClipsCount === 1 ? "" : "s"} live`
+                        ? t(
+                            stats.liveClipsCount === 1
+                              ? "campaign.clipsLiveOne"
+                              : "campaign.clipsLiveMany",
+                            { n: stats.liveClipsCount }
+                          )
                         : null,
                     ]
                       .filter(Boolean)
                       .join(" · ")
-                  : "Be the first to clip this."}
+                  : t("campaign.beFirst")}
               </p>
             </CardContent>
           </Card>
@@ -320,7 +342,7 @@ function CampaignDetail() {
           className="mt-10"
         >
           <h2 className="font-display text-lg font-bold uppercase tracking-wider">
-            About this campaign
+            {t("campaign.about")}
           </h2>
           <p className="mt-2 font-body text-sm md:text-base">
             {campaign.longDescription}
@@ -335,7 +357,7 @@ function CampaignDetail() {
           className="mt-10"
         >
           <h2 className="font-display text-lg font-bold uppercase tracking-wider">
-            Suggested script
+            {t("campaign.script")}
           </h2>
           <Card className="mt-3 bg-cream">
             <CardContent>
@@ -354,7 +376,7 @@ function CampaignDetail() {
           className="mt-10"
         >
           <h2 className="font-display text-lg font-bold uppercase tracking-wider">
-            Rules
+            {t("campaign.rules")}
           </h2>
           <RichText className="mt-2 text-sm md:text-base">
             {campaign.instructionsMarkdown}
@@ -369,13 +391,13 @@ function CampaignDetail() {
           className="mt-10"
         >
           <h2 className="font-display text-lg font-bold uppercase tracking-wider">
-            How Clippa works
+            {t("campaign.howItWorks")}
           </h2>
           <ul className="mt-2 flex flex-col gap-1.5 font-body text-sm md:text-base">
-            <li>· Make it feel like you, not an ad.</li>
-            <li>· Hook in the first 2 seconds.</li>
-            <li>· Drop your unique code in the caption — that&apos;s how we know the post is yours.</li>
-            <li>· We track views every hour. Your balance updates on its own.</li>
+            <li>· {t("campaign.howItWorks1")}</li>
+            <li>· {t("campaign.howItWorks2")}</li>
+            <li>· {t("campaign.howItWorks3")}</li>
+            <li>· {t("campaign.howItWorks4")}</li>
           </ul>
         </motion.div>
 
@@ -389,18 +411,20 @@ function CampaignDetail() {
           {formState.stage === "form" ? (
             <Card>
               <CardContent>
-                <CardTitle className="text-xl">Submit your clip</CardTitle>
+                <CardTitle className="text-xl">
+                  {t("campaign.submitTitle")}
+                </CardTitle>
                 <p className="mt-1 text-sm text-ink-soft">
-                  Add the code to your caption, post on IG or TikTok, then drop the link here.
+                  {t("campaign.submitSubtitle")}
                 </p>
 
                 {/* Your code — prominent step 1 */}
                 <div className="mt-6 rounded-card border-2 border-ink bg-lime p-5 shadow-sticker">
                   <p className="font-display text-xs font-bold uppercase tracking-wider text-ink">
-                    Step 1 — Your code
+                    {t("campaign.step1Title")}
                   </p>
                   <p className="mt-1 text-xs text-ink/80">
-                    Paste this somewhere in your caption so we know the post is yours.
+                    {t("campaign.step1Subtitle")}
                   </p>
                   <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
                     <code className="w-full truncate rounded-md border-2 border-ink bg-cream px-3 py-2 font-mono text-base font-bold tracking-wider sm:flex-1">
@@ -416,11 +440,11 @@ function CampaignDetail() {
                     >
                       {copied ? (
                         <>
-                          <Check className="size-4" /> Copied
+                          <Check className="size-4" /> {t("common.copied")}
                         </>
                       ) : (
                         <>
-                          <Copy className="size-4" /> Copy
+                          <Copy className="size-4" /> {t("common.copy")}
                         </>
                       )}
                     </Button>
@@ -430,7 +454,7 @@ function CampaignDetail() {
                 <form className="mt-6 flex flex-col gap-5" onSubmit={handleSubmit}>
                   <div className="flex flex-col gap-2">
                     <label className="font-display text-sm font-bold uppercase tracking-wide">
-                      Step 2 — Where did you post it?
+                      {t("campaign.step2Title")}
                     </label>
                     <div className="flex gap-2">
                       {campaign.platforms.map((p) => {
@@ -457,7 +481,7 @@ function CampaignDetail() {
 
                   <div className="flex flex-col gap-2">
                     <label className="font-display text-sm font-bold uppercase tracking-wide">
-                      Step 3 — Paste the link
+                      {t("campaign.step3Title")}
                     </label>
                     <Input
                       type="url"
@@ -481,7 +505,9 @@ function CampaignDetail() {
                       variant="magenta"
                       size="lg"
                     >
-                      {submitting ? "Verifying..." : "Submit clip →"}
+                      {submitting
+                        ? t("campaign.submitting")
+                        : t("campaign.submitButton")}
                     </Button>
                   </div>
                 </form>
@@ -491,12 +517,12 @@ function CampaignDetail() {
             <Card className="bg-magenta text-cream">
               <CardContent className="flex flex-col gap-3 py-8 text-center">
                 <CardTitle className="text-2xl text-cream">
-                  Got it.
+                  {t("campaign.doneTitle")}
                 </CardTitle>
                 <p className="text-sm text-cream/90">
-                  Your clip is being reviewed.
+                  {t("campaign.doneSubtitleLine1")}
                   <br />
-                  We&apos;ll let you know as soon as it&apos;s live.
+                  {t("campaign.doneSubtitleLine2")}
                 </p>
                 <div className="mt-4 flex justify-center gap-3">
                   <Button
@@ -504,7 +530,7 @@ function CampaignDetail() {
                     variant="default"
                     size="lg"
                   >
-                    Go home
+                    {t("campaign.goHome")}
                   </Button>
                 </div>
               </CardContent>

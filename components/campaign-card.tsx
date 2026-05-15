@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { useTranslation } from "@/components/locale-provider";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { getCampaignChainStateBySlug } from "@/lib/actions/campaigns";
@@ -14,6 +15,7 @@ import {
 } from "@/lib/campaigns";
 
 export function CampaignCard({ campaign }: { campaign: Campaign }) {
+  const { t } = useTranslation();
   // Budget comes from the on-chain escrow — the source of truth for money.
   const [chain, setChain] = useState<CampaignChainState | null>(null);
 
@@ -62,12 +64,16 @@ export function CampaignCard({ campaign }: { campaign: Campaign }) {
             <div className="flex items-baseline justify-between text-xs">
               <span className="font-display font-bold uppercase tracking-wider">
                 {chain
-                  ? `${formatUsd(chain.balanceUsd, { decimals: 2 })} budget left`
-                  : "Loading budget…"}
+                  ? t("campaign.cardBudgetLeft", {
+                      amount: formatUsd(chain.balanceUsd, { decimals: 2 }),
+                    })
+                  : t("campaign.cardBudgetLoading")}
               </span>
               {chain && (
                 <span className="text-ink-soft">
-                  of {formatUsd(chain.totalFundedUsd, { decimals: 2 })}
+                  {t("campaign.cardBudgetOf", {
+                    total: formatUsd(chain.totalFundedUsd, { decimals: 2 }),
+                  })}
                 </span>
               )}
             </div>
@@ -82,12 +88,17 @@ export function CampaignCard({ campaign }: { campaign: Campaign }) {
           {/* Terms */}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
             <span className="font-display font-bold">
-              {formatUsd(campaign.ratePerViewUsd, { decimals: 2 })} per view
+              {t("campaign.cardPerView", {
+                amount: formatUsd(campaign.ratePerViewUsd, { decimals: 2 }),
+              })}
             </span>
             <span className="text-ink-soft">·</span>
             <span className="text-ink-soft">
-              up to {formatUsd(campaign.maxPayoutPerClipUsd, { decimals: 0 })}{" "}
-              per clip
+              {t("campaign.cardUpTo", {
+                amount: formatUsd(campaign.maxPayoutPerClipUsd, {
+                  decimals: 0,
+                }),
+              })}
             </span>
           </div>
         </CardContent>

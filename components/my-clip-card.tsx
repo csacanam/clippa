@@ -4,6 +4,7 @@ import { ChevronRight, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { useTranslation } from "@/components/locale-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
@@ -12,21 +13,21 @@ import { formatUsd } from "@/lib/campaigns";
 import { type Clip, type ClipStatus } from "@/lib/clips";
 import { useAccessToken } from "@/lib/hooks/use-access-token";
 
-function statusBadge(s: ClipStatus): {
-  label: string;
+function statusInfo(s: ClipStatus): {
+  key: string;
   variant: "live" | "review" | "rejected" | "muted";
 } {
   switch (s) {
     case "tracking":
-      return { label: "Live", variant: "live" };
+      return { key: "common.statusLive", variant: "live" };
     case "pending":
-      return { label: "Under review", variant: "review" };
+      return { key: "common.statusUnderReview", variant: "review" };
     case "rejected":
-      return { label: "Not approved", variant: "rejected" };
+      return { key: "common.statusNotApproved", variant: "rejected" };
     case "paused":
-      return { label: "Paused", variant: "muted" };
+      return { key: "common.statusPaused", variant: "muted" };
     case "maxed_out":
-      return { label: "Max payout reached", variant: "muted" };
+      return { key: "common.statusMaxedOut", variant: "muted" };
   }
 }
 
@@ -38,8 +39,9 @@ export function MyClipCard({
   onRemoved: () => void | Promise<void>;
 }) {
   const router = useRouter();
+  const { t } = useTranslation();
   const identityToken = useAccessToken();
-  const badge = statusBadge(clip.status);
+  const badge = statusInfo(clip.status);
   const [confirming, setConfirming] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,7 +97,7 @@ export function MyClipCard({
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <Badge variant={badge.variant} className="px-2.5 py-0.5">
-              {badge.label}
+              {t(badge.key)}
             </Badge>
             {!confirming && (
               <button
@@ -104,7 +106,7 @@ export function MyClipCard({
                   e.stopPropagation();
                   setConfirming(true);
                 }}
-                aria-label="Remove clip"
+                aria-label={t("clipCard.removeAria")}
                 className="rounded-md p-1.5 text-ink-soft transition-colors hover:bg-cream hover:text-ink"
               >
                 <Trash2 className="size-4" />
@@ -117,15 +119,21 @@ export function MyClipCard({
         {clip.status === "tracking" && (
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm">
             <span className="font-mono">
-              {clip.verifiedViews.toLocaleString()} views
+              {t("clipCard.viewsLabel", {
+                n: clip.verifiedViews.toLocaleString(),
+              })}
             </span>
             <span className="text-ink-soft">·</span>
             <span className="font-display font-bold">
-              {formatUsd(clip.earningsUsd)} earned
+              {t("clipCard.earnedLabel", {
+                amount: formatUsd(clip.earningsUsd),
+              })}
             </span>
             <span className="text-ink-soft">·</span>
             <span className="font-display font-bold text-ink-soft">
-              {formatUsd(clip.paidOutUsd)} paid
+              {t("clipCard.paidLabel", {
+                amount: formatUsd(clip.paidOutUsd),
+              })}
             </span>
           </div>
         )}
@@ -133,7 +141,7 @@ export function MyClipCard({
         {clip.status === "rejected" && clip.rejectionReason && (
           <p className="text-xs text-ink-soft">
             <span className="font-display font-bold uppercase tracking-wider">
-              Reason:
+              {t("clipCard.reasonLabel")}
             </span>{" "}
             {clip.rejectionReason}
           </p>
@@ -142,17 +150,12 @@ export function MyClipCard({
         {confirming && (
           <div className="mt-2 flex flex-col gap-2 rounded-md border-2 border-ink bg-cream p-3">
             <p className="text-sm">
-              Remove this clip?{" "}
-              {earnedSomething ? (
-                <span className="text-ink-soft">
-                  Payouts already sent stay yours. We&apos;ll stop tracking new
-                  views.
-                </span>
-              ) : (
-                <span className="text-ink-soft">
-                  You haven&apos;t earned anything yet, so nothing&apos;s lost.
-                </span>
-              )}
+              {t("clipCard.confirmRemove")}{" "}
+              <span className="text-ink-soft">
+                {earnedSomething
+                  ? t("clipCard.payoutsStay")
+                  : t("clipCard.noLoss")}
+              </span>
             </p>
             {error && <p className="text-xs text-error">{error}</p>}
             <div className="flex gap-2">
@@ -162,7 +165,7 @@ export function MyClipCard({
                 variant="destructive"
                 size="sm"
               >
-                {removing ? "Removing..." : "Yes, remove"}
+                {removing ? t("clipCard.removing") : t("clipCard.yesRemove")}
               </Button>
               <Button
                 onClick={() => {
@@ -172,7 +175,7 @@ export function MyClipCard({
                 variant="ghost"
                 size="sm"
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
             </div>
           </div>

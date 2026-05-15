@@ -369,10 +369,17 @@ function AdminDashboard() {
                   Owed to creators
                 </p>
                 <p className="mt-1 font-display text-3xl font-bold tracking-tight">
-                  {stats ? formatUsd(stats.totalEarnedUsd) : "—"}
+                  {stats
+                    ? formatUsd(
+                        Math.max(
+                          0,
+                          stats.totalEarnedUsd - stats.totalPaidUsd
+                        )
+                      )
+                    : "—"}
                 </p>
                 <p className="mt-1 text-xs opacity-80">
-                  earned from verified views
+                  still pending payout
                 </p>
               </div>
               <div>

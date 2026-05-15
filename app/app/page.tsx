@@ -9,6 +9,8 @@ import { useCallback, useEffect, useState } from "react";
 import { AuthGuard } from "@/components/auth-guard";
 import { CampaignCard } from "@/components/campaign-card";
 import { ClippaLogo } from "@/components/clippa-logo";
+import { LocaleToggle } from "@/components/locale-toggle";
+import { useTranslation } from "@/components/locale-provider";
 import { MyClipCard } from "@/components/my-clip-card";
 import { PayoutHistoryDialog } from "@/components/payout-history-dialog";
 import { WithdrawDialog } from "@/components/withdraw-dialog";
@@ -27,6 +29,7 @@ import { useAccessToken } from "@/lib/hooks/use-access-token";
 function AppHome() {
   const router = useRouter();
   const { user, logout } = usePrivy();
+  const { t } = useTranslation();
   const identityToken = useAccessToken();
   const [checking, setChecking] = useState(true);
   const [clips, setClips] = useState<Clip[]>([]);
@@ -82,7 +85,7 @@ function AppHome() {
     return (
       <div className="flex min-h-dvh items-center justify-center">
         <div className="font-display text-sm uppercase tracking-wider text-ink-soft">
-          Loading...
+          {t("common.loading")}
         </div>
       </div>
     );
@@ -98,15 +101,16 @@ function AppHome() {
           {isAdmin(email) && (
             <Link href="/admin">
               <Badge variant="indigo" className="px-2.5 py-1 text-[0.7rem]">
-                Admin
+                {t("home.adminLabel")}
               </Badge>
             </Link>
           )}
+          <LocaleToggle />
           <span className="hidden font-body text-xs text-ink-soft md:inline">
             {email}
           </span>
           <Button onClick={() => logout()} variant="ghost" size="sm">
-            Sign out
+            {t("common.signOut")}
           </Button>
         </div>
       </header>
@@ -118,10 +122,10 @@ function AppHome() {
           transition={{ duration: 0.4, ease: "easeOut" }}
         >
           <h1 className="font-display text-3xl font-bold tracking-tight md:text-4xl">
-            Hi, {displayName}.
+            {t("home.greeting", { name: displayName })}
           </h1>
           <p className="mt-1 font-body text-sm text-ink-soft md:text-base">
-            Pick a campaign below and start earning.
+            {t("home.subtitle")}
           </p>
         </motion.div>
 
@@ -139,16 +143,20 @@ function AppHome() {
               <div className="flex items-center justify-between gap-3 rounded-card border-2 border-ink bg-indigo p-5 text-cream shadow-sticker">
                 <div>
                   <p className="font-display text-xs font-bold uppercase tracking-wider opacity-90">
-                    Admin
+                    {t("home.adminLabel")}
                   </p>
                   <p className="mt-1 font-display text-lg font-bold tracking-tight md:text-xl">
-                    {pendingCount > 0
-                      ? `${pendingCount} clip${pendingCount === 1 ? "" : "s"} waiting to be reviewed`
-                      : "Nothing pending. All caught up."}
+                    {pendingCount === 0
+                      ? t("home.adminAllCaught")
+                      : pendingCount === 1
+                        ? t("home.adminPendingOne", { n: pendingCount })
+                        : t("home.adminPendingMany", { n: pendingCount })}
                   </p>
                 </div>
                 <span className="shrink-0 rounded-md border-2 border-cream/30 bg-cream/10 px-3 py-1.5 font-display text-xs font-bold uppercase tracking-wider">
-                  {pendingCount > 0 ? "Review now →" : "Open admin →"}
+                  {pendingCount > 0
+                    ? t("home.adminReviewNow")
+                    : t("home.adminOpenAdmin")}
                 </span>
               </div>
             </Link>
@@ -165,7 +173,7 @@ function AppHome() {
             <CardContent className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
               <div>
                 <p className="font-display text-xs font-bold uppercase tracking-wider">
-                  Your balance
+                  {t("home.balanceLabel")}
                 </p>
                 <p className="mt-1 font-display text-5xl font-bold tracking-tight md:text-6xl">
                   {balance === null ? "—" : formatUsd(balance)}
@@ -174,11 +182,11 @@ function AppHome() {
               <div className="flex items-center gap-3">
                 <PayoutHistoryDialog
                   load={() => listMyPayouts(identityToken!)}
-                  title="Your payouts"
-                  description="Every payment you've received, with its receipt."
+                  title={t("payoutDialog.myPayoutsTitle")}
+                  description={t("payoutDialog.myPayoutsSubtitle")}
                   trigger={
                     <button className="font-display text-xs font-bold uppercase tracking-wider underline-offset-4 hover:underline">
-                      History →
+                      {t("home.history")}
                     </button>
                   }
                 />
@@ -187,7 +195,7 @@ function AppHome() {
                   onDone={reloadClips}
                   trigger={
                     <Button variant="outline" size="default">
-                      Withdraw
+                      {t("home.withdraw")}
                     </Button>
                   }
                 />
@@ -204,7 +212,7 @@ function AppHome() {
             className="mt-10"
           >
             <h2 className="font-display text-xl font-bold tracking-tight">
-              Your clips
+              {t("home.yourClips")}
             </h2>
             <div className="mt-4 flex flex-col gap-3">
               {clips.map((clip) => (
@@ -225,15 +233,15 @@ function AppHome() {
           className="mt-10"
         >
           <h2 className="font-display text-xl font-bold tracking-tight">
-            Live campaigns
+            {t("home.liveCampaigns")}
           </h2>
 
           {campaigns.length === 0 ? (
             <Card className="mt-4 bg-peach">
               <CardContent className="flex flex-col gap-2 py-8 text-center">
-                <CardTitle>No campaigns yet.</CardTitle>
+                <CardTitle>{t("home.noCampaignsTitle")}</CardTitle>
                 <p className="text-sm text-ink-soft">
-                  New ones drop here. Check back soon.
+                  {t("home.noCampaignsSubtitle")}
                 </p>
               </CardContent>
             </Card>

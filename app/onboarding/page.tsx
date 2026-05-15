@@ -10,6 +10,8 @@ import { useEffect, useState } from "react";
 import { AuthGuard } from "@/components/auth-guard";
 import { ClippaLogo } from "@/components/clippa-logo";
 import { CountryCombobox } from "@/components/country-combobox";
+import { LocaleToggle } from "@/components/locale-toggle";
+import { useTranslation } from "@/components/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getMyOnboarding, saveOnboarding } from "@/lib/actions/onboarding";
@@ -17,6 +19,7 @@ import { getMyOnboarding, saveOnboarding } from "@/lib/actions/onboarding";
 function OnboardingForm() {
   const router = useRouter();
   const { user } = usePrivy();
+  const { t } = useTranslation();
   const identityToken = useAccessToken();
   const [country, setCountry] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
@@ -59,9 +62,12 @@ function OnboardingForm() {
     <main className="flex min-h-dvh flex-col px-6 py-6 md:px-12">
       <header className="flex items-center justify-between">
         <ClippaLogo />
-        <span className="font-body text-xs text-ink-soft">
-          {user?.email?.address}
-        </span>
+        <div className="flex items-center gap-4">
+          <LocaleToggle />
+          <span className="hidden font-body text-xs text-ink-soft md:inline">
+            {user?.email?.address}
+          </span>
+        </div>
       </header>
 
       <section className="mx-auto mt-12 w-full max-w-xl">
@@ -71,10 +77,10 @@ function OnboardingForm() {
           transition={{ duration: 0.4, ease: "easeOut" }}
         >
           <h1 className="font-display text-3xl font-bold tracking-tight md:text-4xl">
-            Where are you from?
+            {t("onboarding.heading")}
           </h1>
           <p className="mt-2 font-body text-sm text-ink-soft md:text-base">
-            We use this to match you with the right campaigns. That&apos;s it.
+            {t("onboarding.subtitle")}
           </p>
         </motion.div>
 
@@ -89,7 +95,7 @@ function OnboardingForm() {
               <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
                 <div className="flex flex-col gap-2">
                   <label className="font-display text-sm font-bold uppercase tracking-wide">
-                    Country
+                    {t("onboarding.countryLabel")}
                   </label>
                   <CountryCombobox value={country} onChange={setCountry} />
                 </div>
@@ -100,7 +106,9 @@ function OnboardingForm() {
 
                 <div className="flex justify-end pt-2">
                   <Button type="submit" disabled={!canSubmit} size="lg">
-                    {submitting ? "Saving..." : "All set →"}
+                    {submitting
+                      ? t("onboarding.saving")
+                      : t("onboarding.submit")}
                   </Button>
                 </div>
               </form>

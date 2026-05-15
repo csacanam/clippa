@@ -13,6 +13,7 @@ import {
 } from "viem";
 import { celo } from "viem/chains";
 
+import { useTranslation } from "@/components/locale-provider";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -42,6 +43,7 @@ export function WithdrawDialog({
   onDone?: () => void;
 }) {
   const { wallets } = useWallets();
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [destination, setDestination] = useState("");
   const [amount, setAmount] = useState("");
@@ -101,9 +103,9 @@ export function WithdrawDialog({
       // Surface a friendlier message for the common cases.
       let message = raw.slice(0, 200);
       if (/insufficient/i.test(raw)) {
-        message = "Not enough balance to cover this withdrawal.";
+        message = t("withdraw.errNotEnough");
       } else if (/rejected|denied/i.test(raw)) {
-        message = "You cancelled the transfer.";
+        message = t("withdraw.errCancelled");
       }
       setStage({ kind: "error", message });
     }
@@ -121,10 +123,10 @@ export function WithdrawDialog({
       <DialogContent className="max-w-md !rounded-card !border-2 !border-ink !bg-cream !shadow-sticker-lg">
         <DialogHeader>
           <DialogTitle className="font-display text-xl font-bold tracking-tight">
-            Withdraw your money
+            {t("withdraw.title")}
           </DialogTitle>
           <DialogDescription className="text-sm text-ink-soft">
-            Send your balance to your own account.
+            {t("withdraw.subtitle")}
           </DialogDescription>
         </DialogHeader>
 
@@ -133,10 +135,13 @@ export function WithdrawDialog({
             <div className="flex size-12 items-center justify-center rounded-full border-2 border-ink bg-lime">
               <Check className="size-6" />
             </div>
-            <p className="font-display text-lg font-bold">On its way.</p>
+            <p className="font-display text-lg font-bold">
+              {t("withdraw.doneTitle")}
+            </p>
             <p className="text-sm text-ink-soft">
-              {formatUsd(numericAmount)} sent. It usually arrives in a few
-              seconds.
+              {t("withdraw.doneSubtitle", {
+                amount: formatUsd(numericAmount),
+              })}
             </p>
             <a
               href={celoExplorerTx(stage.txHash)}
@@ -144,7 +149,7 @@ export function WithdrawDialog({
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-xs text-indigo hover:underline"
             >
-              View receipt
+              {t("withdraw.viewReceipt")}
               <ArrowUpRight className="size-3" />
             </a>
             <Button
@@ -156,7 +161,7 @@ export function WithdrawDialog({
               size="default"
               className="mt-2"
             >
-              Done
+              {t("common.done")}
             </Button>
           </div>
         ) : (
@@ -164,25 +169,20 @@ export function WithdrawDialog({
             {/* Plain-language instructions — step by step */}
             <div className="rounded-md border-2 border-ink bg-peach/60 p-3 text-xs text-ink">
               <p className="font-display font-bold uppercase tracking-wider">
-                Where do I send it?
+                {t("withdraw.whereTitle")}
               </p>
               <ol className="mt-2 flex flex-col gap-1.5 leading-relaxed">
-                <li>1. Open your exchange (Binance, Coinbase, etc.).</li>
-                <li>
-                  2. Go to <strong>Deposit</strong> and choose{" "}
-                  <strong>USDT</strong>.
-                </li>
-                <li>
-                  3. Pick the <strong>Celo</strong> network.
-                </li>
-                <li>4. Copy the address it gives you and paste it below.</li>
+                <li>{t("withdraw.step1")}</li>
+                <li>{t("withdraw.step2")}</li>
+                <li>{t("withdraw.step3")}</li>
+                <li>{t("withdraw.step4")}</li>
               </ol>
             </div>
 
             {/* Amount */}
             <div className="flex flex-col gap-1.5">
               <label className="font-display text-sm font-bold uppercase tracking-wide">
-                Amount
+                {t("withdraw.amount")}
               </label>
               <div className="relative">
                 <Input
@@ -198,18 +198,18 @@ export function WithdrawDialog({
                   onClick={() => setAmount(String(balance))}
                   className="absolute right-3 top-1/2 -translate-y-1/2 font-display text-xs font-bold uppercase tracking-wider text-indigo hover:underline"
                 >
-                  Max
+                  {t("withdraw.max")}
                 </button>
               </div>
               <p className="text-xs text-ink-soft">
-                Available: {formatUsd(balance)}
+                {t("withdraw.available", { amount: formatUsd(balance) })}
               </p>
             </div>
 
             {/* Destination */}
             <div className="flex flex-col gap-1.5">
               <label className="font-display text-sm font-bold uppercase tracking-wide">
-                Destination address
+                {t("withdraw.destination")}
               </label>
               <Input
                 placeholder="0x..."
@@ -221,14 +221,12 @@ export function WithdrawDialog({
               />
               {destination.trim().length > 0 && !addressValid && (
                 <p className="text-xs text-error">
-                  That doesn&apos;t look like a valid address.
+                  {t("withdraw.invalidAddress")}
                 </p>
               )}
             </div>
 
-            <p className="text-xs text-ink-soft">
-              Double-check the address — transfers can&apos;t be undone.
-            </p>
+            <p className="text-xs text-ink-soft">{t("withdraw.warning")}</p>
 
             {stage.kind === "error" && (
               <p className="text-sm text-error">{stage.message}</p>
@@ -241,10 +239,12 @@ export function WithdrawDialog({
               size="lg"
             >
               {stage.kind === "sending"
-                ? "Sending..."
+                ? t("withdraw.sending")
                 : amountValid
-                  ? `Withdraw ${formatUsd(numericAmount)}`
-                  : "Withdraw"}
+                  ? t("withdraw.buttonWithAmount", {
+                      amount: formatUsd(numericAmount),
+                    })
+                  : t("withdraw.button")}
             </Button>
           </div>
         )}

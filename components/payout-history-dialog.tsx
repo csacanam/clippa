@@ -3,6 +3,7 @@
 import { ArrowUpRight } from "lucide-react";
 import { useState } from "react";
 
+import { useTranslation } from "@/components/locale-provider";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -44,8 +45,8 @@ export function PayoutHistoryDialog({
   trigger,
   load,
   showCreator = false,
-  title = "Payout history",
-  description = "Every payment, with its on-chain receipt.",
+  title,
+  description,
 }: {
   trigger: React.ReactNode;
   load: () => Promise<PayoutHistoryRow[]>;
@@ -53,8 +54,11 @@ export function PayoutHistoryDialog({
   title?: string;
   description?: string;
 }) {
+  const { t } = useTranslation();
   const [rows, setRows] = useState<PayoutHistoryRow[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const resolvedTitle = title ?? t("payoutDialog.defaultTitle");
+  const resolvedDescription = description ?? t("payoutDialog.defaultSubtitle");
 
   const handleOpenChange = async (open: boolean) => {
     if (open && rows === null && !loading) {
@@ -75,43 +79,45 @@ export function PayoutHistoryDialog({
       <DialogContent className="max-w-2xl !rounded-card !border-2 !border-ink !bg-cream !shadow-sticker-lg">
         <DialogHeader>
           <DialogTitle className="font-display text-xl font-bold tracking-tight">
-            {title}
+            {resolvedTitle}
           </DialogTitle>
           <DialogDescription className="text-sm text-ink-soft">
-            {description}
+            {resolvedDescription}
           </DialogDescription>
         </DialogHeader>
 
         <div className="mt-2 max-h-[60vh] overflow-y-auto">
           {loading ? (
-            <p className="py-8 text-center text-sm text-ink-soft">Loading...</p>
+            <p className="py-8 text-center text-sm text-ink-soft">
+              {t("common.loading")}
+            </p>
           ) : !rows || rows.length === 0 ? (
             <p className="py-8 text-center text-sm text-ink-soft">
-              No payouts yet.
+              {t("payoutDialog.noPayouts")}
             </p>
           ) : (
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b-2 border-ink text-left">
                   <th className="px-3 py-2 font-display text-xs font-bold uppercase tracking-wider">
-                    When
+                    {t("payoutDialog.headerWhen")}
                   </th>
                   {showCreator && (
                     <th className="px-3 py-2 font-display text-xs font-bold uppercase tracking-wider">
-                      Creator
+                      {t("payoutDialog.headerCreator")}
                     </th>
                   )}
                   <th className="px-3 py-2 font-display text-xs font-bold uppercase tracking-wider">
-                    Campaign
+                    {t("payoutDialog.headerCampaign")}
                   </th>
                   <th className="px-3 py-2 text-right font-display text-xs font-bold uppercase tracking-wider">
-                    Amount
+                    {t("payoutDialog.headerAmount")}
                   </th>
                   <th className="px-3 py-2 font-display text-xs font-bold uppercase tracking-wider">
-                    Status
+                    {t("payoutDialog.headerStatus")}
                   </th>
                   <th className="px-3 py-2 text-right font-display text-xs font-bold uppercase tracking-wider">
-                    Receipt
+                    {t("payoutDialog.headerReceipt")}
                   </th>
                 </tr>
               </thead>
@@ -152,7 +158,7 @@ export function PayoutHistoryDialog({
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 text-xs text-indigo hover:underline"
                         >
-                          View
+                          {t("common.view")}
                           <ArrowUpRight className="size-3" />
                         </a>
                       ) : (

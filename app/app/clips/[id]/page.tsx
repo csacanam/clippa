@@ -17,6 +17,8 @@ import {
 
 import { AuthGuard } from "@/components/auth-guard";
 import { ClippaLogo } from "@/components/clippa-logo";
+import { LocaleToggle } from "@/components/locale-toggle";
+import { useTranslation } from "@/components/locale-provider";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import {
@@ -29,18 +31,7 @@ import {
 import { formatUsd } from "@/lib/campaigns";
 import { type Clip, type ClipStatus } from "@/lib/clips";
 import { useAccessToken } from "@/lib/hooks/use-access-token";
-
-function timeAgo(iso: string): string {
-  const ms = Date.now() - new Date(iso).getTime();
-  const s = Math.max(0, Math.floor(ms / 1000));
-  if (s < 60) return `${s}s ago`;
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  const d = Math.floor(h / 24);
-  return `${d}d ago`;
-}
+import { useTimeAgo } from "@/lib/i18n/time";
 
 function shortTime(iso: string): string {
   const d = new Date(iso);
@@ -52,26 +43,28 @@ function shortTime(iso: string): string {
   });
 }
 
-function statusBadge(s: ClipStatus): {
-  label: string;
+function statusInfo(s: ClipStatus): {
+  key: string;
   variant: "live" | "review" | "rejected" | "muted";
 } {
   switch (s) {
     case "tracking":
-      return { label: "Live", variant: "live" };
+      return { key: "common.statusLive", variant: "live" };
     case "pending":
-      return { label: "Under review", variant: "review" };
+      return { key: "common.statusUnderReview", variant: "review" };
     case "rejected":
-      return { label: "Not approved", variant: "rejected" };
+      return { key: "common.statusNotApproved", variant: "rejected" };
     case "paused":
-      return { label: "Paused", variant: "muted" };
+      return { key: "common.statusPaused", variant: "muted" };
     case "maxed_out":
-      return { label: "Max payout reached", variant: "muted" };
+      return { key: "common.statusMaxedOut", variant: "muted" };
   }
 }
 
 function ClipDetail() {
   const { id } = useParams<{ id: string }>();
+  const { t } = useTranslation();
+  const timeAgo = useTimeAgo();
   const identityToken = useAccessToken();
   const [clip, setClip] = useState<Clip | null>(null);
   const [snapshots, setSnapshots] = useState<ViewSnapshot[]>([]);
@@ -132,26 +125,29 @@ function ClipDetail() {
     return (
       <div className="flex min-h-dvh items-center justify-center">
         <div className="font-display text-sm uppercase tracking-wider text-ink-soft">
-          Loading...
+          {t("common.loading")}
         </div>
       </div>
     );
   }
 
-  const badge = statusBadge(clip.status);
+  const badge = statusInfo(clip.status);
   const pendingPayoutUsd = Math.max(0, clip.earningsUsd - clip.paidOutUsd);
 
   return (
     <main className="flex min-h-dvh flex-col px-6 py-6 md:px-12">
       <header className="flex items-center justify-between">
         <ClippaLogo />
-        <Link
-          href="/app"
-          className="flex items-center gap-1 font-body text-sm font-medium text-ink hover:underline"
-        >
-          <ChevronLeft className="size-4" />
-          Back
-        </Link>
+        <div className="flex items-center gap-4">
+          <LocaleToggle />
+          <Link
+            href="/app"
+            className="flex items-center gap-1 font-body text-sm font-medium text-ink hover:underline"
+          >
+            <ChevronLeft className="size-4" />
+            {t("common.back")}
+          </Link>
+        </div>
       </header>
 
       <section className="mx-auto mt-8 w-full max-w-3xl">
@@ -170,11 +166,11 @@ function ClipDetail() {
                 </span>
               </h1>
               <p className="mt-1 text-xs text-ink-soft">
-                Submitted {timeAgo(clip.createdAt)}
+                {t("clipDetail.submitted", { ago: timeAgo(clip.createdAt) })}
               </p>
             </div>
             <Badge variant={badge.variant} className="shrink-0 px-2.5 py-0.5">
-              {badge.label}
+              {t(badge.key)}
             </Badge>
           </div>
 
@@ -197,22 +193,22 @@ function ClipDetail() {
           className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4"
         >
           <StatCard
-            label="Total views"
+            label={t("clipDetail.statTotalViews")}
             value={clip.verifiedViews.toLocaleString()}
             color="lime"
           />
           <StatCard
-            label="Earned"
+            label={t("clipDetail.statEarned")}
             value={formatUsd(clip.earningsUsd)}
             color="peach"
           />
           <StatCard
-            label="Paid"
+            label={t("clipDetail.statPaid")}
             value={formatUsd(clip.paidOutUsd)}
             color="indigo"
           />
           <StatCard
-            label="Coming next"
+            label={t("clipDetail.statComingNext")}
             value={formatUsd(pendingPayoutUsd)}
             color="magenta"
           />
@@ -227,13 +223,13 @@ function ClipDetail() {
             className="mt-10"
           >
             <h2 className="font-display text-lg font-bold uppercase tracking-wider">
-              Views over time
+              {t("clipDetail.viewsOverTime")}
             </h2>
             <Card className="mt-3 bg-cream">
               <CardContent>
                 {snapshots.length === 0 ? (
                   <p className="py-8 text-center text-sm text-ink-soft">
-                    No data yet. We track views every hour.
+                    {t("clipDetail.noChartData")}
                   </p>
                 ) : (
                   <div className="h-64 w-full">
@@ -273,7 +269,10 @@ function ClipDetail() {
                             fontFamily: "var(--font-body)",
                           }}
                           labelStyle={{ fontWeight: 700 }}
-                          formatter={(v) => [Number(v).toLocaleString(), "Views"]}
+                          formatter={(v) => [
+                            Number(v).toLocaleString(),
+                            t("clipDetail.headerViews"),
+                          ]}
                         />
                         <Area
                           type="monotone"
@@ -301,7 +300,7 @@ function ClipDetail() {
           >
             <Card className="bg-peach">
               <CardContent>
-                <CardTitle>Why this wasn&apos;t approved</CardTitle>
+                <CardTitle>{t("clipDetail.notApprovedTitle")}</CardTitle>
                 <p className="mt-2 text-sm">{clip.rejectionReason}</p>
               </CardContent>
             </Card>
@@ -316,12 +315,12 @@ function ClipDetail() {
           className="mt-10 mb-16"
         >
           <h2 className="font-display text-lg font-bold uppercase tracking-wider">
-            Payment history
+            {t("clipDetail.paymentHistory")}
           </h2>
           {payouts.length === 0 ? (
             <Card className="mt-3 bg-peach">
               <CardContent className="py-6 text-center text-sm text-ink-soft">
-                No payments yet. They&apos;ll show up here as views come in.
+                {t("clipDetail.noPayments")}
               </CardContent>
             </Card>
           ) : (
@@ -331,16 +330,16 @@ function ClipDetail() {
                   <thead>
                     <tr className="border-b-2 border-ink text-left">
                       <th className="px-4 py-3 font-display text-xs font-bold uppercase tracking-wider">
-                        When
+                        {t("clipDetail.headerWhen")}
                       </th>
                       <th className="px-4 py-3 text-right font-display text-xs font-bold uppercase tracking-wider">
-                        Views
+                        {t("clipDetail.headerViews")}
                       </th>
                       <th className="px-4 py-3 text-right font-display text-xs font-bold uppercase tracking-wider">
-                        Amount
+                        {t("clipDetail.headerAmount")}
                       </th>
                       <th className="px-4 py-3 text-right font-display text-xs font-bold uppercase tracking-wider">
-                        Receipt
+                        {t("clipDetail.headerReceipt")}
                       </th>
                     </tr>
                   </thead>
@@ -364,7 +363,7 @@ function ClipDetail() {
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-1 text-xs text-indigo hover:underline"
                             >
-                              View
+                              {t("common.view")}
                               <ArrowUpRight className="size-3" />
                             </a>
                           ) : (
