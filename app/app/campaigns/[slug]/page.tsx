@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 
 import { AuthGuard } from "@/components/auth-guard";
 import { ClippaLogo } from "@/components/clippa-logo";
+import { CommunityHint } from "@/components/community-card";
 import { LocaleToggle } from "@/components/locale-toggle";
 import { useTranslation } from "@/components/locale-provider";
 import { RichText } from "@/components/rich-text";
@@ -399,6 +400,9 @@ function CampaignDetail() {
             <li>· {t("campaign.howItWorks3")}</li>
             <li>· {t("campaign.howItWorks4")}</li>
           </ul>
+          <div className="mt-4">
+            <CommunityHint />
+          </div>
         </motion.div>
 
         {/* Submit form */}

@@ -172,6 +172,18 @@ const en = {
     errCancelled: "You cancelled the transfer.",
   },
 
+  community: {
+    title: "Got questions? Join the community",
+    subtitle:
+      "Tips, help, and other creators — all on Telegram. We're around if anything breaks or you need a hand.",
+    cta: "Join on Telegram →",
+    inlineHint: "Stuck? Ask the community on Telegram →",
+    welcomeTitle: "You're in. One last thing.",
+    welcomeSubtitle:
+      "Join our Telegram so you don't miss new campaigns, and so we can help fast if you hit a snag.",
+    welcomeSkip: "Maybe later",
+  },
+
   payoutDialog: {
     defaultTitle: "Payout history",
     defaultSubtitle: "Every payment, with its on-chain receipt.",

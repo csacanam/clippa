@@ -9,6 +9,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AuthGuard } from "@/components/auth-guard";
 import { CampaignCard } from "@/components/campaign-card";
 import { ClippaLogo } from "@/components/clippa-logo";
+import { CommunityCard } from "@/components/community-card";
 import { LocaleToggle } from "@/components/locale-toggle";
 import { useTranslation } from "@/components/locale-provider";
 import { MyClipCard } from "@/components/my-clip-card";
@@ -202,6 +203,15 @@ function AppHome() {
               </div>
             </CardContent>
           </Card>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut", delay: 0.07 }}
+          className="mt-4"
+        >
+          <CommunityCard />
         </motion.div>
 
         {clips.length > 0 && (

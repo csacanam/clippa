@@ -170,6 +170,18 @@ const es: Dict = {
     errCancelled: "Cancelaste la transferencia.",
   },
 
+  community: {
+    title: "¿Dudas? Sumate a la comunidad",
+    subtitle:
+      "Tips, ayuda y otros creadores — todo en Telegram. Estamos ahí si algo se rompe o necesitás una mano.",
+    cta: "Unirme en Telegram →",
+    inlineHint: "¿Trabado? Preguntá en la comunidad en Telegram →",
+    welcomeTitle: "Listo. Una última cosa.",
+    welcomeSubtitle:
+      "Sumate al Telegram para no perderte campañas nuevas y para que podamos ayudarte rápido si te trabás.",
+    welcomeSkip: "Más tarde",
+  },
+
   payoutDialog: {
     defaultTitle: "Historial de pagos",
     defaultSubtitle: "Cada pago, con su recibo on-chain.",
