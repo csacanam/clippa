@@ -16,6 +16,7 @@ export type Clip = {
   id: string;
   campaignSlug: string;
   campaignName: string; // joined from campaigns table for display
+  creatorEmail?: string; // joined from creators table — admin views only
   platform: Platform;
   postUrl: string;
   trackingCode?: string;

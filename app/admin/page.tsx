@@ -4,6 +4,15 @@ import { usePrivy } from "@privy-io/react-auth";
 import { ArrowUpRight, Check, Coins, RefreshCw, X } from "lucide-react";
 import { motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 import { AdminGuard } from "@/components/admin-guard";
 import { ClippaLogo } from "@/components/clippa-logo";
@@ -295,6 +304,39 @@ function AdminDashboard() {
     return allClips.filter((c) => c.status === filter);
   }, [allClips, filter]);
 
+  // Payouts aggregated per calendar day, oldest first — for the chart.
+  const payoutsByDay = useMemo(() => {
+    const map = new Map<
+      string,
+      { day: string; total: number; count: number; t: number }
+    >();
+    for (const p of payouts) {
+      const d = new Date(p.createdAt);
+      const startOfDay = new Date(
+        d.getFullYear(),
+        d.getMonth(),
+        d.getDate()
+      ).getTime();
+      const key = String(startOfDay);
+      const existing = map.get(key);
+      if (existing) {
+        existing.total += p.amountUsd;
+        existing.count += 1;
+      } else {
+        map.set(key, {
+          day: d.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          }),
+          total: p.amountUsd,
+          count: 1,
+          t: startOfDay,
+        });
+      }
+    }
+    return [...map.values()].sort((a, b) => a.t - b.t);
+  }, [payouts]);
+
   return (
     <main className="flex min-h-dvh flex-col px-6 py-6 md:px-12">
       <header className="flex items-center justify-between">
@@ -355,6 +397,40 @@ function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Headline counts */}
+          <div className="mt-3 grid grid-cols-3 gap-3">
+            <Card className="bg-lime">
+              <CardContent className="py-4">
+                <p className="font-display text-3xl font-bold tracking-tight md:text-4xl">
+                  {stats ? stats.creatorsCount : "—"}
+                </p>
+                <p className="mt-0.5 font-display text-xs font-bold uppercase tracking-wider text-ink-soft">
+                  {stats?.creatorsCount === 1 ? "Creator" : "Creators"}
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="bg-peach">
+              <CardContent className="py-4">
+                <p className="font-display text-3xl font-bold tracking-tight md:text-4xl">
+                  {stats ? stats.clipsCount : "—"}
+                </p>
+                <p className="mt-0.5 font-display text-xs font-bold uppercase tracking-wider text-ink-soft">
+                  {stats?.clipsCount === 1 ? "Clip" : "Clips"}
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="bg-cream">
+              <CardContent className="py-4">
+                <p className="font-display text-3xl font-bold tracking-tight md:text-4xl">
+                  {stats ? stats.payoutsCount : "—"}
+                </p>
+                <p className="mt-0.5 font-display text-xs font-bold uppercase tracking-wider text-ink-soft">
+                  {stats?.payoutsCount === 1 ? "Payout" : "Payouts"}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Run payouts */}
           <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -470,6 +546,9 @@ function AdminDashboard() {
                         Campaign
                       </th>
                       <th className="px-4 py-3 font-display text-xs font-bold uppercase tracking-wider">
+                        Creator
+                      </th>
+                      <th className="px-4 py-3 font-display text-xs font-bold uppercase tracking-wider">
                         Platform
                       </th>
                       <th className="px-4 py-3 font-display text-xs font-bold uppercase tracking-wider">
@@ -494,6 +573,9 @@ function AdminDashboard() {
                       <tr key={c.id} className="border-b border-ink/10 last:border-0">
                         <td className="px-4 py-3 font-medium">
                           {c.campaignName}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-ink-soft">
+                          {c.creatorEmail ?? "—"}
                         </td>
                         <td className="px-4 py-3 capitalize text-ink-soft">
                           {c.platform}
@@ -523,6 +605,82 @@ function AdminDashboard() {
             </Card>
           )}
         </motion.div>
+
+        {/* Payouts per day — bar chart */}
+        {payoutsByDay.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut", delay: 0.13 }}
+            className="mt-12"
+          >
+            <h2 className="font-display text-xl font-bold tracking-tight">
+              Payouts per day
+            </h2>
+            <p className="mt-1 font-body text-xs text-ink-soft">
+              Total USDT paid to creators each day.
+            </p>
+            <Card className="mt-3 bg-cream">
+              <CardContent>
+                <div className="h-64 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={payoutsByDay}
+                      margin={{ top: 5, right: 10, left: 0, bottom: 0 }}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="2 4"
+                        stroke="#0A0A0A"
+                        strokeOpacity={0.1}
+                      />
+                      <XAxis
+                        dataKey="day"
+                        stroke="#4D4D4D"
+                        tick={{ fontSize: 11 }}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        stroke="#4D4D4D"
+                        tick={{ fontSize: 11 }}
+                        tickLine={false}
+                        width={50}
+                        tickFormatter={(v: number) => `$${v}`}
+                      />
+                      <Tooltip
+                        cursor={{ fill: "#0A0A0A", fillOpacity: 0.05 }}
+                        contentStyle={{
+                          background: "#FFFCF5",
+                          border: "2px solid #0A0A0A",
+                          borderRadius: "12px",
+                          boxShadow: "4px 4px 0 0 #0A0A0A",
+                          fontFamily: "var(--font-body)",
+                        }}
+                        labelStyle={{ fontWeight: 700 }}
+                        formatter={(v, _n, item) => [
+                          `${formatUsd(Number(v))} · ${
+                            (item.payload as { count: number }).count
+                          } payout${
+                            (item.payload as { count: number }).count === 1
+                              ? ""
+                              : "s"
+                          }`,
+                          "Paid out",
+                        ]}
+                      />
+                      <Bar
+                        dataKey="total"
+                        fill="#C7FF3A"
+                        stroke="#0A0A0A"
+                        strokeWidth={2}
+                        radius={[4, 4, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
         {/* Payout history — inline, full width for trazabilidad */}
         <motion.div

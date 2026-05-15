@@ -3,19 +3,34 @@
 import { usePrivy } from "@privy-io/react-auth";
 import { motion } from "motion/react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { ClippaLogo } from "@/components/clippa-logo";
 import { Button } from "@/components/ui/button";
+import { getPublicStats, type PublicStats } from "@/lib/actions/stats";
 
 export default function LandingPage() {
   const router = useRouter();
   const { ready, authenticated, login } = usePrivy();
+  const [stats, setStats] = useState<PublicStats | null>(null);
 
   // If user is already signed in and lands here, send them to /app.
   useEffect(() => {
     if (ready && authenticated) router.replace("/app");
   }, [ready, authenticated, router]);
+
+  // Social-proof counts — non-critical, load in the background.
+  useEffect(() => {
+    let cancelled = false;
+    getPublicStats()
+      .then((s) => {
+        if (!cancelled) setStats(s);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <main className="flex min-h-dvh flex-col">
@@ -65,6 +80,21 @@ export default function LandingPage() {
               Start earning →
             </Button>
           </motion.div>
+
+          {stats && (
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: "easeOut", delay: 0.3 }}
+              className="mt-14 flex items-stretch gap-6 sm:gap-10"
+            >
+              <Stat value={stats.creatorsCount} label="Creators" />
+              <div className="w-px bg-ink/15" />
+              <Stat value={stats.clipsCount} label="Clips posted" />
+              <div className="w-px bg-ink/15" />
+              <Stat value={stats.payoutsCount} label="Payments sent" />
+            </motion.div>
+          )}
         </div>
       </section>
 
@@ -73,5 +103,18 @@ export default function LandingPage() {
         Built for creators worldwide. Payments anywhere.
       </footer>
     </main>
+  );
+}
+
+function Stat({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="flex flex-col items-center">
+      <span className="font-display text-3xl font-bold tracking-tight md:text-4xl">
+        {value.toLocaleString()}
+      </span>
+      <span className="mt-1 font-display text-[0.7rem] font-bold uppercase tracking-wider text-ink-soft">
+        {label}
+      </span>
+    </div>
   );
 }

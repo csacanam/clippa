@@ -5,7 +5,8 @@ import { getCampaignIdBySlug } from "@/lib/actions/campaigns";
 import type { Platform } from "@/lib/campaigns";
 import type { Clip, ClipStatus } from "@/lib/clips";
 import { validatePostUrl } from "@/lib/clips";
-import { scrapePost } from "@/lib/scrapers";
+import { scrapePostsBatch } from "@/lib/scrapers";
+import type { ScrapeResult } from "@/lib/scrapers";
 import { createServerClient } from "@/lib/supabase/server";
 
 type Row = {
@@ -14,6 +15,7 @@ type Row = {
   campaign_id: string;
   campaign_slug: string;
   campaign_name: string;
+  creator_email?: string;
   platform: Platform;
   post_url: string;
   tracking_code: string | null;
@@ -37,6 +39,7 @@ function rowToClip(r: Row): Clip {
     id: r.id,
     campaignSlug: r.campaign_slug,
     campaignName: r.campaign_name,
+    creatorEmail: r.creator_email,
     platform: r.platform,
     postUrl: r.post_url,
     trackingCode: r.tracking_code ?? undefined,
@@ -68,6 +71,27 @@ function joinRowToClip(r: RawJoinRow): Clip {
     ...r,
     campaign_slug: r.campaigns.slug,
     campaign_name: r.campaigns.product_name,
+  });
+}
+
+// Admin-only select: also joins the creator's email so the admin can see
+// who submitted each clip.
+const ADMIN_CLIP_SELECT = `
+  id, creator_id, campaign_id, platform, post_url, tracking_code,
+  status, rejection_reason, approved_at, verified_views, paid_views,
+  earnings_usd, paid_out_usd, last_scraped_at, created_at,
+  campaigns!inner(slug, product_name),
+  creators!inner(email)
+`;
+
+type AdminRawJoinRow = RawJoinRow & { creators: { email: string } };
+
+function adminJoinRowToClip(r: AdminRawJoinRow): Clip {
+  return rowToClip({
+    ...r,
+    campaign_slug: r.campaigns.slug,
+    campaign_name: r.campaigns.product_name,
+    creator_email: r.creators.email,
   });
 }
 
@@ -269,11 +293,11 @@ export async function listPendingClips(identityToken: string): Promise<Clip[]> {
   const sb = createServerClient();
   const { data, error } = await sb
     .from("clips")
-    .select(CLIP_SELECT)
+    .select(ADMIN_CLIP_SELECT)
     .eq("status", "pending")
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return ((data ?? []) as unknown as RawJoinRow[]).map(joinRowToClip);
+  return ((data ?? []) as unknown as AdminRawJoinRow[]).map(adminJoinRowToClip);
 }
 
 export async function listAllClips(identityToken: string): Promise<Clip[]> {
@@ -281,10 +305,10 @@ export async function listAllClips(identityToken: string): Promise<Clip[]> {
   const sb = createServerClient();
   const { data, error } = await sb
     .from("clips")
-    .select(CLIP_SELECT)
+    .select(ADMIN_CLIP_SELECT)
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return ((data ?? []) as unknown as RawJoinRow[]).map(joinRowToClip);
+  return ((data ?? []) as unknown as AdminRawJoinRow[]).map(adminJoinRowToClip);
 }
 
 export async function approveClip(
@@ -368,12 +392,29 @@ export async function refreshAllViews(
   let failed = 0;
   let firstError: string | undefined;
 
+  // Scrape in one Apify run per platform, not one per clip. N parallel runs
+  // blew Apify's 8 GB concurrent-memory limit. Platforms run sequentially so
+  // only one actor run holds memory at a time.
+  const byPlatform = new Map<Platform, string[]>();
+  for (const c of live) {
+    const urls = byPlatform.get(c.platform) ?? [];
+    urls.push(c.post_url);
+    byPlatform.set(c.platform, urls);
+  }
+  const scraped = new Map<string, ScrapeResult>();
+  for (const [platform, urls] of byPlatform) {
+    const results = await scrapePostsBatch(platform, urls);
+    for (const [url, result] of results) scraped.set(url, result);
+  }
+
   await Promise.all(
     live.map(async (c) => {
-      const result = await scrapePost(c.platform, c.post_url);
-      if (!result.ok) {
+      const result = scraped.get(c.post_url);
+      if (!result || !result.ok) {
         failed++;
-        if (!firstError) firstError = `${c.platform}: ${result.error}`;
+        if (!firstError) {
+          firstError = `${c.platform}: ${result?.error ?? "no scrape result"}`;
+        }
         return;
       }
       const newViews = Math.max(c.verified_views, result.views);
@@ -422,6 +463,12 @@ export type OperatorStats = {
   totalEarnedUsd: number;
   /** Sum of paid_out_usd — what's actually been transferred (0 until Phase 8). */
   totalPaidUsd: number;
+  /** Total clips submitted, all statuses. */
+  clipsCount: number;
+  /** Total registered creators. */
+  creatorsCount: number;
+  /** Total payout rows recorded. */
+  payoutsCount: number;
 };
 
 export async function getOperatorStats(
@@ -430,7 +477,7 @@ export async function getOperatorStats(
   await requireAdmin(identityToken);
   const sb = createServerClient();
 
-  const [pending, live, all] = await Promise.all([
+  const [pending, live, all, creators, payouts] = await Promise.all([
     sb
       .from("clips")
       .select("id", { count: "exact", head: true })
@@ -440,6 +487,8 @@ export async function getOperatorStats(
       .select("id", { count: "exact", head: true })
       .eq("status", "tracking"),
     sb.from("clips").select("earnings_usd, paid_out_usd"),
+    sb.from("creators").select("id", { count: "exact", head: true }),
+    sb.from("payouts").select("id", { count: "exact", head: true }),
   ]);
 
   const rows = (all.data ?? []) as {
@@ -454,5 +503,8 @@ export async function getOperatorStats(
     liveClipsCount: live.count ?? 0,
     totalEarnedUsd,
     totalPaidUsd,
+    clipsCount: rows.length,
+    creatorsCount: creators.count ?? 0,
+    payoutsCount: payouts.count ?? 0,
   };
 }
