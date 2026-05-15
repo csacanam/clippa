@@ -23,10 +23,10 @@ const es: Dict = {
   },
 
   landing: {
-    title1: "Hacé clips.",
-    title2: "Cobrá.",
+    title1: "Haz clips.",
+    title2: "Cobra.",
     subtitle:
-      "Videos cortos para marcas en Instagram o TikTok. Pegá el link. Ganá por cada vista.",
+      "Videos cortos para marcas en Instagram o TikTok. Pega el link. Gana por cada vista.",
     cta: "Empezar a ganar →",
     footer: "Hecho para creadores en todo el mundo. Pagos donde estés.",
     statsCreators: "Creadores",
@@ -35,11 +35,10 @@ const es: Dict = {
   },
 
   onboarding: {
-    heading: "¿De dónde sos?",
-    subtitle:
-      "Lo usamos para mostrarte las campañas adecuadas. Nada más.",
+    heading: "¿De dónde eres?",
+    subtitle: "Lo usamos para mostrarte las campañas adecuadas. Nada más.",
     countryLabel: "País",
-    countryPlaceholder: "Elegí un país",
+    countryPlaceholder: "Elige un país",
     countrySearch: "Buscar...",
     countryEmpty: "Sin resultados.",
     submit: "¡Listo! →",
@@ -48,7 +47,7 @@ const es: Dict = {
 
   home: {
     greeting: "Hola, {name}.",
-    subtitle: "Elegí una campaña abajo y empezá a ganar.",
+    subtitle: "Elige una campaña abajo y empieza a ganar.",
     adminLabel: "Admin",
     adminPendingOne: "{n} clip esperando revisión",
     adminPendingMany: "{n} clips esperando revisión",
@@ -61,11 +60,11 @@ const es: Dict = {
     yourClips: "Tus clips",
     liveCampaigns: "Campañas activas",
     noCampaignsTitle: "Todavía no hay campañas.",
-    noCampaignsSubtitle: "Acá aparecen las nuevas. Volvé pronto.",
+    noCampaignsSubtitle: "Aquí aparecen las nuevas. Vuelve pronto.",
   },
 
   campaign: {
-    whatYouEarn: "Lo que ganás",
+    whatYouEarn: "Lo que ganas",
     perView: "por vista",
     maxPerClip: "máximo por clip",
     budgetLabel: "Presupuesto de la campaña",
@@ -86,28 +85,28 @@ const es: Dict = {
     script: "Guion sugerido",
     rules: "Reglas",
     howItWorks: "Cómo funciona Clippa",
-    howItWorks1: "Que se sienta como vos, no como un anuncio.",
-    howItWorks2: "Enganchá en los primeros 2 segundos.",
+    howItWorks1: "Que se sienta como tú, no como un anuncio.",
+    howItWorks2: "Engancha en los primeros 2 segundos.",
     howItWorks3:
-      "Pegá tu código único en la descripción — así sabemos que el post es tuyo.",
+      "Pega tu código único en la descripción — así sabemos que el post es tuyo.",
     howItWorks4:
       "Seguimos las vistas cada hora. Tu balance se actualiza solo.",
-    submitTitle: "Subí tu clip",
+    submitTitle: "Sube tu clip",
     submitSubtitle:
-      "Pegá el código en tu descripción, publicalo en IG o TikTok, y dejá el link acá.",
+      "Pega el código en tu descripción, publícalo en IG o TikTok, y deja el link aquí.",
     step1Title: "Paso 1 — Tu código",
     step1Subtitle:
-      "Pegalo en algún lugar de tu descripción para que sepamos que el post es tuyo.",
+      "Pégalo en algún lugar de tu descripción para que sepamos que el post es tuyo.",
     step2Title: "Paso 2 — ¿Dónde lo publicaste?",
-    step3Title: "Paso 3 — Pegá el link",
+    step3Title: "Paso 3 — Pega el link",
     submitButton: "Subir clip →",
     submitting: "Verificando...",
-    errPickPlatform: "Elegí una plataforma primero.",
-    errCodeLoading: "Tu código sigue cargando — probá de nuevo en un momento.",
+    errPickPlatform: "Elige una plataforma primero.",
+    errCodeLoading: "Tu código sigue cargando — prueba de nuevo en un momento.",
     errAuthNotReady:
-      "La sesión aún no está lista — probá de nuevo en un momento.",
+      "La sesión aún no está lista — prueba de nuevo en un momento.",
     errCouldntVerify:
-      "No pudimos verificar el post. Revisá tu conexión y probá de nuevo.",
+      "No pudimos verificar el post. Revisa tu conexión y prueba de nuevo.",
     doneTitle: "Listo.",
     doneSubtitleLine1: "Tu clip está siendo revisado.",
     doneSubtitleLine2: "Te avisamos apenas esté en vivo.",
@@ -125,7 +124,7 @@ const es: Dict = {
     notApprovedTitle: "Por qué no se aprobó",
     paymentHistory: "Historial de pagos",
     noPayments:
-      "Todavía no hay pagos. Aparecerán acá a medida que entren vistas.",
+      "Todavía no hay pagos. Aparecerán aquí a medida que entren vistas.",
     headerWhen: "Cuándo",
     headerViews: "Vistas",
     headerAmount: "Monto",
@@ -147,38 +146,38 @@ const es: Dict = {
   },
 
   withdraw: {
-    title: "Retirar tu plata",
-    subtitle: "Mandá tu balance a tu propia cuenta.",
-    whereTitle: "¿A dónde lo mando?",
-    step1: "1. Abrí tu exchange (Binance, Coinbase, etc.).",
-    step2: "2. Andá a Depositar y elegí USDT.",
-    step3: "3. Elegí la red Celo.",
-    step4: "4. Copiá la dirección que te muestra y pegala abajo.",
+    title: "Retirar tu dinero",
+    subtitle: "Envía tu balance a tu propia cuenta.",
+    whereTitle: "¿A dónde lo envío?",
+    step1: "1. Abre tu exchange (Binance, Coinbase, etc.).",
+    step2: "2. Ve a Depositar y elige USDT.",
+    step3: "3. Elige la red Celo.",
+    step4: "4. Copia la dirección que te muestra y pégala abajo.",
     amount: "Monto",
     max: "Máx",
     available: "Disponible: {amount}",
     destination: "Dirección de destino",
     invalidAddress: "Eso no parece una dirección válida.",
-    warning: "Verificá bien la dirección — las transferencias no se deshacen.",
+    warning: "Verifica bien la dirección — las transferencias no se deshacen.",
     button: "Retirar",
     buttonWithAmount: "Retirar {amount}",
     sending: "Enviando...",
     doneTitle: "En camino.",
-    doneSubtitle: "Mandamos {amount}. Suele llegar en unos segundos.",
+    doneSubtitle: "Enviamos {amount}. Suele llegar en unos segundos.",
     viewReceipt: "Ver recibo",
     errNotEnough: "No alcanza el balance para este retiro.",
     errCancelled: "Cancelaste la transferencia.",
   },
 
   community: {
-    title: "¿Dudas? Sumate a la comunidad",
+    title: "¿Dudas? Únete a la comunidad",
     subtitle:
-      "Tips, ayuda y otros creadores — todo en Telegram. Estamos ahí si algo se rompe o necesitás una mano.",
+      "Tips, ayuda y otros creadores — todo en Telegram. Estamos ahí si algo se rompe o necesitas una mano.",
     cta: "Unirme en Telegram →",
-    inlineHint: "¿Trabado? Preguntá en la comunidad en Telegram →",
+    inlineHint: "¿Atascado? Pregunta en la comunidad en Telegram →",
     welcomeTitle: "Listo. Una última cosa.",
     welcomeSubtitle:
-      "Sumate al Telegram para no perderte campañas nuevas y para que podamos ayudarte rápido si te trabás.",
+      "Únete al Telegram para no perderte campañas nuevas y para que podamos ayudarte rápido si te atascas.",
     welcomeSkip: "Más tarde",
   },
 
