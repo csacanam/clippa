@@ -15,9 +15,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   getPublicStats,
-  listTopEarningClips,
+  listFeaturedClips,
+  type FeaturedClip,
   type PublicStats,
-  type ShowcaseClip,
 } from "@/lib/actions/stats";
 
 export default function LandingPage() {
@@ -25,7 +25,7 @@ export default function LandingPage() {
   const { ready, authenticated, login } = usePrivy();
   const { t } = useTranslation();
   const [stats, setStats] = useState<PublicStats | null>(null);
-  const [topClips, setTopClips] = useState<ShowcaseClip[] | null>(null);
+  const [topClips, setTopClips] = useState<FeaturedClip[] | null>(null);
 
   // If user is already signed in and lands here, send them to /app.
   useEffect(() => {
@@ -37,7 +37,7 @@ export default function LandingPage() {
     let cancelled = false;
     Promise.all([
       getPublicStats().catch(() => null),
-      listTopEarningClips(6).catch(() => []),
+      listFeaturedClips(8).catch(() => []),
     ]).then(([s, clips]) => {
       if (cancelled) return;
       if (s) setStats(s);

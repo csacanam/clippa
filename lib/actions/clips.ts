@@ -28,6 +28,7 @@ type Row = {
   paid_out_usd: string | number;
   last_scraped_at: string | null;
   created_at: string;
+  featured_video_url: string | null;
 };
 
 function n(v: string | number): number {
@@ -52,13 +53,14 @@ function rowToClip(r: Row): Clip {
     createdAt: r.created_at,
     approvedAt: r.approved_at ?? undefined,
     lastScrapedAt: r.last_scraped_at ?? undefined,
+    featuredVideoUrl: r.featured_video_url ?? undefined,
   };
 }
 
 const CLIP_SELECT = `
   id, creator_id, campaign_id, platform, post_url, tracking_code,
   status, rejection_reason, approved_at, verified_views, paid_views,
-  earnings_usd, paid_out_usd, last_scraped_at, created_at,
+  earnings_usd, paid_out_usd, last_scraped_at, created_at, featured_video_url,
   campaigns!inner(slug, product_name)
 `;
 
@@ -79,7 +81,7 @@ function joinRowToClip(r: RawJoinRow): Clip {
 const ADMIN_CLIP_SELECT = `
   id, creator_id, campaign_id, platform, post_url, tracking_code,
   status, rejection_reason, approved_at, verified_views, paid_views,
-  earnings_usd, paid_out_usd, last_scraped_at, created_at,
+  earnings_usd, paid_out_usd, last_scraped_at, created_at, featured_video_url,
   campaigns!inner(slug, product_name),
   users!inner(email)
 `;
@@ -373,6 +375,31 @@ export async function rejectClip(
     .eq("status", "pending");
   if (error) return { ok: false, error: error.message };
   if (!count) return { ok: false, error: "Clip not pending." };
+  return { ok: true };
+}
+
+/**
+ * Sets (or clears) the featured_video_url of a clip — the landing's
+ * social-proof carousel reads this. Admin-only because it controls what
+ * shows up on the public landing.
+ */
+export async function setClipFeaturedVideo(
+  identityToken: string,
+  clipId: string,
+  videoUrl: string | null
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  await requireAdmin(identityToken);
+  const trimmed = videoUrl?.trim() || null;
+  if (trimmed && !/^https?:\/\/.+/.test(trimmed)) {
+    return { ok: false, error: "Video URL must start with http(s)://." };
+  }
+  const sb = createServerClient();
+  const { error, count } = await sb
+    .from("clips")
+    .update({ featured_video_url: trimmed }, { count: "exact" })
+    .eq("id", clipId);
+  if (error) return { ok: false, error: error.message };
+  if (!count) return { ok: false, error: "Clip not found." };
   return { ok: true };
 }
 

@@ -29,6 +29,8 @@ export type Clip = {
   createdAt: string; // ISO
   approvedAt?: string;
   lastScrapedAt?: string;
+  /** Admin-curated video URL shown in the public landing carousel. */
+  featuredVideoUrl?: string;
 };
 
 // ---- URL validation ---------------------------------------------------

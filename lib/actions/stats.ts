@@ -18,6 +18,16 @@ export type ShowcaseClip = {
   earningsUsd: number;
 };
 
+export type FeaturedClip = {
+  id: string;
+  campaignName: string;
+  platform: Platform;
+  postUrl: string;
+  verifiedViews: number;
+  earningsUsd: number;
+  featuredVideoUrl: string;
+};
+
 /**
  * Platform-wide counts for the public landing page. No auth — only returns
  * aggregate counts, no row data.
@@ -79,5 +89,46 @@ export async function listTopEarningClips(
       typeof r.earnings_usd === "string"
         ? parseFloat(r.earnings_usd)
         : r.earnings_usd,
+  }));
+}
+
+/**
+ * Hand-curated clips with admin-uploaded videos for the landing showcase.
+ * Public, identity-free. Returns clips that have a featured_video_url set,
+ * ordered by earnings desc so the most successful ones lead the carousel.
+ */
+export async function listFeaturedClips(
+  limit = 6
+): Promise<FeaturedClip[]> {
+  const sb = createServerClient();
+  const { data, error } = await sb
+    .from("clips")
+    .select(
+      "id, platform, post_url, verified_views, earnings_usd, featured_video_url, campaigns!inner(product_name)"
+    )
+    .not("featured_video_url", "is", null)
+    .order("earnings_usd", { ascending: false })
+    .limit(limit);
+  if (error) return [];
+  type Row = {
+    id: string;
+    platform: Platform;
+    post_url: string;
+    verified_views: number;
+    earnings_usd: string | number;
+    featured_video_url: string;
+    campaigns: { product_name: string };
+  };
+  return ((data ?? []) as unknown as Row[]).map((r) => ({
+    id: r.id,
+    campaignName: r.campaigns.product_name,
+    platform: r.platform,
+    postUrl: r.post_url,
+    verifiedViews: r.verified_views,
+    earningsUsd:
+      typeof r.earnings_usd === "string"
+        ? parseFloat(r.earnings_usd)
+        : r.earnings_usd,
+    featuredVideoUrl: r.featured_video_url,
   }));
 }

@@ -31,6 +31,7 @@ import {
   listPendingClips,
   refreshAllViews,
   rejectClip,
+  setClipFeaturedVideo,
   type OperatorStats,
 } from "@/lib/actions/clips";
 import {
@@ -761,6 +762,9 @@ function AdminDashboard() {
                       <th className="px-4 py-3 text-right font-display text-xs font-bold uppercase tracking-wider">
                         When
                       </th>
+                      <th className="px-4 py-3 font-display text-xs font-bold uppercase tracking-wider">
+                        Featured video
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -791,6 +795,14 @@ function AdminDashboard() {
                         </td>
                         <td className="px-4 py-3 text-right text-xs text-ink-soft">
                           {timeAgo(c.createdAt)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <FeaturedVideoCell
+                            clipId={c.id}
+                            initialUrl={c.featuredVideoUrl ?? ""}
+                            identityToken={identityToken ?? ""}
+                            onChange={refresh}
+                          />
                         </td>
                       </tr>
                     ))}
@@ -990,6 +1002,66 @@ function AdminDashboard() {
         </motion.div>
       </section>
     </main>
+  );
+}
+
+function FeaturedVideoCell({
+  clipId,
+  initialUrl,
+  identityToken,
+  onChange,
+}: {
+  clipId: string;
+  initialUrl: string;
+  identityToken: string;
+  onChange: () => void | Promise<void>;
+}) {
+  const [url, setUrl] = useState(initialUrl);
+  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">(
+    "idle"
+  );
+  const [error, setError] = useState<string | null>(null);
+
+  const save = async (value: string) => {
+    if (value === initialUrl) return;
+    if (!identityToken) return;
+    setStatus("saving");
+    setError(null);
+    const r = await setClipFeaturedVideo(
+      identityToken,
+      clipId,
+      value || null
+    );
+    if (!r.ok) {
+      setStatus("error");
+      setError(r.error);
+      return;
+    }
+    setStatus("saved");
+    await onChange();
+    setTimeout(() => setStatus("idle"), 1200);
+  };
+
+  return (
+    <div className="flex min-w-[14rem] flex-col gap-1">
+      <Input
+        value={url}
+        onChange={(e) => setUrl(e.target.value)}
+        onBlur={() => save(url.trim())}
+        placeholder="https://...mp4"
+        className="h-8 text-xs"
+        disabled={status === "saving"}
+      />
+      {status === "saving" && (
+        <span className="text-[0.6rem] text-ink-soft">Saving…</span>
+      )}
+      {status === "saved" && (
+        <span className="text-[0.6rem] text-success">Saved</span>
+      )}
+      {status === "error" && error && (
+        <span className="text-[0.6rem] text-error">{error}</span>
+      )}
+    </div>
   );
 }
 
