@@ -34,22 +34,23 @@ const es: Dict = {
     statsPaymentsSent: "Pagos enviados",
     forBrands: "Para marcas →",
 
-    howTitle: "Cómo funciona",
-    howStep1Title: "Elige una campaña",
+    howTitle: "Cobra por hacer videos cortos para marcas",
+    howStep1Title: "Recrea un video",
     howStep1Body:
-      "Las marcas pagan por visualizaciones reales. Tú eliges la campaña que combine con tu estilo.",
-    howStep2Title: "Haz un clip y postéalo",
+      "Te mostramos exactamente qué video hacer, con un ejemplo y un guion.",
+    howStep2Title: "Publícalo en tus redes",
     howStep2Body:
-      "15–60 segundos, en Instagram o TikTok. Sin guion fijo — te damos uno para que lo adaptes.",
-    howStep3Title: "Cobra por visualizaciones",
+      "Graba un video de 15–60 segundos, publícalo en Instagram o TikTok, y envía el link.",
+    howStep3Title: "Cobra",
     howStep3Body:
-      "Te enviamos USDT a tu wallet conforme lleguen las visualizaciones. Sin facturas, sin esperar fin de mes.",
+      "Tus ganancias se actualizan en tiempo real según las visualizaciones. Retira cuando quieras.",
 
-    whyTitle: "Por qué empezar hoy",
-    why1: "Sin mínimo de seguidores — sirve cualquier cuenta",
-    why2: "Postea desde cualquier perfil, incluso uno nuevo",
-    why3: "Pagos automáticos cuando llegan las visualizaciones — nada que facturar",
-    why4: "Sin contratos, sin compromisos, sin letra chica",
+    receiptBalance: "Saldo",
+    receiptToday: "Hoy",
+    receiptWeek: "Esta semana",
+    receiptCashOut: "Retirar",
+    receiptInstant: "Transferencias instantáneas",
+    receiptNoFees: "Sin comisiones",
 
     topClipsTitle: "Clips reales. Pagos reales.",
     topClipsSubtitle:
@@ -59,19 +60,26 @@ const es: Dict = {
     topClipsWatchOn: "Ver en {platform} →",
     topClipsEmpty: "Los clips destacados aparecerán aquí pronto.",
 
-    faqTitle: "Respuestas rápidas",
-    faqQ1: "¿Necesito mucha audiencia?",
+    faqTitle: "Aclaremos algunas cosas",
+    faqSubtitle:
+      "Respuestas cortas para entender cómo funciona Clippa.",
+    faqQ1: "¿Cómo funciona esto?",
     faqA1:
-      "No. Contamos visualizaciones por post, no seguidores. Una cuenta nueva puede ganar lo mismo que una grande si el clip pega.",
-    faqQ2: "¿Cuándo me pagan?",
+      "Recreas videos cortos usando los guiones que te damos, los publicas en tus redes (15–60 segundos), y nos envías los links. A medida que tus videos suman visualizaciones, ganas dinero.",
+    faqQ2: "¿Necesito experiencia previa creando contenido?",
     faqA2:
-      "Automáticamente, en USDT, conforme suman las visualizaciones. Pagamos continuamente — no envías facturas ni esperas a fin de mes.",
-    faqQ3: "¿Tengo que ser creador con experiencia?",
+      "No. No necesitas experiencia para empezar a ganar en Clippa.",
+    faqQ3: "¿Cómo me pagan?",
     faqA3:
-      "No hace falta experiencia previa. Cada campaña viene con un guion sugerido y las reglas a seguir. Si sabes presionar grabar, puedes ganar.",
-    faqQ4: "¿Y si mi clip no genera visualizaciones?",
+      "Tus ganancias llegan a tu wallet de Clippa en USDT a medida que tus posts suman visualizaciones. Puedes retirar a cualquier wallet, cuando quieras — sin comisiones, sin esperar fin de mes.",
+    faqQ4: "¿Cuánto puedo ganar?",
     faqA4:
-      "No ganas por ese, pero no hay penalización — sigue posteando en otras campañas. Con que pegue uno solo, valió la pena.",
+      "Cada campaña define un máximo por clip. De ahí depende de la campaña y de qué tan virales sean tus clips — entre más visualizaciones, más ganas.",
+
+    finalCtaTitleOne: "{n}+ creador ya está ganando",
+    finalCtaTitleMany: "{n}+ creadores ya están ganando",
+    finalCtaTitleFallback: "Creadores ya están ganando con Clippa",
+    finalCtaButton: "Empieza a ganar hoy",
   },
 
   onboarding: {

@@ -40,22 +40,23 @@ const en = {
     statsPaymentsSent: "Payments sent",
     forBrands: "For brands →",
 
-    howTitle: "How it works",
-    howStep1Title: "Pick a campaign",
+    howTitle: "Get paid to make short videos for brands",
+    howStep1Title: "Recreate a video",
     howStep1Body:
-      "Brands pay per real view. You choose the campaign that fits your style.",
-    howStep2Title: "Make a clip and post it",
+      "We show you exactly what video to make with an example and a script.",
+    howStep2Title: "Post to social media",
     howStep2Body:
-      "15–60 seconds, on Instagram or TikTok. No fixed script — we give you one to riff on.",
-    howStep3Title: "Get paid per view",
+      "Record a 15–60 second video, post it to Instagram or TikTok, and submit the link.",
+    howStep3Title: "Get paid",
     howStep3Body:
-      "We send USDT to your wallet as views land. No invoices, no waiting until month-end.",
+      "Your earnings update in real time as you get views. Cash out whenever you want.",
 
-    whyTitle: "Why start today",
-    why1: "No follower minimum — works for any account",
-    why2: "Post from any profile, even a brand new one",
-    why3: "Automatic payouts as views land — nothing to invoice",
-    why4: "No contracts, no commitment, no fine print",
+    receiptBalance: "Balance",
+    receiptToday: "Today",
+    receiptWeek: "This week",
+    receiptCashOut: "Cash out",
+    receiptInstant: "Instant transfers",
+    receiptNoFees: "No fees",
 
     topClipsTitle: "Real clips. Real payouts.",
     topClipsSubtitle:
@@ -65,19 +66,25 @@ const en = {
     topClipsWatchOn: "Watch on {platform} →",
     topClipsEmpty: "Top-earning clips will show up here soon.",
 
-    faqTitle: "Quick answers",
-    faqQ1: "Do I need a big audience?",
+    faqTitle: "Let's clear a few things up",
+    faqSubtitle: "A short set of answers to help you understand how Clippa works.",
+    faqQ1: "How does this work?",
     faqA1:
-      "No. We track views per post, not follower count. A brand-new account can earn the same as a big one if the clip lands.",
-    faqQ2: "When do I get paid?",
+      "You recreate short videos using provided scripts, post them on your social media (15–60 seconds), and submit the links. As your videos get views, you earn money.",
+    faqQ2: "Do I need prior content creation experience?",
     faqA2:
-      "Automatically, in USDT, as views accumulate. We pay out continuously — you don't submit invoices or wait until month-end.",
-    faqQ3: "Do I need to be a content creator already?",
+      "You do not. No content experience is required to start earning on Clippa.",
+    faqQ3: "How do I get paid?",
     faqA3:
-      "No prior experience needed. Each campaign comes with a suggested script and the rules to follow. If you can hit record on your phone, you can earn.",
-    faqQ4: "What happens if my clip doesn't get views?",
+      "Earnings land in your Clippa wallet in USDT as your submissions get views. You can withdraw to any wallet, anytime — no fees, no waiting until month-end.",
+    faqQ4: "How much can I earn?",
     faqA4:
-      "You don't earn for that one. There's no penalty — keep posting on other campaigns. It only takes one clip landing to make it worth it.",
+      "Each campaign sets a max per clip. Beyond that, it's up to the campaign and how viral your clips go — the more views, the more you earn.",
+
+    finalCtaTitleOne: "{n}+ creator is already earning",
+    finalCtaTitleMany: "{n}+ creators are already earning",
+    finalCtaTitleFallback: "Creators are already earning with Clippa",
+    finalCtaButton: "Start making money today",
   },
 
   onboarding: {

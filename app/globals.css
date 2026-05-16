@@ -122,8 +122,31 @@
 .animate-marquee:hover {
   animation-play-state: paused;
 }
+
+/* Vertical marquees for the "Recreate a video" card in the
+ * How-it-works section. One column scrolls up, the other down for
+ * visual contrast. List is doubled in JSX for a seamless loop. */
+@keyframes marquee-y-up {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(0, -50%, 0); }
+}
+@keyframes marquee-y-down {
+  from { transform: translate3d(0, -50%, 0); }
+  to { transform: translate3d(0, 0, 0); }
+}
+.animate-marquee-y-up {
+  animation: marquee-y-up var(--marquee-duration, 30s) linear infinite;
+  will-change: transform;
+}
+.animate-marquee-y-down {
+  animation: marquee-y-down var(--marquee-duration, 30s) linear infinite;
+  will-change: transform;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .animate-marquee {
+  .animate-marquee,
+  .animate-marquee-y-up,
+  .animate-marquee-y-down {
     animation: none;
   }
 }
