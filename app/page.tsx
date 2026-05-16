@@ -103,33 +103,19 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Top clips — full-bleed marquee, only render once we have at least one */}
+      {/* Top clips — full-bleed marquee, only render once we have at least one.
+       * No heading: the hero copy + the cards themselves (campaign, $ earned,
+       * views) already make the section self-evident. */}
       {topClips && topClips.length > 0 && (
-        <section className="pb-16">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="px-6 text-center md:px-12"
-          >
-            <h2 className="font-display text-3xl font-bold tracking-tight md:text-4xl">
-              {t("landing.topClipsTitle")}
-            </h2>
-            <p className="mx-auto mt-2 max-w-md font-body text-sm text-ink-soft md:text-base">
-              {t("landing.topClipsSubtitle")}
-            </p>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
-            className="mt-8"
-          >
-            <TopClipsShowcase clips={topClips} />
-          </motion.div>
-        </section>
+        <motion.section
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="pb-16"
+        >
+          <TopClipsShowcase clips={topClips} />
+        </motion.section>
       )}
 
       {/* How it works */}
