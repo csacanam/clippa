@@ -198,6 +198,8 @@ const es: Dict = {
 
   brand: {
     badgeBrand: "Marca",
+    badgeCreator: "Creador",
+    modeLabel: "Modo",
     backToDashboard: "← Volver al panel",
     creatorMode: "Cambiar a modo creador",
     brandMode: "Cambiar a modo marca",

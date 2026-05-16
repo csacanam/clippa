@@ -10,7 +10,7 @@ import { AuthGuard } from "@/components/auth-guard";
 import { CampaignCard } from "@/components/campaign-card";
 import { ClippaLogo } from "@/components/clippa-logo";
 import { CommunityCard } from "@/components/community-card";
-import { RoleSwitchLink } from "@/components/role-switch-link";
+import { ModeBar } from "@/components/mode-bar";
 import { LocaleToggle } from "@/components/locale-toggle";
 import { useTranslation } from "@/components/locale-provider";
 import { MyClipCard } from "@/components/my-clip-card";
@@ -108,11 +108,6 @@ function AppHome() {
                 </Badge>
               </Link>
             )}
-            <RoleSwitchLink
-              targetRole="brand"
-              targetHref="/brand"
-              label={t("brand.brandMode")}
-            />
             <LocaleToggle />
             <span className="hidden font-body text-xs text-ink-soft md:inline">
               {email}
@@ -123,7 +118,9 @@ function AppHome() {
           </div>
         </header>
 
-        <section className="mt-12 w-full">
+        <ModeBar currentMode="creator" />
+
+        <section className="mt-8 w-full">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}

@@ -19,7 +19,7 @@ import { celo } from "viem/chains";
 import { AuthGuard } from "@/components/auth-guard";
 import { ClippaLogo } from "@/components/clippa-logo";
 import { useTranslation } from "@/components/locale-provider";
-import { Badge } from "@/components/ui/badge";
+import { ModeBar } from "@/components/mode-bar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -214,12 +214,7 @@ function FundCampaign() {
     <main className="flex min-h-dvh flex-col px-6 py-6 md:px-12">
       <div className="mx-auto flex w-full max-w-2xl flex-col">
         <header className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <ClippaLogo />
-            <Badge variant="indigo" className="px-2.5 py-1 text-[0.7rem]">
-              {t("brand.badgeBrand")}
-            </Badge>
-          </div>
+          <ClippaLogo />
           <Link
             href="/brand"
             className="font-body text-sm font-medium text-ink-soft underline-offset-4 hover:underline"
@@ -228,7 +223,9 @@ function FundCampaign() {
           </Link>
         </header>
 
-        <section className="mt-12 w-full">
+        <ModeBar currentMode="brand" />
+
+        <section className="mt-8 w-full">
         {campaign === null ? (
           <p className="text-center font-display text-sm uppercase tracking-wider text-ink-soft">
             {t("common.loading")}

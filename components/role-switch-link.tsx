@@ -21,7 +21,7 @@ export function RoleSwitchLink({
 }: {
   targetRole: UserRole;
   targetHref: string;
-  label: string;
+  label: React.ReactNode;
   className?: string;
 }) {
   const router = useRouter();

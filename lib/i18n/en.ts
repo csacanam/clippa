@@ -202,6 +202,8 @@ const en = {
   brand: {
     // Shared
     badgeBrand: "Brand",
+    badgeCreator: "Creator",
+    modeLabel: "Mode",
     backToDashboard: "← Back to dashboard",
     creatorMode: "Switch to creator mode",
     brandMode: "Switch to brand mode",
