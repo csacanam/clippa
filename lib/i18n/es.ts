@@ -142,7 +142,7 @@ const es: Dict = {
     cardPerView: "{amount} por visualización",
     cardUpTo: "hasta {amount} por clip",
     about: "Sobre esta campaña",
-    postOnLabel: "Redes habilitadas",
+    postOnLabel: "Plataformas habilitadas",
     postOnHint: "Puedes publicar tu clip en cualquiera de estas.",
     languagesLabel: "Idiomas habilitados",
     languagesHint: "Puedes grabar tu clip en cualquiera de estos idiomas.",

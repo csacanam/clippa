@@ -38,6 +38,19 @@ type FormState =
   | { stage: "form" }
   | { stage: "submitted" };
 
+const LANGUAGE_NATIVE_NAMES: Record<string, string> = {
+  en: "English",
+  es: "Español",
+  pt: "Português",
+  fr: "Français",
+  de: "Deutsch",
+  it: "Italiano",
+};
+
+function languageLabel(code: string): string {
+  return LANGUAGE_NATIVE_NAMES[code] ?? code.toUpperCase();
+}
+
 function CampaignDetail() {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
@@ -405,8 +418,8 @@ function CampaignDetail() {
               </h3>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {campaign.availableLanguages.map((l) => (
-                  <Badge key={l} variant="default" className="uppercase">
-                    {l}
+                  <Badge key={l} variant="default">
+                    {languageLabel(l)}
                   </Badge>
                 ))}
               </div>

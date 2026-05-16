@@ -147,7 +147,7 @@ const en = {
     cardPerView: "{amount} per view",
     cardUpTo: "up to {amount} per clip",
     about: "About this campaign",
-    postOnLabel: "Allowed networks",
+    postOnLabel: "Allowed platforms",
     postOnHint: "You can post your clip on any of these.",
     languagesLabel: "Allowed languages",
     languagesHint: "You can record your clip in any of these languages.",
