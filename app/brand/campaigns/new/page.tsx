@@ -1,0 +1,920 @@
+"use client";
+
+import { useWallets } from "@privy-io/react-auth";
+import { ArrowLeft, ArrowRight, ArrowUpRight, Check, Coins } from "lucide-react";
+import { motion } from "motion/react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import {
+  createPublicClient,
+  createWalletClient,
+  custom,
+  erc20Abi,
+  http,
+  type Hex,
+} from "viem";
+import { celo } from "viem/chains";
+
+import { AuthGuard } from "@/components/auth-guard";
+import { ClippaLogo } from "@/components/clippa-logo";
+import { MarkdownField } from "@/components/markdown-field";
+import { Badge } from "@/components/ui/badge";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  isSlugAvailable,
+  markCampaignActive,
+  reserveCampaignDraft,
+  type CampaignDraftInput,
+  type ReserveDraftResult,
+} from "@/lib/actions/campaigns";
+import { type Platform } from "@/lib/campaigns";
+import {
+  CELO_USDT_ADDRESS,
+  CLIPPA_CONTRACT_ADDRESS,
+  celoExplorerTx,
+  usdToBaseUnits,
+  uuidToBytes32,
+} from "@/lib/chain";
+import { useAccessToken } from "@/lib/hooks/use-access-token";
+
+// ============================================================
+// Helpers
+// ============================================================
+
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+}
+
+const CLIPPA_WRITE_ABI = [
+  {
+    type: "function",
+    name: "createCampaign",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "campaignId", type: "bytes32" },
+      { name: "maxPayoutPerClip", type: "uint256" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "fundCampaign",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "campaignId", type: "bytes32" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [],
+  },
+] as const;
+
+const DEFAULTS: FormState = {
+  productName: "",
+  slug: "",
+  shortDescription: "",
+  longDescription: "",
+  exampleVideoUrl: "",
+  scriptMarkdown:
+    "**[hook · 0–3s]**\n\nGrab attention here.\n\n**[body · 3–15s]**\n\nShow the product in action.\n\n**[outro · 15–20s]**\n\nClear call to action.",
+  instructionsMarkdown:
+    "**1. Mention the product on screen at least once.**\nName, URL, or logo.\n\n**2. Keep it authentic.**\nNo fake testimonials or unrealistic results.\n\n**3. Avoid X, Y, Z.**\n[Edit this list.]",
+  ratePerViewUsd: "0.01",
+  maxPayoutPerClipUsd: "20",
+  totalBudgetUsd: "100",
+  platforms: { instagram: true, tiktok: true },
+};
+
+type FormState = {
+  productName: string;
+  slug: string;
+  shortDescription: string;
+  longDescription: string;
+  exampleVideoUrl: string;
+  scriptMarkdown: string;
+  instructionsMarkdown: string;
+  ratePerViewUsd: string;
+  maxPayoutPerClipUsd: string;
+  totalBudgetUsd: string;
+  platforms: { instagram: boolean; tiktok: boolean };
+};
+
+function formToInput(f: FormState): CampaignDraftInput {
+  const platforms: Platform[] = [];
+  if (f.platforms.instagram) platforms.push("instagram");
+  if (f.platforms.tiktok) platforms.push("tiktok");
+  return {
+    productName: f.productName.trim(),
+    slug: f.slug.trim(),
+    shortDescription: f.shortDescription.trim(),
+    longDescription: f.longDescription.trim(),
+    exampleVideoUrl: f.exampleVideoUrl.trim() || undefined,
+    scriptMarkdown: f.scriptMarkdown,
+    instructionsMarkdown: f.instructionsMarkdown,
+    ratePerViewUsd: Number(f.ratePerViewUsd),
+    maxPayoutPerClipUsd: Number(f.maxPayoutPerClipUsd),
+    totalBudgetUsd: Number(f.totalBudgetUsd),
+    platforms,
+  };
+}
+
+// ============================================================
+// Page
+// ============================================================
+
+type TxStage =
+  | { kind: "idle" }
+  | { kind: "approving" }
+  | { kind: "creating"; approveTx?: string }
+  | { kind: "funding"; approveTx?: string; createTx: string }
+  | { kind: "finalizing"; approveTx?: string; createTx: string; fundTx: string }
+  | { kind: "done"; approveTx?: string; createTx: string; fundTx: string }
+  | { kind: "error"; message: string };
+
+function NewCampaignWizard() {
+  const router = useRouter();
+  const identityToken = useAccessToken();
+  const { wallets } = useWallets();
+
+  const [step, setStep] = useState<1 | 2>(1);
+  const [form, setForm] = useState<FormState>(DEFAULTS);
+  const [errors, setErrors] = useState<Partial<Record<keyof CampaignDraftInput, string>>>({});
+  const [slugTouched, setSlugTouched] = useState(false);
+  const [slugStatus, setSlugStatus] = useState<"idle" | "checking" | "available" | "taken">(
+    "idle"
+  );
+  const [reserving, setReserving] = useState(false);
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [stage, setStage] = useState<TxStage>({ kind: "idle" });
+
+  // Auto-fill slug from product name until the user edits it manually.
+  useEffect(() => {
+    if (!slugTouched) {
+      setForm((f) => ({ ...f, slug: slugify(f.productName) }));
+    }
+  }, [form.productName, slugTouched]);
+
+  // Debounced slug availability check.
+  useEffect(() => {
+    if (!form.slug) {
+      setSlugStatus("idle");
+      return;
+    }
+    setSlugStatus("checking");
+    const t = setTimeout(async () => {
+      try {
+        const ok = await isSlugAvailable(form.slug);
+        setSlugStatus(ok ? "available" : "taken");
+      } catch {
+        setSlugStatus("idle");
+      }
+    }, 350);
+    return () => clearTimeout(t);
+  }, [form.slug]);
+
+  const platformsValid = form.platforms.instagram || form.platforms.tiktok;
+  const fundAmount = Number(form.totalBudgetUsd);
+  const fundAmountValid = Number.isFinite(fundAmount) && fundAmount > 0;
+
+  const handleNext = async () => {
+    if (!identityToken) return;
+    setErrors({});
+    setReserving(true);
+    try {
+      const result: ReserveDraftResult = await reserveCampaignDraft(
+        identityToken,
+        formToInput(form)
+      );
+      if (!result.ok) {
+        if (result.field) setErrors({ [result.field]: result.error });
+        else setErrors({ slug: result.error });
+        return;
+      }
+      setDraftId(result.id);
+      setStep(2);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } finally {
+      setReserving(false);
+    }
+  };
+
+  const handleFund = async () => {
+    if (!identityToken || !draftId) return;
+    if (!CLIPPA_CONTRACT_ADDRESS) {
+      setStage({ kind: "error", message: "Contract address not configured." });
+      return;
+    }
+    try {
+      const wallet =
+        wallets.find((w) => w.walletClientType === "privy") ?? wallets[0];
+      if (!wallet) throw new Error("No wallet found on your account.");
+      try {
+        await wallet.switchChain(celo.id);
+      } catch {
+        /* already on celo or auto-switched */
+      }
+
+      const provider = await wallet.getEthereumProvider();
+      const account = wallet.address as Hex;
+      const walletClient = createWalletClient({
+        account,
+        chain: celo,
+        transport: custom(provider),
+      });
+      const publicClient = createPublicClient({
+        chain: celo,
+        transport: http(),
+      });
+
+      const campaignId = uuidToBytes32(draftId);
+      const fundUnits = usdToBaseUnits(fundAmount);
+      const maxPayoutUnits = usdToBaseUnits(Number(form.maxPayoutPerClipUsd));
+
+      // 1. Skip approve if existing allowance already covers fundUnits.
+      const allowance = (await publicClient.readContract({
+        address: CELO_USDT_ADDRESS,
+        abi: erc20Abi,
+        functionName: "allowance",
+        args: [account, CLIPPA_CONTRACT_ADDRESS],
+      })) as bigint;
+
+      let approveTx: string | undefined;
+      if (allowance < fundUnits) {
+        setStage({ kind: "approving" });
+        approveTx = await walletClient.writeContract({
+          address: CELO_USDT_ADDRESS,
+          abi: erc20Abi,
+          functionName: "approve",
+          args: [CLIPPA_CONTRACT_ADDRESS, fundUnits],
+        });
+        await publicClient.waitForTransactionReceipt({ hash: approveTx as Hex });
+      }
+
+      // 2. createCampaign.
+      setStage({ kind: "creating", approveTx });
+      const createTx = await walletClient.writeContract({
+        address: CLIPPA_CONTRACT_ADDRESS,
+        abi: CLIPPA_WRITE_ABI,
+        functionName: "createCampaign",
+        args: [campaignId, maxPayoutUnits],
+      });
+      await publicClient.waitForTransactionReceipt({ hash: createTx as Hex });
+
+      // 3. fundCampaign.
+      setStage({ kind: "funding", approveTx, createTx });
+      const fundTx = await walletClient.writeContract({
+        address: CLIPPA_CONTRACT_ADDRESS,
+        abi: CLIPPA_WRITE_ABI,
+        functionName: "fundCampaign",
+        args: [campaignId, fundUnits],
+      });
+      await publicClient.waitForTransactionReceipt({ hash: fundTx as Hex });
+
+      // 4. Flip DB to active.
+      setStage({ kind: "finalizing", approveTx, createTx, fundTx });
+      const r = await markCampaignActive(identityToken, draftId);
+      if (!r.ok) throw new Error(r.error);
+
+      setStage({ kind: "done", approveTx, createTx, fundTx });
+    } catch (e) {
+      const raw = (e as Error).message ?? "Something went wrong.";
+      let message = raw.slice(0, 200);
+      if (/rejected|denied/i.test(raw)) message = "Signing cancelled.";
+      else if (/insufficient/i.test(raw)) message = "Not enough USDT or CELO for gas.";
+      setStage({ kind: "error", message });
+    }
+  };
+
+  return (
+    <main className="flex min-h-dvh flex-col px-6 py-6 md:px-12">
+      <header className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <ClippaLogo />
+          <Badge variant="indigo" className="px-2.5 py-1 text-[0.7rem]">
+            Brand
+          </Badge>
+        </div>
+        <Link
+          href="/brand"
+          className="font-body text-sm font-medium text-ink-soft underline-offset-4 hover:underline"
+        >
+          ← Back to dashboard
+        </Link>
+      </header>
+
+      <section className="mx-auto mt-8 w-full max-w-3xl">
+        <StepIndicator step={step} />
+
+        {step === 1 ? (
+          <StepOne
+            form={form}
+            setForm={setForm}
+            errors={errors}
+            slugTouched={slugTouched}
+            setSlugTouched={setSlugTouched}
+            slugStatus={slugStatus}
+            platformsValid={platformsValid}
+            fundAmountValid={fundAmountValid}
+            reserving={reserving}
+            onNext={handleNext}
+          />
+        ) : (
+          <StepTwo
+            form={form}
+            fundAmount={fundAmount}
+            stage={stage}
+            onBack={() => {
+              if (stage.kind === "idle" || stage.kind === "error") setStep(1);
+            }}
+            onFund={handleFund}
+            onDone={() => router.push("/brand")}
+          />
+        )}
+      </section>
+    </main>
+  );
+}
+
+// ============================================================
+// Step indicator
+// ============================================================
+
+function StepIndicator({ step }: { step: 1 | 2 }) {
+  return (
+    <div className="flex items-center gap-3">
+      <StepDot n={1} active={step === 1} done={step === 2} label="Details" />
+      <div className="h-px flex-1 bg-ink/15" />
+      <StepDot n={2} active={step === 2} done={false} label="Review & Fund" />
+    </div>
+  );
+}
+
+function StepDot({
+  n,
+  active,
+  done,
+  label,
+}: {
+  n: number;
+  active: boolean;
+  done: boolean;
+  label: string;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <div
+        className={`flex size-7 items-center justify-center rounded-full border-2 border-ink font-display text-sm font-bold ${
+          active ? "bg-lime text-ink" : done ? "bg-ink text-cream" : "bg-cream text-ink-soft"
+        }`}
+      >
+        {done ? <Check className="size-3.5" /> : n}
+      </div>
+      <span
+        className={`font-display text-xs font-bold uppercase tracking-wider ${
+          active || done ? "text-ink" : "text-ink-soft"
+        }`}
+      >
+        {label}
+      </span>
+    </div>
+  );
+}
+
+// ============================================================
+// Step 1 — Form
+// ============================================================
+
+function StepOne({
+  form,
+  setForm,
+  errors,
+  slugTouched,
+  setSlugTouched,
+  slugStatus,
+  platformsValid,
+  fundAmountValid,
+  reserving,
+  onNext,
+}: {
+  form: FormState;
+  setForm: React.Dispatch<React.SetStateAction<FormState>>;
+  errors: Partial<Record<keyof CampaignDraftInput, string>>;
+  slugTouched: boolean;
+  setSlugTouched: (v: boolean) => void;
+  slugStatus: "idle" | "checking" | "available" | "taken";
+  platformsValid: boolean;
+  fundAmountValid: boolean;
+  reserving: boolean;
+  onNext: () => void;
+}) {
+  const update = <K extends keyof FormState>(k: K, v: FormState[K]) => {
+    setForm((f) => ({ ...f, [k]: v }));
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      className="mt-8 flex flex-col gap-6"
+    >
+      <Card className="bg-cream">
+        <CardContent className="flex flex-col gap-5">
+          <h2 className="font-display text-xl font-bold tracking-tight">
+            Basics
+          </h2>
+
+          <Field label="Product name" error={errors.productName}>
+            <Input
+              value={form.productName}
+              onChange={(e) => update("productName", e.target.value)}
+              placeholder="Nerdos.fun"
+              maxLength={60}
+            />
+          </Field>
+
+          <Field
+            label="Slug"
+            error={errors.slug}
+            hint={
+              slugStatus === "checking"
+                ? "Checking availability…"
+                : slugStatus === "available"
+                  ? "✓ Available"
+                  : slugStatus === "taken"
+                    ? "✗ Already taken"
+                    : "Used in URLs. Lowercase letters, numbers, dashes."
+            }
+            hintColor={
+              slugStatus === "available"
+                ? "text-success"
+                : slugStatus === "taken"
+                  ? "text-error"
+                  : undefined
+            }
+          >
+            <Input
+              value={form.slug}
+              onChange={(e) => {
+                setSlugTouched(true);
+                update("slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""));
+              }}
+              placeholder="nerdos-fun"
+              maxLength={40}
+            />
+          </Field>
+
+          <Field label="Short description" error={errors.shortDescription}>
+            <Input
+              value={form.shortDescription}
+              onChange={(e) => update("shortDescription", e.target.value)}
+              placeholder="A daily game where curious people compete and win rewards."
+              maxLength={200}
+            />
+          </Field>
+
+          <Field
+            label="Long description"
+            error={errors.longDescription}
+            hint="What is the product? Why do you want clips? Who's the audience?"
+          >
+            <textarea
+              value={form.longDescription}
+              onChange={(e) => update("longDescription", e.target.value)}
+              rows={4}
+              maxLength={2000}
+              placeholder="..."
+              className="w-full resize-y rounded-md border-2 border-ink bg-cream px-3 py-2 font-body text-sm leading-relaxed text-ink shadow-sticker outline-none focus:ring-4 focus:ring-ring/40"
+            />
+          </Field>
+
+          <Field
+            label="Example video URL (optional)"
+            error={errors.exampleVideoUrl}
+            hint="A reference clip creators can use as inspiration."
+          >
+            <Input
+              value={form.exampleVideoUrl}
+              onChange={(e) => update("exampleVideoUrl", e.target.value)}
+              placeholder="https://..."
+            />
+          </Field>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-cream">
+        <CardContent className="flex flex-col gap-5">
+          <h2 className="font-display text-xl font-bold tracking-tight">
+            Creator brief
+          </h2>
+
+          <Field
+            label="Script"
+            error={errors.scriptMarkdown}
+            hint="Suggested structure for the video. Creators get this as guidance."
+          >
+            <MarkdownField
+              value={form.scriptMarkdown}
+              onChange={(v) => update("scriptMarkdown", v)}
+              rows={10}
+              maxLength={5000}
+            />
+          </Field>
+
+          <Field
+            label="Instructions"
+            error={errors.instructionsMarkdown}
+            hint="Hard rules. Clips that break them get rejected."
+          >
+            <MarkdownField
+              value={form.instructionsMarkdown}
+              onChange={(v) => update("instructionsMarkdown", v)}
+              rows={8}
+              maxLength={5000}
+            />
+          </Field>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-cream">
+        <CardContent className="flex flex-col gap-5">
+          <h2 className="font-display text-xl font-bold tracking-tight">
+            Pricing & budget
+          </h2>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <Field label="Rate per view (USD)" error={errors.ratePerViewUsd}>
+              <Input
+                type="number"
+                inputMode="decimal"
+                step="0.0001"
+                min="0"
+                value={form.ratePerViewUsd}
+                onChange={(e) => update("ratePerViewUsd", e.target.value)}
+              />
+            </Field>
+            <Field label="Max payout / clip (USD)" error={errors.maxPayoutPerClipUsd}>
+              <Input
+                type="number"
+                inputMode="decimal"
+                step="1"
+                min="1"
+                value={form.maxPayoutPerClipUsd}
+                onChange={(e) => update("maxPayoutPerClipUsd", e.target.value)}
+              />
+            </Field>
+            <Field
+              label="Total budget (USD)"
+              error={errors.totalBudgetUsd}
+              hint="This is the amount you'll fund the escrow with."
+            >
+              <Input
+                type="number"
+                inputMode="decimal"
+                step="1"
+                min="1"
+                value={form.totalBudgetUsd}
+                onChange={(e) => update("totalBudgetUsd", e.target.value)}
+              />
+            </Field>
+          </div>
+
+          <Field label="Platforms" error={errors.platforms}>
+            <div className="flex flex-wrap gap-3">
+              <PlatformChip
+                label="Instagram"
+                checked={form.platforms.instagram}
+                onChange={(v) =>
+                  setForm((f) => ({ ...f, platforms: { ...f.platforms, instagram: v } }))
+                }
+              />
+              <PlatformChip
+                label="TikTok"
+                checked={form.platforms.tiktok}
+                onChange={(v) =>
+                  setForm((f) => ({ ...f, platforms: { ...f.platforms, tiktok: v } }))
+                }
+              />
+            </div>
+            {!platformsValid && (
+              <p className="text-xs text-error">Pick at least one platform.</p>
+            )}
+          </Field>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-end">
+        <Button
+          onClick={onNext}
+          disabled={
+            reserving ||
+            !platformsValid ||
+            !fundAmountValid ||
+            slugStatus === "taken" ||
+            slugStatus === "checking"
+          }
+          variant="default"
+          size="lg"
+        >
+          {reserving ? "Reserving..." : "Next: Review & Fund"}
+          <ArrowRight className="size-4" />
+        </Button>
+      </div>
+    </motion.div>
+  );
+}
+
+function Field({
+  label,
+  error,
+  hint,
+  hintColor,
+  children,
+}: {
+  label: string;
+  error?: string;
+  hint?: string;
+  hintColor?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="font-display text-sm font-bold uppercase tracking-wide">
+        {label}
+      </label>
+      {children}
+      {error ? (
+        <p className="text-xs text-error">{error}</p>
+      ) : hint ? (
+        <p className={`text-xs ${hintColor ?? "text-ink-soft"}`}>{hint}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function PlatformChip({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      aria-pressed={checked}
+      className={`inline-flex items-center gap-1.5 rounded-full border-2 border-ink px-3.5 py-1.5 font-display text-xs font-bold uppercase tracking-wider transition-colors ${
+        checked ? "bg-indigo text-cream" : "bg-cream text-ink hover:bg-peach/60"
+      }`}
+    >
+      {checked && <Check className="size-3" />}
+      {label}
+    </button>
+  );
+}
+
+// ============================================================
+// Step 2 — Review + Fund
+// ============================================================
+
+function StepTwo({
+  form,
+  fundAmount,
+  stage,
+  onBack,
+  onFund,
+  onDone,
+}: {
+  form: FormState;
+  fundAmount: number;
+  stage: TxStage;
+  onBack: () => void;
+  onFund: () => void;
+  onDone: () => void;
+}) {
+  const platforms = useMemo(() => {
+    const out: string[] = [];
+    if (form.platforms.instagram) out.push("Instagram");
+    if (form.platforms.tiktok) out.push("TikTok");
+    return out.join(", ");
+  }, [form.platforms]);
+
+  const busy =
+    stage.kind === "approving" ||
+    stage.kind === "creating" ||
+    stage.kind === "funding" ||
+    stage.kind === "finalizing";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      className="mt-8 flex flex-col gap-6"
+    >
+      <Card className="bg-cream">
+        <CardContent className="flex flex-col gap-4">
+          <h2 className="font-display text-xl font-bold tracking-tight">
+            Review
+          </h2>
+          <ReviewRow label="Product" value={form.productName} />
+          <ReviewRow label="Slug" value={form.slug} mono />
+          <ReviewRow label="Short" value={form.shortDescription} />
+          <ReviewRow label="Platforms" value={platforms} />
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <ReviewRow label="Rate / view" value={`$${form.ratePerViewUsd}`} />
+            <ReviewRow label="Max / clip" value={`$${form.maxPayoutPerClipUsd}`} />
+            <ReviewRow label="Total budget" value={`$${form.totalBudgetUsd}`} />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-peach">
+        <CardContent className="flex flex-col gap-3">
+          <h2 className="font-display text-xl font-bold tracking-tight">
+            Fund the escrow
+          </h2>
+          <p className="font-body text-sm text-ink-soft">
+            You'll sign 3 transactions with your wallet: approve USDT, create the
+            campaign on-chain, and fund the escrow. All 3 happen with your own
+            wallet — Clippa never custody your funds.
+          </p>
+
+          <div className="mt-2 rounded-md border-2 border-ink bg-cream p-4">
+            <div className="flex items-baseline justify-between">
+              <span className="font-display text-xs font-bold uppercase tracking-wider text-ink-soft">
+                Funding amount
+              </span>
+              <span className="font-display text-2xl font-bold tracking-tight">
+                ${fundAmount.toFixed(2)} USDT
+              </span>
+            </div>
+            <div className="mt-3 flex items-baseline justify-between text-sm">
+              <span className="text-ink-soft">→ Escrow receives</span>
+              <span className="font-mono font-bold">${fundAmount.toFixed(2)}</span>
+            </div>
+            <p className="mt-3 text-[0.7rem] text-ink-soft">
+              In V2, a 20% protocol fee will be deducted. Today's funding goes
+              100% to the escrow.
+            </p>
+          </div>
+
+          <TxProgress stage={stage} />
+
+          {stage.kind === "done" ? (
+            <div className="mt-2 flex flex-col gap-3">
+              <div className="flex flex-col items-center gap-2 rounded-md border-2 border-ink bg-lime p-4 text-center">
+                <Check className="size-6" />
+                <p className="font-display text-lg font-bold tracking-tight">
+                  Campaign launched
+                </p>
+                <p className="text-sm text-ink-soft">
+                  Your escrow is funded. Creators can now submit clips.
+                </p>
+                <div className="mt-2 flex flex-wrap items-center justify-center gap-3 text-xs">
+                  <a
+                    href={celoExplorerTx(stage.fundTx)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-indigo hover:underline"
+                  >
+                    View funding tx
+                    <ArrowUpRight className="size-3" />
+                  </a>
+                </div>
+              </div>
+              <Button onClick={onDone} variant="default" size="lg">
+                Go to dashboard
+              </Button>
+            </div>
+          ) : (
+            <div className="mt-2 flex flex-wrap justify-between gap-2">
+              <Button
+                onClick={onBack}
+                disabled={busy}
+                variant="ghost"
+                size="default"
+              >
+                <ArrowLeft className="size-4" />
+                Edit details
+              </Button>
+              <Button
+                onClick={onFund}
+                disabled={busy}
+                variant="default"
+                size="lg"
+              >
+                <Coins className={`size-4 ${busy ? "animate-pulse" : ""}`} />
+                {busy ? "Signing..." : "Sign with wallet & launch"}
+              </Button>
+            </div>
+          )}
+
+          {stage.kind === "error" && (
+            <p className="text-sm text-error">{stage.message}</p>
+          )}
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
+function ReviewRow({
+  label,
+  value,
+  mono,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="font-display text-[0.65rem] font-bold uppercase tracking-wider text-ink-soft">
+        {label}
+      </span>
+      <span className={`text-sm ${mono ? "font-mono" : "font-body"}`}>
+        {value || "—"}
+      </span>
+    </div>
+  );
+}
+
+function TxProgress({ stage }: { stage: TxStage }) {
+  if (stage.kind === "idle" || stage.kind === "error") return null;
+  const txs: { label: string; status: "pending" | "active" | "done" }[] = [
+    {
+      label: "Approve USDT",
+      status:
+        stage.kind === "approving"
+          ? "active"
+          : "approveTx" in stage && stage.approveTx
+            ? "done"
+            : "done",
+    },
+    {
+      label: "Create campaign",
+      status:
+        stage.kind === "approving"
+          ? "pending"
+          : stage.kind === "creating"
+            ? "active"
+            : "done",
+    },
+    {
+      label: "Fund escrow",
+      status:
+        stage.kind === "funding"
+          ? "active"
+          : stage.kind === "finalizing" || stage.kind === "done"
+            ? "done"
+            : "pending",
+    },
+  ];
+
+  return (
+    <ol className="flex flex-col gap-1.5 rounded-md border-2 border-ink bg-cream p-3 text-sm">
+      {txs.map((t, i) => (
+        <li key={i} className="flex items-center gap-2">
+          <span
+            className={`flex size-5 items-center justify-center rounded-full border-2 border-ink text-[10px] font-bold ${
+              t.status === "done"
+                ? "bg-lime"
+                : t.status === "active"
+                  ? "bg-peach animate-pulse"
+                  : "bg-cream text-ink-soft"
+            }`}
+          >
+            {t.status === "done" ? <Check className="size-3" /> : i + 1}
+          </span>
+          <span className={t.status === "pending" ? "text-ink-soft" : ""}>
+            {t.label}
+          </span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+// ============================================================
+// Export
+// ============================================================
+
+export default function NewCampaignPage() {
+  return (
+    <AuthGuard redirectTo="/brands">
+      <NewCampaignWizard />
+    </AuthGuard>
+  );
+}

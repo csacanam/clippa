@@ -18,7 +18,7 @@ export type Campaign = {
   totalBudgetUsd: number;
   spentUsd: number;
   platforms: Platform[];
-  status: "active" | "paused" | "ended";
+  status: "pending_funding" | "active" | "paused" | "ended";
 };
 
 /**

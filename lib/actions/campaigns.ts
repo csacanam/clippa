@@ -216,6 +216,7 @@ export async function getAdminCampaignBudgets(
 }
 
 export type BrandCampaign = {
+  id: string;
   slug: string;
   productName: string;
   shortDescription: string;
@@ -250,6 +251,7 @@ export async function listMyBrandCampaigns(
       "id, slug, product_name, short_description, status, rate_per_view_usd, max_payout_per_clip_usd, created_at"
     )
     .eq("created_by_user_id", user.id)
+    .neq("status", "ended")
     .order("created_at", { ascending: false });
   if (campErr) throw campErr;
 
@@ -303,6 +305,7 @@ export async function listMyBrandCampaigns(
   );
 
   return campaigns.map((c, i) => ({
+    id: c.id,
     slug: c.slug,
     productName: c.product_name,
     shortDescription: c.short_description,
@@ -315,4 +318,200 @@ export async function listMyBrandCampaigns(
     chain: chainStates[i],
     createdAt: c.created_at,
   }));
+}
+
+// ============================================================
+// Brand: campaign creation
+// ============================================================
+
+export type CampaignDraftInput = {
+  productName: string;
+  slug: string;
+  shortDescription: string;
+  longDescription: string;
+  exampleVideoUrl?: string;
+  scriptMarkdown: string;
+  instructionsMarkdown: string;
+  ratePerViewUsd: number;
+  maxPayoutPerClipUsd: number;
+  totalBudgetUsd: number;
+  platforms: Platform[];
+};
+
+export type ReserveDraftResult =
+  | { ok: true; id: string; slug: string }
+  | { ok: false; error: string; field?: keyof CampaignDraftInput };
+
+const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const URL_RE = /^https?:\/\/.+/;
+
+function validateDraft(input: CampaignDraftInput): {
+  ok: true;
+} | { ok: false; error: string; field?: keyof CampaignDraftInput } {
+  if (!input.productName?.trim() || input.productName.length > 60) {
+    return { ok: false, error: "Product name must be 1–60 characters.", field: "productName" };
+  }
+  if (!SLUG_RE.test(input.slug) || input.slug.length > 40) {
+    return {
+      ok: false,
+      error: "Slug must be lowercase letters, numbers, and dashes (max 40 chars).",
+      field: "slug",
+    };
+  }
+  if (!input.shortDescription?.trim() || input.shortDescription.length > 200) {
+    return { ok: false, error: "Short description is required (max 200 chars).", field: "shortDescription" };
+  }
+  if (!input.longDescription?.trim() || input.longDescription.length > 2000) {
+    return { ok: false, error: "Long description is required (max 2000 chars).", field: "longDescription" };
+  }
+  if (input.exampleVideoUrl && !URL_RE.test(input.exampleVideoUrl)) {
+    return { ok: false, error: "Example video URL must start with http(s)://.", field: "exampleVideoUrl" };
+  }
+  if (!input.scriptMarkdown?.trim() || input.scriptMarkdown.length > 5000) {
+    return { ok: false, error: "Script is required (max 5000 chars).", field: "scriptMarkdown" };
+  }
+  if (!input.instructionsMarkdown?.trim() || input.instructionsMarkdown.length > 5000) {
+    return { ok: false, error: "Instructions are required (max 5000 chars).", field: "instructionsMarkdown" };
+  }
+  if (!(input.ratePerViewUsd > 0) || input.ratePerViewUsd > 1) {
+    return { ok: false, error: "Rate per view must be between $0 and $1.", field: "ratePerViewUsd" };
+  }
+  if (!(input.maxPayoutPerClipUsd >= 1) || input.maxPayoutPerClipUsd > 10000) {
+    return { ok: false, error: "Max payout per clip must be between $1 and $10,000.", field: "maxPayoutPerClipUsd" };
+  }
+  if (!(input.totalBudgetUsd >= 1) || input.totalBudgetUsd > 100000) {
+    return { ok: false, error: "Total budget must be between $1 and $100,000.", field: "totalBudgetUsd" };
+  }
+  if (!Array.isArray(input.platforms) || input.platforms.length === 0) {
+    return { ok: false, error: "Pick at least one platform.", field: "platforms" };
+  }
+  return { ok: true };
+}
+
+/**
+ * Reserves a campaign row in the DB with status='pending_funding'. The
+ * returned UUID is what the client will use for the on-chain createCampaign
+ * + fundCampaign calls. If the user bails before funding completes, the
+ * row stays pending and can be resumed from the brand dashboard.
+ */
+export async function reserveCampaignDraft(
+  identityToken: string,
+  input: CampaignDraftInput
+): Promise<ReserveDraftResult> {
+  const v = validateDraft(input);
+  if (!v.ok) return v;
+
+  const user = await requireUser(identityToken);
+  const sb = createServerClient();
+
+  const { data, error } = await sb
+    .from("campaigns")
+    .insert({
+      slug: input.slug,
+      product_name: input.productName,
+      short_description: input.shortDescription,
+      long_description: input.longDescription,
+      example_video_url: input.exampleVideoUrl || null,
+      script_markdown: input.scriptMarkdown,
+      instructions_markdown: input.instructionsMarkdown,
+      rate_per_view_usd: input.ratePerViewUsd,
+      max_payout_per_clip_usd: input.maxPayoutPerClipUsd,
+      total_budget_usd: input.totalBudgetUsd,
+      platforms: input.platforms,
+      status: "pending_funding",
+      created_by_user_id: user.id,
+    })
+    .select("id, slug")
+    .single();
+
+  if (error) {
+    // 23505 = unique_violation on slug.
+    if ((error as { code?: string }).code === "23505") {
+      return { ok: false, error: "That slug is already taken.", field: "slug" };
+    }
+    return { ok: false, error: error.message };
+  }
+  return { ok: true, id: (data as { id: string }).id, slug: (data as { slug: string }).slug };
+}
+
+/**
+ * Flips a campaign from 'pending_funding' to 'active' after the on-chain
+ * createCampaign + fundCampaign txs have succeeded. Only the campaign's
+ * creator can call this (and only on their own pending campaigns).
+ */
+export async function markCampaignActive(
+  identityToken: string,
+  campaignId: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const user = await requireUser(identityToken);
+  const sb = createServerClient();
+  const { error, count } = await sb
+    .from("campaigns")
+    .update({ status: "active" }, { count: "exact" })
+    .eq("id", campaignId)
+    .eq("created_by_user_id", user.id)
+    .eq("status", "pending_funding");
+  if (error) return { ok: false, error: error.message };
+  if (!count) return { ok: false, error: "Campaign not found or already active." };
+  return { ok: true };
+}
+
+export type PendingCampaign = {
+  id: string;
+  slug: string;
+  productName: string;
+  totalBudgetUsd: number;
+  maxPayoutPerClipUsd: number;
+};
+
+/**
+ * Returns a pending_funding campaign belonging to the current user, or null.
+ * Used by the resume-funding page to restart the on-chain signing flow.
+ */
+export async function getMyPendingCampaign(
+  identityToken: string,
+  campaignId: string
+): Promise<PendingCampaign | null> {
+  const user = await requireUser(identityToken);
+  const sb = createServerClient();
+  const { data, error } = await sb
+    .from("campaigns")
+    .select(
+      "id, slug, product_name, total_budget_usd, max_payout_per_clip_usd"
+    )
+    .eq("id", campaignId)
+    .eq("created_by_user_id", user.id)
+    .eq("status", "pending_funding")
+    .maybeSingle();
+  if (error || !data) return null;
+  const row = data as {
+    id: string;
+    slug: string;
+    product_name: string;
+    total_budget_usd: string | number;
+    max_payout_per_clip_usd: string | number;
+  };
+  return {
+    id: row.id,
+    slug: row.slug,
+    productName: row.product_name,
+    totalBudgetUsd: n(row.total_budget_usd),
+    maxPayoutPerClipUsd: n(row.max_payout_per_clip_usd),
+  };
+}
+
+/**
+ * Checks if a slug is available. Cheap pre-check so the form can show
+ * inline feedback before submit.
+ */
+export async function isSlugAvailable(slug: string): Promise<boolean> {
+  if (!SLUG_RE.test(slug)) return false;
+  const sb = createServerClient();
+  const { data, error } = await sb
+    .from("campaigns")
+    .select("id")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (error) return false;
+  return !data;
 }

@@ -21,7 +21,7 @@ import { useAccessToken } from "@/lib/hooks/use-access-token";
 
 function statusVariant(
   s: BrandCampaign["status"]
-): "live" | "muted" | "rejected" {
+): "live" | "muted" | "rejected" | "review" {
   switch (s) {
     case "active":
       return "live";
@@ -29,6 +29,8 @@ function statusVariant(
       return "muted";
     case "ended":
       return "rejected";
+    case "pending_funding":
+      return "review";
   }
 }
 
@@ -40,6 +42,8 @@ function statusLabel(s: BrandCampaign["status"]): string {
       return "Paused";
     case "ended":
       return "Ended";
+    case "pending_funding":
+      return "Awaiting funding";
   }
 }
 
@@ -182,6 +186,7 @@ function BrandCampaignCard({
 }) {
   const bg = CARD_COLORS[index % CARD_COLORS.length];
   const { chain } = campaign;
+  const isPending = campaign.status === "pending_funding";
   // Warn when escrow is running low — under 10% of funded or under $10.
   const balanceLow =
     chain.exists &&
@@ -218,7 +223,22 @@ function BrandCampaignCard({
             </p>
           )}
 
-          {!chain.exists ? (
+          {isPending ? (
+            <div className="flex flex-col items-center gap-2 rounded-md border-2 border-dashed border-ink/30 bg-cream/50 p-4 text-center">
+              <p className="font-display text-xs font-bold uppercase tracking-wider text-ink-soft">
+                Funding incomplete
+              </p>
+              <p className="text-[0.7rem] text-ink-soft">
+                Finish signing the funding txs to make this campaign live.
+              </p>
+              <Link
+                href={`/brand/campaigns/${campaign.id}/fund`}
+                className={`${buttonVariants({ variant: "default", size: "sm" })} mt-1`}
+              >
+                Resume funding
+              </Link>
+            </div>
+          ) : !chain.exists ? (
             <div className="rounded-md border-2 border-dashed border-ink/30 bg-cream/50 p-3 text-center">
               <p className="font-display text-xs font-bold uppercase tracking-wider text-ink-soft">
                 Not funded on-chain yet
