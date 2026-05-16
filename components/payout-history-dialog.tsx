@@ -96,61 +96,117 @@ export function PayoutHistoryDialog({
               {t("payoutDialog.noPayouts")}
             </p>
           ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b-2 border-ink text-left">
-                  <th className="px-3 py-2 font-display text-xs font-bold uppercase tracking-wider">
-                    {t("payoutDialog.headerWhen")}
-                  </th>
-                  {showCreator && (
+            <>
+              {/* Desktop: dense table */}
+              <table className="hidden w-full text-sm md:table">
+                <thead>
+                  <tr className="border-b-2 border-ink text-left">
                     <th className="px-3 py-2 font-display text-xs font-bold uppercase tracking-wider">
-                      {t("payoutDialog.headerCreator")}
+                      {t("payoutDialog.headerWhen")}
                     </th>
-                  )}
-                  <th className="px-3 py-2 font-display text-xs font-bold uppercase tracking-wider">
-                    {t("payoutDialog.headerCampaign")}
-                  </th>
-                  <th className="px-3 py-2 text-right font-display text-xs font-bold uppercase tracking-wider">
-                    {t("payoutDialog.headerAmount")}
-                  </th>
-                  <th className="px-3 py-2 font-display text-xs font-bold uppercase tracking-wider">
-                    {t("payoutDialog.headerStatus")}
-                  </th>
-                  <th className="px-3 py-2 text-right font-display text-xs font-bold uppercase tracking-wider">
-                    {t("payoutDialog.headerReceipt")}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((p) => (
-                  <tr
-                    key={p.id}
-                    className="border-b border-ink/10 last:border-0"
-                  >
-                    <td className="px-3 py-2 text-xs text-ink-soft">
-                      {shortTime(p.createdAt)}
-                    </td>
                     {showCreator && (
-                      <td className="px-3 py-2 text-xs">{p.creatorEmail}</td>
+                      <th className="px-3 py-2 font-display text-xs font-bold uppercase tracking-wider">
+                        {t("payoutDialog.headerCreator")}
+                      </th>
                     )}
-                    <td className="px-3 py-2">
-                      {p.campaignName}{" "}
-                      <span className="text-ink-soft capitalize">
-                        · {p.platform}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 text-right font-display font-bold">
-                      {formatUsd(p.amountUsd)}
-                    </td>
-                    <td className="px-3 py-2">
+                    <th className="px-3 py-2 font-display text-xs font-bold uppercase tracking-wider">
+                      {t("payoutDialog.headerCampaign")}
+                    </th>
+                    <th className="px-3 py-2 text-right font-display text-xs font-bold uppercase tracking-wider">
+                      {t("payoutDialog.headerAmount")}
+                    </th>
+                    <th className="px-3 py-2 font-display text-xs font-bold uppercase tracking-wider">
+                      {t("payoutDialog.headerStatus")}
+                    </th>
+                    <th className="px-3 py-2 text-right font-display text-xs font-bold uppercase tracking-wider">
+                      {t("payoutDialog.headerReceipt")}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((p) => (
+                    <tr
+                      key={p.id}
+                      className="border-b border-ink/10 last:border-0"
+                    >
+                      <td className="px-3 py-2 text-xs text-ink-soft">
+                        {shortTime(p.createdAt)}
+                      </td>
+                      {showCreator && (
+                        <td className="px-3 py-2 text-xs">{p.creatorEmail}</td>
+                      )}
+                      <td className="px-3 py-2">
+                        {p.campaignName}{" "}
+                        <span className="text-ink-soft capitalize">
+                          · {p.platform}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-right font-display font-bold">
+                        {formatUsd(p.amountUsd)}
+                      </td>
+                      <td className="px-3 py-2">
+                        <Badge
+                          variant={statusVariant(p.status)}
+                          className="px-2 py-0.5 text-[0.6rem]"
+                        >
+                          {p.status}
+                        </Badge>
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        {p.explorerUrl ? (
+                          <a
+                            href={p.explorerUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs text-indigo hover:underline"
+                          >
+                            {t("common.view")}
+                            <ArrowUpRight className="size-3" />
+                          </a>
+                        ) : (
+                          <span className="text-xs text-ink-soft">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* Mobile: stacked cards */}
+              <ul className="flex flex-col gap-2 md:hidden">
+                {rows.map((p) => (
+                  <li
+                    key={p.id}
+                    className="rounded-md border-2 border-ink bg-cream p-3"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate font-display text-sm font-bold tracking-tight">
+                          {p.campaignName}{" "}
+                          <span className="font-body font-normal capitalize text-ink-soft">
+                            · {p.platform}
+                          </span>
+                        </p>
+                        {showCreator && p.creatorEmail && (
+                          <p className="mt-0.5 truncate text-[0.7rem] text-ink-soft">
+                            {p.creatorEmail}
+                          </p>
+                        )}
+                        <p className="mt-0.5 text-[0.7rem] text-ink-soft">
+                          {shortTime(p.createdAt)}
+                        </p>
+                      </div>
                       <Badge
                         variant={statusVariant(p.status)}
-                        className="px-2 py-0.5 text-[0.6rem]"
+                        className="shrink-0 px-2 py-0.5 text-[0.6rem]"
                       >
                         {p.status}
                       </Badge>
-                    </td>
-                    <td className="px-3 py-2 text-right">
+                    </div>
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      <span className="font-display text-lg font-bold tracking-tight">
+                        {formatUsd(p.amountUsd)}
+                      </span>
                       {p.explorerUrl ? (
                         <a
                           href={p.explorerUrl}
@@ -164,11 +220,11 @@ export function PayoutHistoryDialog({
                       ) : (
                         <span className="text-xs text-ink-soft">—</span>
                       )}
-                    </td>
-                  </tr>
+                    </div>
+                  </li>
                 ))}
-              </tbody>
-            </table>
+              </ul>
+            </>
           )}
         </div>
       </DialogContent>
