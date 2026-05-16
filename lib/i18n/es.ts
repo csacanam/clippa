@@ -275,7 +275,7 @@ const es: Dict = {
 
     landingTitle: "Consigue gente real hablando de tu app.",
     landingSubtitle:
-      "Lanza campañas con creadores para tu app. Consigue videos auténticos y llega a nuevos usuarios a través de redes sociales.",
+      "Crea una campaña. Recibe videos auténticos. Consigue nuevos usuarios a través de redes sociales.",
     landingCta: "Lanzar una campaña →",
     landingHowTitle: "Adquisición de usuarios que se paga sola",
     landingStep1Title: "Define tu campaña",
