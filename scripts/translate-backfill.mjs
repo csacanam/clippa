@@ -15,9 +15,9 @@
  *   node scripts/translate-backfill.mjs pt
  *
  * Reads NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SECRET_KEY, OPENAI_API_KEY.
+ * Uses Supabase's PostgREST endpoints over fetch so it works on Node 20
+ * (the JS SDK pulls in realtime, which needs WebSocket support).
  */
-
-import { createClient } from "@supabase/supabase-js";
 
 const target = process.argv[2];
 if (!target) {
@@ -33,9 +33,26 @@ if (!SUPABASE_URL || !SUPABASE_SECRET || !OPENAI_KEY) {
   process.exit(1);
 }
 
-const sb = createClient(SUPABASE_URL, SUPABASE_SECRET, {
-  auth: { persistSession: false, autoRefreshToken: false },
-});
+const SB_HEADERS = {
+  apikey: SUPABASE_SECRET,
+  Authorization: `Bearer ${SUPABASE_SECRET}`,
+  "Content-Type": "application/json",
+};
+
+async function sbGet(path) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: SB_HEADERS });
+  if (!res.ok) throw new Error(`Supabase GET ${path}: ${res.status} ${await res.text()}`);
+  return res.json();
+}
+
+async function sbInsert(table, row) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+    method: "POST",
+    headers: { ...SB_HEADERS, Prefer: "return=minimal" },
+    body: JSON.stringify(row),
+  });
+  if (!res.ok) throw new Error(`Supabase INSERT ${table}: ${res.status} ${await res.text()}`);
+}
 
 const LANG_NAMES = {
   en: "English",
@@ -108,31 +125,25 @@ async function translate(content, fromLang, toLang) {
 
 console.log(`Backfilling translations to '${target}'...`);
 
-const { data: campaigns, error } = await sb
-  .from("campaigns")
-  .select(
-    "id, slug, source_language, product_name, short_description, long_description, script_markdown, instructions_markdown"
-  );
-if (error) throw error;
+const campaigns = await sbGet(
+  "campaigns?select=id,slug,source_language,product_name,short_description,long_description,script_markdown,instructions_markdown"
+);
 
 let translated = 0;
 let skipped = 0;
 let failed = 0;
 
-for (const c of campaigns ?? []) {
+for (const c of campaigns) {
   if (c.source_language === target) {
     skipped++;
     console.log(`- ${c.slug}: source already ${target}, skipping`);
     continue;
   }
 
-  const existing = await sb
-    .from("campaign_translations")
-    .select("language")
-    .eq("campaign_id", c.id)
-    .eq("language", target)
-    .maybeSingle();
-  if (existing.data) {
+  const existing = await sbGet(
+    `campaign_translations?campaign_id=eq.${c.id}&language=eq.${target}&select=language`
+  );
+  if (existing.length > 0) {
     skipped++;
     console.log(`- ${c.slug}: already translated to ${target}, skipping`);
     continue;
@@ -150,7 +161,7 @@ for (const c of campaigns ?? []) {
       c.source_language,
       target
     );
-    const ins = await sb.from("campaign_translations").insert({
+    await sbInsert("campaign_translations", {
       campaign_id: c.id,
       language: target,
       product_name: out.productName,
@@ -159,7 +170,6 @@ for (const c of campaigns ?? []) {
       script_markdown: out.scriptMarkdown,
       instructions_markdown: out.instructionsMarkdown,
     });
-    if (ins.error) throw ins.error;
     translated++;
     console.log(`✓ ${c.slug}: translated`);
   } catch (e) {
