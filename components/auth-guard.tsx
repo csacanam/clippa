@@ -7,17 +7,24 @@ import { useEffect } from "react";
 import { useTranslation } from "@/components/locale-provider";
 
 /**
- * Wraps authenticated pages. Sends unauthenticated users back to /.
+ * Wraps authenticated pages. Sends unauthenticated users back to the
+ * given landing (default `/`).
  * Shows a soft loading state while Privy resolves.
  */
-export function AuthGuard({ children }: { children: React.ReactNode }) {
+export function AuthGuard({
+  children,
+  redirectTo = "/",
+}: {
+  children: React.ReactNode;
+  redirectTo?: string;
+}) {
   const { ready, authenticated } = usePrivy();
   const { t } = useTranslation();
   const router = useRouter();
 
   useEffect(() => {
-    if (ready && !authenticated) router.replace("/");
-  }, [ready, authenticated, router]);
+    if (ready && !authenticated) router.replace(redirectTo);
+  }, [ready, authenticated, router, redirectTo]);
 
   if (!ready) {
     return (

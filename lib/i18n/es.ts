@@ -32,6 +32,7 @@ const es: Dict = {
     statsCreators: "Creadores",
     statsClipsPosted: "Clips publicados",
     statsPaymentsSent: "Pagos enviados",
+    forBrands: "Para marcas →",
   },
 
   onboarding: {

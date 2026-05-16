@@ -38,6 +38,7 @@ const en = {
     statsCreators: "Creators",
     statsClipsPosted: "Clips posted",
     statsPaymentsSent: "Payments sent",
+    forBrands: "For brands →",
   },
 
   onboarding: {

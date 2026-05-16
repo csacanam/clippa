@@ -4,37 +4,21 @@ import { usePrivy } from "@privy-io/react-auth";
 import { motion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 import { ClippaLogo } from "@/components/clippa-logo";
 import { LocaleToggle } from "@/components/locale-toggle";
-import { useTranslation } from "@/components/locale-provider";
 import { Button } from "@/components/ui/button";
-import { getPublicStats, type PublicStats } from "@/lib/actions/stats";
 
-export default function LandingPage() {
+export default function BrandsLanding() {
   const router = useRouter();
   const { ready, authenticated, login } = usePrivy();
-  const { t } = useTranslation();
-  const [stats, setStats] = useState<PublicStats | null>(null);
 
-  // If user is already signed in and lands here, send them to /app.
+  // Already signed in? Take them straight to the brand dashboard.
+  // The dashboard handles first-time role assignment.
   useEffect(() => {
-    if (ready && authenticated) router.replace("/app");
+    if (ready && authenticated) router.replace("/brand");
   }, [ready, authenticated, router]);
-
-  // Social-proof counts — non-critical, load in the background.
-  useEffect(() => {
-    let cancelled = false;
-    getPublicStats()
-      .then((s) => {
-        if (!cancelled) setStats(s);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   return (
     <main className="flex min-h-dvh flex-col">
@@ -43,10 +27,10 @@ export default function LandingPage() {
         <ClippaLogo />
         <div className="flex items-center gap-4">
           <Link
-            href="/brands"
+            href="/"
             className="hidden font-body text-sm font-medium text-ink-soft underline-offset-4 hover:underline sm:inline"
           >
-            {t("landing.forBrands")}
+            For creators →
           </Link>
           <LocaleToggle />
           <button
@@ -54,7 +38,7 @@ export default function LandingPage() {
             disabled={!ready}
             className="font-body text-sm font-medium text-ink underline-offset-4 hover:underline disabled:opacity-50"
           >
-            {t("common.signIn")}
+            Sign in
           </button>
         </div>
       </header>
@@ -68,9 +52,9 @@ export default function LandingPage() {
             transition={{ duration: 0.5, ease: "easeOut" }}
             className="font-display text-6xl font-bold tracking-tighter md:text-7xl"
           >
-            {t("landing.title1")}
+            Pay per view.
             <br />
-            {t("landing.title2")}
+            Not per promise.
           </motion.h1>
 
           <motion.p
@@ -79,7 +63,8 @@ export default function LandingPage() {
             transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
             className="mt-6 max-w-md font-body text-base text-ink-soft md:text-lg"
           >
-            {t("landing.subtitle")}
+            Fund a USDT escrow. Creators publish clips on Instagram and TikTok.
+            You only pay when real views land. No agency, no upfront retainer.
           </motion.p>
 
           <motion.div
@@ -89,53 +74,51 @@ export default function LandingPage() {
             className="mt-10"
           >
             <Button onClick={() => login()} disabled={!ready} size="xl">
-              {t("landing.cta")}
+              Launch a campaign →
             </Button>
           </motion.div>
 
-          {stats && (
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, ease: "easeOut", delay: 0.3 }}
-              className="mt-14 flex items-stretch gap-6 sm:gap-10"
-            >
-              <Stat
-                value={stats.creatorsCount}
-                label={t("landing.statsCreators")}
-              />
-              <div className="w-px bg-ink/15" />
-              <Stat
-                value={stats.clipsCount}
-                label={t("landing.statsClipsPosted")}
-              />
-              <div className="w-px bg-ink/15" />
-              <Stat
-                value={stats.payoutsCount}
-                label={t("landing.statsPaymentsSent")}
-              />
-            </motion.div>
-          )}
+          {/* How it works — three steps */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut", delay: 0.3 }}
+            className="mt-16 grid w-full grid-cols-1 gap-4 text-left sm:grid-cols-3"
+          >
+            <Step
+              n={1}
+              title="Define your campaign"
+              body="Product, rate per view, max payout per clip, and the rules creators must follow."
+            />
+            <Step
+              n={2}
+              title="Fund the escrow"
+              body="USDT goes on-chain into your campaign's escrow. You control the budget."
+            />
+            <Step
+              n={3}
+              title="Pay on results"
+              body="As creators publish and views land, payouts flow straight to their wallets."
+            />
+          </motion.div>
         </div>
       </section>
 
-      {/* Footer hint */}
       <footer className="px-6 py-6 text-center text-xs text-ink-soft/70 md:px-12">
-        {t("landing.footer")}
+        Trustless escrow on Celo. Audited contract. No middlemen.
       </footer>
     </main>
   );
 }
 
-function Stat({ value, label }: { value: number; label: string }) {
+function Step({ n, title, body }: { n: number; title: string; body: string }) {
   return (
-    <div className="flex flex-col items-center">
-      <span className="font-display text-3xl font-bold tracking-tight md:text-4xl">
-        {value.toLocaleString()}
-      </span>
-      <span className="mt-1 font-display text-[0.7rem] font-bold uppercase tracking-wider text-ink-soft">
-        {label}
-      </span>
+    <div className="flex flex-col gap-2 rounded-card border-2 border-ink bg-cream p-4 shadow-sticker">
+      <div className="flex size-7 items-center justify-center rounded-full border-2 border-ink bg-lime font-display text-sm font-bold">
+        {n}
+      </div>
+      <p className="font-display text-base font-bold tracking-tight">{title}</p>
+      <p className="font-body text-sm text-ink-soft">{body}</p>
     </div>
   );
 }
