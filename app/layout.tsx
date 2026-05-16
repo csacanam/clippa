@@ -20,15 +20,41 @@ const body = Inter({
   display: "swap",
 });
 
+// The `?v=` query bumps the browser's favicon cache when the file
+// behind the same name has been updated. Bump this when the logo
+// changes so users see the new icon without manually clearing cache.
+const FAVICON = "/clippa-logo.png?v=2";
+
+const SITE_DESCRIPTION =
+  "Make short videos for apps. Post them to your socials. Earn for every view.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL("https://clippa.fun"),
   title: "Clippa — Make clips. Get paid.",
-  description:
-    "Make short videos for apps. Post them to your socials. Earn for every view.",
+  description: SITE_DESCRIPTION,
   icons: {
-    icon: [
-      { url: "/clippa-logo.png", type: "image/png" },
+    icon: [{ url: FAVICON, type: "image/png" }],
+    apple: FAVICON,
+  },
+  openGraph: {
+    title: "Clippa — Make clips. Get paid.",
+    description: SITE_DESCRIPTION,
+    type: "website",
+    url: "/",
+    images: [
+      {
+        url: "/creators-og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Clippa — Make clips. Get paid.",
+      },
     ],
-    apple: "/clippa-logo.png",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Clippa — Make clips. Get paid.",
+    description: SITE_DESCRIPTION,
+    images: ["/creators-og-image.png"],
   },
 };
 

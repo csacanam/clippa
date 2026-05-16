@@ -252,7 +252,7 @@ const es: Dict = {
 
   payoutDialog: {
     defaultTitle: "Historial de pagos",
-    defaultSubtitle: "Cada pago, con su recibo on-chain.",
+    defaultSubtitle: "Cada pago, con su recibo.",
     myPayoutsTitle: "Tus pagos",
     myPayoutsSubtitle: "Cada pago que recibiste, con su recibo.",
     noPayouts: "Todavía no hay pagos.",
@@ -283,7 +283,7 @@ const es: Dict = {
       "Tu app, cuánto pagas por visualización, un tope por clip y las reglas que los creadores siguen. Toma 2 minutos.",
     landingStep2Title: "Deposita tu presupuesto",
     landingStep2Body:
-      "Empieza con lo que quieras. El dinero se queda en un escrow on-chain — tuyo hasta que lleguen las visualizaciones.",
+      "Empieza con lo que quieras. El dinero que no gastes en visualizaciones, te lo devolvemos.",
     landingStep3Title: "Ve cómo llegan las visualizaciones",
     landingStep3Body:
       "Los creadores publican, nosotros rastreamos visualizaciones cada hora, los pagos fluyen automáticamente. Solo pagas por lo que conseguiste.",
@@ -296,13 +296,13 @@ const es: Dict = {
       "Tú defines la tarifa por visualización (ej. $0.01) y un tope por clip (ej. $20). Empieza con el presupuesto que quieras — no hay mínimo. Solo gastas en las visualizaciones que los creadores realmente generen.",
     landingFaqQ2: "¿Y si ningún creador toma mi campaña?",
     landingFaqA2:
-      "Tu dinero sigue siendo tuyo. El depósito vive en escrow y puedes terminar la campaña y recuperar lo no gastado cuando quieras.",
+      "Tu dinero sigue siendo tuyo. El depósito queda apartado, sin tocar. Puedes terminar la campaña y recuperar lo que no gastaste cuando quieras.",
     landingFaqQ3: "¿Cómo verifican las visualizaciones?",
     landingFaqA3:
       "Cada hora consultamos los conteos reales de visualizaciones que reporta Instagram y TikTok, y pagamos contra esos números. Sin bots, sin métricas infladas — solo lo que las plataformas mismas reportan.",
     landingFaqQ4: "¿Quién le paga a los creadores?",
     landingFaqA4:
-      "Nosotros, automáticamente, desde el escrow de tu campaña a medida que llegan visualizaciones. Los creadores reciben USDT en su wallet — tú no tocas el flujo de pago.",
+      "Nosotros, automáticamente, desde el presupuesto de tu campaña a medida que llegan visualizaciones. Los creadores reciben su pago directo — tú no tocas el flujo.",
     landingFaqQ5: "¿Puedo correr varias campañas?",
     landingFaqQ5Hint: "",
     landingFaqA5:
@@ -333,7 +333,7 @@ const es: Dict = {
     mockCapValue: "$20",
     mockPlatforms: "Plataformas",
     mockDeposit: "Depósito",
-    mockEscrow: "Escrow on-chain",
+    mockEscrow: "En custodia segura",
     mockYourMoney: "Tu dinero, reembolsable cuando quieras",
     mockDashTitle: "Visualizaciones activas",
     mockDashClips: "Clips activos",
@@ -430,7 +430,7 @@ const es: Dict = {
       "Tope por clip individual — incluso uno viral se detiene aquí.",
     fldTotalBudget: "Presupuesto total",
     fldTotalBudgetHint:
-      "USDT con los que vas a financiar el escrow ahora. Puedes agregar más después.",
+      "El monto que vas a depositar ahora. Puedes agregar más después.",
     fldPlatforms: "Plataformas",
     fldPlatformsHint: "¿Desde dónde pueden enviar clips los creadores?",
     fldPlatformsRequired: "Elige al menos una plataforma.",

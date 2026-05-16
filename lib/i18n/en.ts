@@ -254,7 +254,7 @@ const en = {
 
   payoutDialog: {
     defaultTitle: "Payout history",
-    defaultSubtitle: "Every payment, with its on-chain receipt.",
+    defaultSubtitle: "Every payment, with its receipt.",
     myPayoutsTitle: "Your payouts",
     myPayoutsSubtitle: "Every payment you've received, with its receipt.",
     noPayouts: "No payouts yet.",
@@ -287,7 +287,7 @@ const en = {
       "Your app, what you pay per view, a cap per clip, and the rules creators follow. Takes 2 minutes.",
     landingStep2Title: "Deposit your budget",
     landingStep2Body:
-      "Start with as little as you want. The money sits in an on-chain escrow — yours until views land.",
+      "Start with as little as you want. Whatever you don't spend on views, you get back.",
     landingStep3Title: "Watch views land",
     landingStep3Body:
       "Creators post, we track views every hour, payouts flow automatically. You only pay for the views you got.",
@@ -300,13 +300,13 @@ const en = {
       "You set the rate per view (e.g. $0.01) and a cap per clip (e.g. $20). Start with any budget you want — there's no minimum to launch. You only spend on views creators actually deliver.",
     landingFaqQ2: "What if no creator picks my campaign?",
     landingFaqA2:
-      "Your money stays yours. The deposit sits in escrow and you can end the campaign and recover unspent funds whenever you want.",
+      "Your money stays yours. The deposit sits aside, untouched. You can end the campaign and recover anything you didn't spend whenever you want.",
     landingFaqQ3: "How are views verified?",
     landingFaqA3:
       "We scrape the actual view counts from Instagram and TikTok every hour and pay against those numbers. No bots, no fake metrics — only views the platforms themselves report.",
     landingFaqQ4: "Who pays the creators?",
     landingFaqA4:
-      "We do, automatically, from your campaign's escrow as views land. Creators get paid in USDT to their wallet — you never touch the payout flow.",
+      "We do, automatically, from your campaign's budget as views land. Creators get paid directly — you never touch the payout flow.",
     landingFaqQ5: "Can I run multiple campaigns?",
     landingFaqQ5Hint: "",
     landingFaqA5:
@@ -337,7 +337,7 @@ const en = {
     mockCapValue: "$20",
     mockPlatforms: "Platforms",
     mockDeposit: "Deposit",
-    mockEscrow: "On-chain escrow",
+    mockEscrow: "Held safely",
     mockYourMoney: "Your money, refundable anytime",
     mockDashTitle: "Live views",
     mockDashClips: "Live clips",
@@ -437,7 +437,7 @@ const en = {
       "Cap per individual clip — even a viral one stops here.",
     fldTotalBudget: "Total budget",
     fldTotalBudgetHint:
-      "USDT you'll fund the escrow with now. You can top up later.",
+      "The amount you'll deposit now. You can add more later.",
     fldPlatforms: "Platforms",
     fldPlatformsHint: "Where can creators submit clips from?",
     fldPlatformsRequired: "Pick at least one platform.",
