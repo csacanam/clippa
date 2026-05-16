@@ -277,10 +277,10 @@ const en = {
     forCreators: "For creators →",
 
     // /brands landing — targeting builders/founders, not corporate brands
-    landingTitle1: "Get users.",
-    landingTitle2: "Pay for results.",
+    landingTitle1: "Get real people",
+    landingTitle2: "talking about your app.",
     landingSubtitle:
-      "Real creators turn your app into short videos on Instagram and TikTok. You set the price per view, deposit a budget, and only spend on views that actually happen. No agencies. No retainers.",
+      "Launch creator campaigns for your app. Get authentic videos and reach new users through social media.",
     landingCta: "Launch a campaign →",
     landingHowTitle: "User acquisition that pays for itself",
     landingStep1Title: "Define your campaign",

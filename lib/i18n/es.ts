@@ -273,10 +273,10 @@ const es: Dict = {
     brandMode: "Cambiar a modo marca",
     forCreators: "Para creadores →",
 
-    landingTitle1: "Consigue usuarios.",
-    landingTitle2: "Paga por resultados.",
+    landingTitle1: "Consigue gente real",
+    landingTitle2: "hablando de tu app.",
     landingSubtitle:
-      "Creadores reales convierten tu app en videos cortos en Instagram y TikTok. Tú defines el precio por visualización, depositas un presupuesto y solo gastas en visualizaciones que realmente ocurren. Sin agencias. Sin contratos.",
+      "Lanza campañas con creadores para tu app. Consigue videos auténticos y llega a nuevos usuarios a través de redes sociales.",
     landingCta: "Lanzar una campaña →",
     landingHowTitle: "Adquisición de usuarios que se paga sola",
     landingStep1Title: "Define tu campaña",
