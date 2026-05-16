@@ -17,6 +17,7 @@ import {
 import { celo } from "viem/chains";
 
 import { AuthGuard } from "@/components/auth-guard";
+import { CampaignPreview } from "@/components/campaign-preview";
 import { ClippaLogo } from "@/components/clippa-logo";
 import { MarkdownField } from "@/components/markdown-field";
 import { Badge } from "@/components/ui/badge";
@@ -429,10 +430,14 @@ function StepOne({
       <Card className="bg-cream">
         <CardContent className="flex flex-col gap-5">
           <h2 className="font-display text-xl font-bold tracking-tight">
-            Basics
+            What you&apos;re promoting
           </h2>
 
-          <Field label="Product name" error={errors.productName}>
+          <Field
+            label="Product name"
+            error={errors.productName}
+            hint="Shown as the title both in the catalog and on the campaign page."
+          >
             <Input
               value={form.productName}
               onChange={(e) => update("productName", e.target.value)}
@@ -442,16 +447,16 @@ function StepOne({
           </Field>
 
           <Field
-            label="Slug"
+            label="URL slug"
             error={errors.slug}
             hint={
               slugStatus === "checking"
                 ? "Checking availability…"
                 : slugStatus === "available"
-                  ? "✓ Available"
+                  ? `✓ Available: clippa.fun/app/campaigns/${form.slug}`
                   : slugStatus === "taken"
-                    ? "✗ Already taken"
-                    : "Used in URLs. Lowercase letters, numbers, dashes."
+                    ? "✗ Already taken — pick another"
+                    : "Lowercase letters, numbers, dashes. Used in the campaign URL."
             }
             hintColor={
               slugStatus === "available"
@@ -472,7 +477,11 @@ function StepOne({
             />
           </Field>
 
-          <Field label="Short description" error={errors.shortDescription}>
+          <Field
+            label="Catalog tagline"
+            error={errors.shortDescription}
+            hint="One scannable line that appears under the product name in the catalog. 8–15 words."
+          >
             <Input
               value={form.shortDescription}
               onChange={(e) => update("shortDescription", e.target.value)}
@@ -482,29 +491,29 @@ function StepOne({
           </Field>
 
           <Field
-            label="Long description"
+            label="About this product"
             error={errors.longDescription}
-            hint="What is the product? Why do you want clips? Who's the audience?"
+            hint="A paragraph creators read on the campaign page before deciding to make a clip. What is the product? Why do you want clips? What kind of clips win?"
           >
             <textarea
               value={form.longDescription}
               onChange={(e) => update("longDescription", e.target.value)}
               rows={4}
               maxLength={2000}
-              placeholder="..."
+              placeholder="Nerdos.fun is a daily game where players answer quick questions and win real money. We want creators to show the game in action — make viewers curious enough to try it. The best clips feel like a personal discovery."
               className="w-full resize-y rounded-md border-2 border-ink bg-cream px-3 py-2 font-body text-sm leading-relaxed text-ink shadow-sticker outline-none focus:ring-4 focus:ring-ring/40"
             />
           </Field>
 
           <Field
-            label="Example video URL (optional)"
+            label="Reference video (optional)"
             error={errors.exampleVideoUrl}
-            hint="A reference clip creators can use as inspiration."
+            hint="If you have a clip that captures the tone you want, link it here."
           >
             <Input
               value={form.exampleVideoUrl}
               onChange={(e) => update("exampleVideoUrl", e.target.value)}
-              placeholder="https://..."
+              placeholder="https://www.instagram.com/reel/..."
             />
           </Field>
         </CardContent>
@@ -513,13 +522,13 @@ function StepOne({
       <Card className="bg-cream">
         <CardContent className="flex flex-col gap-5">
           <h2 className="font-display text-xl font-bold tracking-tight">
-            Creator brief
+            What you want creators to make
           </h2>
 
           <Field
-            label="Script"
+            label="Suggested video script"
             error={errors.scriptMarkdown}
-            hint="Suggested structure for the video. Creators get this as guidance."
+            hint="The structure you'd love to see — hook, body, outro, dialogue cues. Creators read this on the campaign page as inspiration and can adapt it. Markdown: **bold** works."
           >
             <MarkdownField
               value={form.scriptMarkdown}
@@ -530,9 +539,9 @@ function StepOne({
           </Field>
 
           <Field
-            label="Instructions"
+            label="Rules for clips"
             error={errors.instructionsMarkdown}
-            hint="Hard rules. Clips that break them get rejected."
+            hint="Hard requirements. Clips that don't follow these get rejected. Be specific — e.g., 'must mention the URL on screen', 'do not use the word X'."
           >
             <MarkdownField
               value={form.instructionsMarkdown}
@@ -547,11 +556,15 @@ function StepOne({
       <Card className="bg-cream">
         <CardContent className="flex flex-col gap-5">
           <h2 className="font-display text-xl font-bold tracking-tight">
-            Pricing & budget
+            Money
           </h2>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <Field label="Rate per view (USD)" error={errors.ratePerViewUsd}>
+            <Field
+              label="Rate per view"
+              error={errors.ratePerViewUsd}
+              hint="$0.01 = $10 per 1,000 views."
+            >
               <Input
                 type="number"
                 inputMode="decimal"
@@ -561,7 +574,11 @@ function StepOne({
                 onChange={(e) => update("ratePerViewUsd", e.target.value)}
               />
             </Field>
-            <Field label="Max payout / clip (USD)" error={errors.maxPayoutPerClipUsd}>
+            <Field
+              label="Max payout / clip"
+              error={errors.maxPayoutPerClipUsd}
+              hint="Cap per individual clip — even a viral one stops here."
+            >
               <Input
                 type="number"
                 inputMode="decimal"
@@ -572,9 +589,9 @@ function StepOne({
               />
             </Field>
             <Field
-              label="Total budget (USD)"
+              label="Total budget"
               error={errors.totalBudgetUsd}
-              hint="This is the amount you'll fund the escrow with."
+              hint="USDT you'll fund the escrow with now. You can top up later."
             >
               <Input
                 type="number"
@@ -587,7 +604,11 @@ function StepOne({
             </Field>
           </div>
 
-          <Field label="Platforms" error={errors.platforms}>
+          <Field
+            label="Platforms"
+            error={errors.platforms}
+            hint="Where can creators submit clips from?"
+          >
             <div className="flex flex-wrap gap-3">
               <PlatformChip
                 label="Instagram"
@@ -608,6 +629,35 @@ function StepOne({
               <p className="text-xs text-error">Pick at least one platform.</p>
             )}
           </Field>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-cream">
+        <CardContent className="flex flex-col gap-4">
+          <div>
+            <h2 className="font-display text-xl font-bold tracking-tight">
+              Preview
+            </h2>
+            <p className="mt-1 font-body text-sm text-ink-soft">
+              How your campaign will appear to creators. Updates as you type.
+            </p>
+          </div>
+          <CampaignPreview
+            data={{
+              productName: form.productName,
+              shortDescription: form.shortDescription,
+              longDescription: form.longDescription,
+              scriptMarkdown: form.scriptMarkdown,
+              instructionsMarkdown: form.instructionsMarkdown,
+              ratePerViewUsd: Number(form.ratePerViewUsd) || 0,
+              maxPayoutPerClipUsd: Number(form.maxPayoutPerClipUsd) || 0,
+              totalBudgetUsd: Number(form.totalBudgetUsd) || 0,
+              platforms: [
+                ...(form.platforms.instagram ? (["instagram"] as const) : []),
+                ...(form.platforms.tiktok ? (["tiktok"] as const) : []),
+              ],
+            }}
+          />
         </CardContent>
       </Card>
 
@@ -726,17 +776,48 @@ function StepTwo({
       <Card className="bg-cream">
         <CardContent className="flex flex-col gap-4">
           <h2 className="font-display text-xl font-bold tracking-tight">
-            Review
+            Terms
           </h2>
-          <ReviewRow label="Product" value={form.productName} />
-          <ReviewRow label="Slug" value={form.slug} mono />
-          <ReviewRow label="Short" value={form.shortDescription} />
-          <ReviewRow label="Platforms" value={platforms} />
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <ReviewRow label="Product" value={form.productName} />
+            <ReviewRow label="URL slug" value={form.slug} mono />
+            <ReviewRow label="Platforms" value={platforms} />
+            <ReviewRow label="Catalog tagline" value={form.shortDescription} />
+          </div>
+          <div className="grid grid-cols-1 gap-3 border-t-2 border-ink/10 pt-3 md:grid-cols-3">
             <ReviewRow label="Rate / view" value={`$${form.ratePerViewUsd}`} />
             <ReviewRow label="Max / clip" value={`$${form.maxPayoutPerClipUsd}`} />
             <ReviewRow label="Total budget" value={`$${form.totalBudgetUsd}`} />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-cream">
+        <CardContent className="flex flex-col gap-4">
+          <div>
+            <h2 className="font-display text-xl font-bold tracking-tight">
+              Creator-facing preview
+            </h2>
+            <p className="mt-1 font-body text-sm text-ink-soft">
+              Exactly what creators will see once you fund this campaign.
+            </p>
+          </div>
+          <CampaignPreview
+            data={{
+              productName: form.productName,
+              shortDescription: form.shortDescription,
+              longDescription: form.longDescription,
+              scriptMarkdown: form.scriptMarkdown,
+              instructionsMarkdown: form.instructionsMarkdown,
+              ratePerViewUsd: Number(form.ratePerViewUsd) || 0,
+              maxPayoutPerClipUsd: Number(form.maxPayoutPerClipUsd) || 0,
+              totalBudgetUsd: Number(form.totalBudgetUsd) || 0,
+              platforms: [
+                ...(form.platforms.instagram ? (["instagram"] as const) : []),
+                ...(form.platforms.tiktok ? (["tiktok"] as const) : []),
+              ],
+            }}
+          />
         </CardContent>
       </Card>
 
