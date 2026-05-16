@@ -80,8 +80,11 @@ const es: Dict = {
 
     brandCtaTitle: "¿Tienes un producto que promocionar?",
     brandCtaBody:
-      "Lanza una campaña en Clippa: defines la tarifa, depositas el presupuesto, y solo pagas por las visualizaciones que realmente ocurren.",
+      "Conviértelo en clips con creadores reales. Define cuánto pagas por visualización, deposita el presupuesto, y solo gastas en las visualizaciones que realmente conseguiste.",
     brandCtaButton: "Ver cómo funciona para marcas →",
+    brandCtaBullet1: "Paga por visualización, no por seguidor",
+    brandCtaBullet2: "Presupuesto reembolsable, cuando quieras",
+    brandCtaBullet3: "Activo en 2 minutos",
 
     footerCommunity: "Únete a nuestra comunidad en Telegram →",
 
@@ -270,22 +273,72 @@ const es: Dict = {
     brandMode: "Cambiar a modo marca",
     forCreators: "Para creadores →",
 
-    landingTitle1: "Paga por visualización.",
-    landingTitle2: "No por promesa.",
+    landingTitle1: "Consigue usuarios.",
+    landingTitle2: "Paga por resultados.",
     landingSubtitle:
-      "Creadores reales convierten tu producto en clips para Instagram y TikTok. Tú defines el precio por visualización, depositas un presupuesto y solo pagas por las visualizaciones que realmente ocurren. Sin agencia. Sin contrato.",
+      "Creadores reales convierten tu producto en videos cortos en Instagram y TikTok. Tú defines el precio por visualización, depositas un presupuesto y solo gastas en visualizaciones que realmente ocurren. Sin agencias. Sin contratos.",
     landingCta: "Lanzar una campaña →",
+    landingHowTitle: "Adquisición de usuarios que se paga sola",
     landingStep1Title: "Define tu campaña",
     landingStep1Body:
-      "Tu producto, cuánto pagas por visualización, un tope por clip y las reglas que los creadores deben seguir.",
+      "Producto, cuánto pagas por visualización, un tope por clip y las reglas que los creadores siguen. Toma 2 minutos.",
     landingStep2Title: "Deposita tu presupuesto",
     landingStep2Body:
-      "Decide cuánto gastar. El dinero queda apartado, sin tocar, hasta que lleguen las visualizaciones.",
-    landingStep3Title: "Paga por resultados",
+      "Empieza con lo que quieras. El dinero se queda en un escrow on-chain — tuyo hasta que lleguen las visualizaciones.",
+    landingStep3Title: "Ve cómo llegan las visualizaciones",
     landingStep3Body:
-      "A medida que se publican los clips y suman visualizaciones, los creadores reciben su pago automáticamente. Sin facturas, sin perseguir a nadie.",
+      "Los creadores publican, nosotros rastreamos visualizaciones cada hora, los pagos fluyen automáticamente. Solo pagas por lo que conseguiste.",
+
+    landingFaqTitle: "Respuestas rápidas",
+    landingFaqSubtitle:
+      "Todo lo que querías preguntar antes de lanzar una campaña.",
+    landingFaqQ1: "¿Cuánto cuesta una campaña?",
+    landingFaqA1:
+      "Tú defines la tarifa por visualización (ej. $0.01) y un tope por clip (ej. $20). Empieza con el presupuesto que quieras — no hay mínimo. Solo gastas en las visualizaciones que los creadores realmente generen.",
+    landingFaqQ2: "¿Y si ningún creador toma mi campaña?",
+    landingFaqA2:
+      "Tu dinero sigue siendo tuyo. El depósito vive en escrow y puedes terminar la campaña y recuperar lo no gastado cuando quieras.",
+    landingFaqQ3: "¿Cómo verifican las visualizaciones?",
+    landingFaqA3:
+      "Cada hora consultamos los conteos reales de visualizaciones que reporta Instagram y TikTok, y pagamos contra esos números. Sin bots, sin métricas infladas — solo lo que las plataformas mismas reportan.",
+    landingFaqQ4: "¿Quién le paga a los creadores?",
+    landingFaqA4:
+      "Nosotros, automáticamente, desde el escrow de tu campaña a medida que llegan visualizaciones. Los creadores reciben USDT en su wallet — tú no tocas el flujo de pago.",
+    landingFaqQ5: "¿Puedo correr varias campañas?",
+    landingFaqQ5Hint: "",
+    landingFaqA5:
+      "Sí. Diferentes productos, diferentes tarifas, diferentes reglas — cada campaña es independiente. Las manejas todas desde tu dashboard en /brand.",
+    landingFaqQ6: "Soy creador. ¿Dónde me registro?",
+    landingFaqA6:
+      "En la página principal. O haz click en 'Para creadores' abajo en el footer.",
+
+    landingFinalCtaTitleOne:
+      "{n}+ campaña ya está corriendo en Clippa",
+    landingFinalCtaTitleMany:
+      "{n}+ campañas ya están corriendo en Clippa",
+    landingFinalCtaTitleFallback: "Sé la primera campaña en Clippa",
+    landingFinalCtaButton: "Lanza tu campaña",
+
     landingFooter:
       "Sin sobreprecio de agencia. Sin contratos largos. Solo pagas por resultados.",
+    landingFooterCreators: "Para creadores →",
+    landingFooterCommunity: "Únete a nuestra comunidad en Telegram →",
+
+    // Etiquetas de los mockups visuales en /brands
+    mockTitleCampaign: "Nueva campaña",
+    mockProduct: "Producto",
+    mockProductValue: "Nerdos.fun",
+    mockRate: "Tarifa / visualización",
+    mockRateValue: "$0.01",
+    mockCap: "Tope / clip",
+    mockCapValue: "$20",
+    mockPlatforms: "Plataformas",
+    mockDeposit: "Depósito",
+    mockEscrow: "Escrow on-chain",
+    mockYourMoney: "Tu dinero, reembolsable cuando quieras",
+    mockDashTitle: "Visualizaciones activas",
+    mockDashClips: "Clips activos",
+    mockDashSpent: "Gastado",
 
     dashTitle: "Tus campañas",
     dashSubtitle: "Lanza, financia y monitorea tus campañas con creadores.",

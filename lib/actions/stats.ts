@@ -7,6 +7,7 @@ export type PublicStats = {
   creatorsCount: number;
   clipsCount: number;
   payoutsCount: number;
+  activeCampaignsCount: number;
 };
 
 export type ShowcaseClip = {
@@ -34,18 +35,23 @@ export type FeaturedClip = {
  */
 export async function getPublicStats(): Promise<PublicStats> {
   const sb = createServerClient();
-  const [creators, clips, payouts] = await Promise.all([
+  const [creators, clips, payouts, campaigns] = await Promise.all([
     sb
       .from("users")
       .select("id", { count: "exact", head: true })
       .eq("primary_role", "creator"),
     sb.from("clips").select("id", { count: "exact", head: true }),
     sb.from("payouts").select("id", { count: "exact", head: true }),
+    sb
+      .from("campaigns")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "active"),
   ]);
   return {
     creatorsCount: creators.count ?? 0,
     clipsCount: clips.count ?? 0,
     payoutsCount: payouts.count ?? 0,
+    activeCampaignsCount: campaigns.count ?? 0,
   };
 }
 

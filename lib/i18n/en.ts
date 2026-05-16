@@ -85,8 +85,11 @@ const en = {
 
     brandCtaTitle: "Got a product to promote?",
     brandCtaBody:
-      "Run a campaign on Clippa: set the rate, fund the budget, and only pay for views that actually happen.",
+      "Turn it into clips with real creators. Set what you pay per view, fund the budget, and only spend on views you actually got.",
     brandCtaButton: "See how it works for brands →",
+    brandCtaBullet1: "Pay per view, not per follower",
+    brandCtaBullet2: "Refundable budget, anytime",
+    brandCtaBullet3: "Live in 2 minutes",
 
     footerCommunity: "Join our community on Telegram →",
 
@@ -273,23 +276,73 @@ const en = {
     brandMode: "Switch to brand mode",
     forCreators: "For creators →",
 
-    // /brands landing
-    landingTitle1: "Pay per view.",
-    landingTitle2: "Not per promise.",
+    // /brands landing — targeting builders/founders, not corporate brands
+    landingTitle1: "Get users.",
+    landingTitle2: "Pay for results.",
     landingSubtitle:
-      "Real creators turn your product into clips on Instagram and TikTok. You set the price per view, deposit a budget, and only spend on views that actually happen. No agency. No retainer.",
+      "Real creators turn your product into short videos on Instagram and TikTok. You set the price per view, deposit a budget, and only spend on views that actually happen. No agencies. No retainers.",
     landingCta: "Launch a campaign →",
+    landingHowTitle: "User acquisition that pays for itself",
     landingStep1Title: "Define your campaign",
     landingStep1Body:
-      "Your product, what you pay per view, a cap per clip, and the rules creators follow.",
+      "Product, what you pay per view, a cap per clip, and the rules creators follow. Takes 2 minutes.",
     landingStep2Title: "Deposit your budget",
     landingStep2Body:
-      "Decide how much to spend. The money sits aside, untouched, until views land.",
-    landingStep3Title: "Pay on results",
+      "Start with as little as you want. The money sits in an on-chain escrow — yours until views land.",
+    landingStep3Title: "Watch views land",
     landingStep3Body:
-      "As clips publish and views accrue, creators get paid automatically. No invoices, no chasing.",
+      "Creators post, we track views every hour, payouts flow automatically. You only pay for the views you got.",
+
+    landingFaqTitle: "Quick answers",
+    landingFaqSubtitle:
+      "Everything you wanted to ask before launching a campaign.",
+    landingFaqQ1: "How much does a campaign cost?",
+    landingFaqA1:
+      "You set the rate per view (e.g. $0.01) and a cap per clip (e.g. $20). Start with any budget you want — there's no minimum to launch. You only spend on views creators actually deliver.",
+    landingFaqQ2: "What if no creator picks my campaign?",
+    landingFaqA2:
+      "Your money stays yours. The deposit sits in escrow and you can end the campaign and recover unspent funds whenever you want.",
+    landingFaqQ3: "How are views verified?",
+    landingFaqA3:
+      "We scrape the actual view counts from Instagram and TikTok every hour and pay against those numbers. No bots, no fake metrics — only views the platforms themselves report.",
+    landingFaqQ4: "Who pays the creators?",
+    landingFaqA4:
+      "We do, automatically, from your campaign's escrow as views land. Creators get paid in USDT to their wallet — you never touch the payout flow.",
+    landingFaqQ5: "Can I run multiple campaigns?",
+    landingFaqQ5Hint: "",
+    landingFaqA5:
+      "Yes. Different products, different rates, different rules — each campaign is independent. Manage them all from your /brand dashboard.",
+    landingFaqQ6: "I'm a creator. Where do I sign up?",
+    landingFaqA6:
+      "On the homepage. Or click 'For creators' in the footer below.",
+
+    landingFinalCtaTitleOne:
+      "{n}+ campaign is already running on Clippa",
+    landingFinalCtaTitleMany:
+      "{n}+ campaigns are already running on Clippa",
+    landingFinalCtaTitleFallback: "Be the first campaign on Clippa",
+    landingFinalCtaButton: "Launch your campaign",
+
     landingFooter:
       "No agency markup. No long-term contracts. Only pay for results.",
+    landingFooterCreators: "For creators →",
+    landingFooterCommunity: "Join our community on Telegram →",
+
+    // Mockup labels for the visual cards on /brands
+    mockTitleCampaign: "New campaign",
+    mockProduct: "Product",
+    mockProductValue: "Nerdos.fun",
+    mockRate: "Rate / view",
+    mockRateValue: "$0.01",
+    mockCap: "Cap / clip",
+    mockCapValue: "$20",
+    mockPlatforms: "Platforms",
+    mockDeposit: "Deposit",
+    mockEscrow: "On-chain escrow",
+    mockYourMoney: "Your money, refundable anytime",
+    mockDashTitle: "Live views",
+    mockDashClips: "Live clips",
+    mockDashSpent: "Spent",
 
     // /brand dashboard
     dashTitle: "Your campaigns",

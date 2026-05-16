@@ -174,10 +174,10 @@ export default function LandingPage() {
         </motion.div>
       </section>
 
-      {/* Brand callout — discreet band before the final CTA so brand
-       *  visitors have a clear next step without diluting the creator
-       *  pitch above. */}
-      <section className="mx-auto w-full max-w-3xl px-6 pb-16 md:px-12">
+      {/* Brand section — full visual presence before the final creator CTA.
+       *  Indie/builder framing on a brand-coloured indigo card with bullets
+       *  + button so brand visitors actually see and click through. */}
+      <section className="mx-auto w-full max-w-5xl px-6 pb-20 md:px-12">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -185,21 +185,44 @@ export default function LandingPage() {
           transition={{ duration: 0.5, ease: "easeOut" }}
         >
           <Card className="bg-indigo text-cream">
-            <CardContent className="flex flex-col items-center gap-4 py-8 text-center">
-              <div>
-                <h3 className="font-display text-xl font-bold tracking-tight md:text-2xl">
+            <CardContent className="grid grid-cols-1 items-center gap-6 py-10 md:grid-cols-2 md:gap-10 md:py-12">
+              {/* Left: copy + CTA */}
+              <div className="flex flex-col gap-4">
+                <h2 className="font-display text-3xl font-bold tracking-tight md:text-4xl">
                   {t("landing.brandCtaTitle")}
-                </h3>
-                <p className="mx-auto mt-2 max-w-md font-body text-sm text-cream/85 md:text-base">
+                </h2>
+                <p className="font-body text-base text-cream/85 md:text-lg">
                   {t("landing.brandCtaBody")}
                 </p>
+                <ul className="flex flex-col gap-2">
+                  {[
+                    t("landing.brandCtaBullet1"),
+                    t("landing.brandCtaBullet2"),
+                    t("landing.brandCtaBullet3"),
+                  ].map((line, i) => (
+                    <li key={i} className="flex items-start gap-2.5">
+                      <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border-2 border-cream bg-lime">
+                        <Check className="size-3 text-ink" strokeWidth={3} />
+                      </span>
+                      <span className="font-body text-sm text-cream">{line}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="pt-2">
+                  <Link
+                    href="/brands"
+                    className={buttonVariants({ variant: "outline", size: "lg" })}
+                  >
+                    {t("landing.brandCtaButton")}
+                  </Link>
+                </div>
               </div>
-              <Link
-                href="/brands"
-                className={buttonVariants({ variant: "outline", size: "default" })}
-              >
-                {t("landing.brandCtaButton")}
-              </Link>
+
+              {/* Right: visual — small "campaign card" mock so brands see the
+               *  end product (their own card on the catalog). */}
+              <div className="flex justify-center md:justify-end">
+                <BrandTeaserMockup />
+              </div>
             </CardContent>
           </Card>
         </motion.div>
@@ -452,6 +475,62 @@ function ReceiptMockup() {
       <div className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-md border-2 border-ink bg-lime px-3 py-1.5 font-display text-[0.65rem] font-bold uppercase tracking-wider shadow-sticker-sm">
         <ArrowDownToLine className="size-3" />
         {t("landing.receiptCashOut")}
+      </div>
+    </motion.div>
+  );
+}
+
+// ============================================================
+// Brand section mockup
+// ============================================================
+
+/**
+ * Mini "campaign card" mock for the brand section — visual preview of
+ * what a brand's listing looks like in the creator catalog. Lifted +
+ * slightly tilted so it reads as a sticker, not a screenshot.
+ */
+function BrandTeaserMockup() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12, rotate: 3 }}
+      whileInView={{ opacity: 1, y: 0, rotate: 3 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
+      className="w-full max-w-[300px] rounded-card border-2 border-ink bg-peach p-4 text-ink shadow-sticker-lg"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="font-display text-lg font-bold tracking-tight">
+            Your product
+          </p>
+          <p className="mt-0.5 text-[0.7rem] text-ink-soft">
+            Your one-line tagline.
+          </p>
+        </div>
+        <div className="flex shrink-0 gap-1">
+          <span className="rounded-full border-2 border-ink bg-lime px-2 py-0.5 font-display text-[0.55rem] font-bold uppercase tracking-wider">
+            IG
+          </span>
+          <span className="rounded-full border-2 border-ink bg-lime px-2 py-0.5 font-display text-[0.55rem] font-bold uppercase tracking-wider">
+            TT
+          </span>
+        </div>
+      </div>
+      <div className="mt-3">
+        <div className="flex items-baseline justify-between text-[0.65rem]">
+          <span className="font-display font-bold uppercase tracking-wider">
+            $80 left
+          </span>
+          <span className="text-ink-soft">of $100</span>
+        </div>
+        <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full border-2 border-ink bg-cream">
+          <div className="h-full bg-lime" style={{ width: "20%" }} />
+        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.65rem]">
+        <span className="font-display font-bold">$0.01 / view</span>
+        <span className="text-ink-soft">·</span>
+        <span className="text-ink-soft">Up to $20 per clip</span>
       </div>
     </motion.div>
   );
