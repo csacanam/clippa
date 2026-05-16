@@ -30,7 +30,7 @@ type ClipRow = {
   paid_views: number;
   earnings_usd: string | number;
   paid_out_usd: string | number;
-  creators: { wallet_address: string };
+  users: { wallet_address: string };
 };
 
 function n(v: string | number): number {
@@ -64,7 +64,7 @@ export async function runPayouts(
   let q = sb
     .from("clips")
     .select(
-      "id, campaign_id, creator_id, verified_views, paid_views, earnings_usd, paid_out_usd, creators!inner(wallet_address)"
+      "id, campaign_id, creator_id, verified_views, paid_views, earnings_usd, paid_out_usd, users!inner(wallet_address)"
     )
     .eq("status", "tracking")
     .order("created_at", { ascending: true });
@@ -103,7 +103,7 @@ export async function runPayouts(
     }
 
     const payoutId = crypto.randomUUID();
-    const recipient = clip.creators.wallet_address as `0x${string}`;
+    const recipient = clip.users.wallet_address as `0x${string}`;
     const viewsPaidNow = Math.max(0, clip.verified_views - clip.paid_views);
 
     // 1. Insert the pending payout row — its id is the on-chain payoutId.
@@ -230,7 +230,7 @@ type PayoutJoinRow = {
     platform: string;
     campaigns: { product_name: string };
   };
-  creators?: { email: string };
+  users?: { email: string };
 };
 
 function toHistoryRow(r: PayoutJoinRow, withCreator: boolean): PayoutHistoryRow {
@@ -244,7 +244,7 @@ function toHistoryRow(r: PayoutJoinRow, withCreator: boolean): PayoutHistoryRow 
     txHash: r.tx_hash,
     explorerUrl: r.tx_hash ? explorerTxUrl(r.tx_hash) : null,
     createdAt: r.created_at,
-    creatorEmail: withCreator ? r.creators?.email : undefined,
+    creatorEmail: withCreator ? r.users?.email : undefined,
   };
 }
 
@@ -276,7 +276,7 @@ export async function listAllPayouts(
   const { data, error } = await sb
     .from("payouts")
     .select(
-      "id, amount_usd, views_paid, status, tx_hash, created_at, clips!inner(platform, campaigns!inner(product_name)), creators!inner(email)"
+      "id, amount_usd, views_paid, status, tx_hash, created_at, clips!inner(platform, campaigns!inner(product_name)), users!inner(email)"
     )
     .order("created_at", { ascending: false });
   if (error) throw error;

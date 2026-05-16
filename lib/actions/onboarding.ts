@@ -26,7 +26,7 @@ export async function saveOnboarding(
   const creator = await requireCreator(identityToken);
   const sb = createServerClient();
   const { error } = await sb
-    .from("creators")
+    .from("users")
     .update({ country })
     .eq("id", creator.id);
   if (error) return { ok: false, error: error.message };

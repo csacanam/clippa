@@ -37,14 +37,24 @@ async function fetchPrivyUser(userId: string): Promise<{
   return res.json();
 }
 
-export type Creator = {
+export type UserRole = "creator" | "brand";
+
+export type User = {
   id: string;
   privy_user_id: string;
   email: string;
   country: string | null;
   wallet_address: string;
+  primary_role: UserRole;
   created_at: string;
 };
+
+/**
+ * Back-compat alias. Most call sites still use `creator` as a variable name
+ * for historical reasons (the user acting as creator in the clip / payout
+ * context). Type is identical to `User`.
+ */
+export type Creator = User;
 
 export type AuthContext = {
   privyUserId: string;
@@ -85,35 +95,45 @@ export async function verifyToken(accessToken: string): Promise<AuthContext> {
 }
 
 /**
- * Verifies the token, then upserts the creator row.
+ * Verifies the token, then upserts the user row.
  * Returns the row from DB.
+ *
+ * `defaultRole` only applies on first-time creation — subsequent calls return
+ * the user's existing role unchanged. Use `setPrimaryRole` to switch later.
  */
-export async function requireCreator(accessToken: string): Promise<Creator> {
+export async function requireUser(
+  accessToken: string,
+  defaultRole: UserRole = "creator"
+): Promise<User> {
   const auth = await verifyToken(accessToken);
   const sb = createServerClient();
 
-  // Try to find existing creator by privy_user_id.
+  // Try to find existing user by privy_user_id.
   const found = await sb
-    .from("creators")
+    .from("users")
     .select("*")
     .eq("privy_user_id", auth.privyUserId)
     .maybeSingle();
   if (found.error) throw found.error;
-  if (found.data) return found.data as Creator;
+  if (found.data) return found.data as User;
 
   // First time we see this user — create the row.
   const inserted = await sb
-    .from("creators")
+    .from("users")
     .insert({
       privy_user_id: auth.privyUserId,
       email: auth.email,
       wallet_address: auth.walletAddress,
+      primary_role: defaultRole,
     })
     .select("*")
     .single();
   if (inserted.error) throw inserted.error;
-  return inserted.data as Creator;
+  return inserted.data as User;
 }
+
+/** @deprecated Prefer `requireUser`. Kept for back-compat with creator-flow call sites. */
+export const requireCreator = requireUser;
 
 const ADMINS = new Set(
   (process.env.ADMIN_EMAILS ?? "")
@@ -122,10 +142,32 @@ const ADMINS = new Set(
     .filter(Boolean)
 );
 
-export async function requireAdmin(accessToken: string): Promise<Creator> {
-  const creator = await requireCreator(accessToken);
-  if (!ADMINS.has(creator.email)) {
+export async function requireAdmin(accessToken: string): Promise<User> {
+  const user = await requireUser(accessToken);
+  if (!ADMINS.has(user.email)) {
     throw new Error("Forbidden");
   }
-  return creator;
+  return user;
+}
+
+/**
+ * Updates the user's primary role. Used by the header role-switcher and by
+ * the brand-onboarding redirect (first login from /brands lands them as brand).
+ */
+export async function setPrimaryRole(
+  accessToken: string,
+  role: UserRole
+): Promise<User> {
+  const user = await requireUser(accessToken);
+  if (user.primary_role === role) return user;
+
+  const sb = createServerClient();
+  const { data, error } = await sb
+    .from("users")
+    .update({ primary_role: role })
+    .eq("id", user.id)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data as User;
 }

@@ -81,17 +81,17 @@ const ADMIN_CLIP_SELECT = `
   status, rejection_reason, approved_at, verified_views, paid_views,
   earnings_usd, paid_out_usd, last_scraped_at, created_at,
   campaigns!inner(slug, product_name),
-  creators!inner(email)
+  users!inner(email)
 `;
 
-type AdminRawJoinRow = RawJoinRow & { creators: { email: string } };
+type AdminRawJoinRow = RawJoinRow & { users: { email: string } };
 
 function adminJoinRowToClip(r: AdminRawJoinRow): Clip {
   return rowToClip({
     ...r,
     campaign_slug: r.campaigns.slug,
     campaign_name: r.campaigns.product_name,
-    creator_email: r.creators.email,
+    creator_email: r.users.email,
   });
 }
 
@@ -493,7 +493,10 @@ export async function getOperatorStats(
       .select("id", { count: "exact", head: true })
       .eq("status", "tracking"),
     sb.from("clips").select("earnings_usd, paid_out_usd"),
-    sb.from("creators").select("id", { count: "exact", head: true }),
+    sb
+      .from("users")
+      .select("id", { count: "exact", head: true })
+      .eq("primary_role", "creator"),
     sb.from("payouts").select("id", { count: "exact", head: true }),
   ]);
 

@@ -15,7 +15,10 @@ export type PublicStats = {
 export async function getPublicStats(): Promise<PublicStats> {
   const sb = createServerClient();
   const [creators, clips, payouts] = await Promise.all([
-    sb.from("creators").select("id", { count: "exact", head: true }),
+    sb
+      .from("users")
+      .select("id", { count: "exact", head: true })
+      .eq("primary_role", "creator"),
     sb.from("clips").select("id", { count: "exact", head: true }),
     sb.from("payouts").select("id", { count: "exact", head: true }),
   ]);
