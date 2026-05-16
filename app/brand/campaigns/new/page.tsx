@@ -824,30 +824,30 @@ function StepTwo({
       <Card className="bg-peach">
         <CardContent className="flex flex-col gap-3">
           <h2 className="font-display text-xl font-bold tracking-tight">
-            Fund the escrow
+            Deposit your budget
           </h2>
           <p className="font-body text-sm text-ink-soft">
-            You'll sign 3 transactions with your wallet: approve USDT, create the
-            campaign on-chain, and fund the escrow. All 3 happen with your own
-            wallet — Clippa never custody your funds.
+            You&apos;ll confirm 3 quick steps from your wallet to put your money
+            into the campaign and make it live. Your money stays in your
+            control — Clippa never holds it for you.
           </p>
 
           <div className="mt-2 rounded-md border-2 border-ink bg-cream p-4">
             <div className="flex items-baseline justify-between">
               <span className="font-display text-xs font-bold uppercase tracking-wider text-ink-soft">
-                Funding amount
+                Deposit
               </span>
               <span className="font-display text-2xl font-bold tracking-tight">
-                ${fundAmount.toFixed(2)} USDT
+                ${fundAmount.toFixed(2)}
               </span>
             </div>
             <div className="mt-3 flex items-baseline justify-between text-sm">
-              <span className="text-ink-soft">→ Escrow receives</span>
+              <span className="text-ink-soft">→ Available for clips</span>
               <span className="font-mono font-bold">${fundAmount.toFixed(2)}</span>
             </div>
             <p className="mt-3 text-[0.7rem] text-ink-soft">
-              In V2, a 20% protocol fee will be deducted. Today's funding goes
-              100% to the escrow.
+              Paid in USDT (a digital dollar, 1 USDT = $1). 100% of this goes
+              to your campaign budget today.
             </p>
           </div>
 
@@ -861,7 +861,7 @@ function StepTwo({
                   Campaign launched
                 </p>
                 <p className="text-sm text-ink-soft">
-                  Your escrow is funded. Creators can now submit clips.
+                  Your budget is in. Creators can now submit clips.
                 </p>
                 <div className="mt-2 flex flex-wrap items-center justify-center gap-3 text-xs">
                   <a
@@ -870,7 +870,7 @@ function StepTwo({
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-indigo hover:underline"
                   >
-                    View funding tx
+                    View payment receipt
                     <ArrowUpRight className="size-3" />
                   </a>
                 </div>
@@ -897,7 +897,7 @@ function StepTwo({
                 size="lg"
               >
                 <Coins className={`size-4 ${busy ? "animate-pulse" : ""}`} />
-                {busy ? "Signing..." : "Sign with wallet & launch"}
+                {busy ? "Confirming..." : "Confirm and launch"}
               </Button>
             </div>
           )}
@@ -936,7 +936,7 @@ function TxProgress({ stage }: { stage: TxStage }) {
   if (stage.kind === "idle" || stage.kind === "error") return null;
   const txs: { label: string; status: "pending" | "active" | "done" }[] = [
     {
-      label: "Approve USDT",
+      label: "Approve transfer",
       status:
         stage.kind === "approving"
           ? "active"
@@ -945,7 +945,7 @@ function TxProgress({ stage }: { stage: TxStage }) {
             : "done",
     },
     {
-      label: "Create campaign",
+      label: "Set up campaign",
       status:
         stage.kind === "approving"
           ? "pending"
@@ -954,7 +954,7 @@ function TxProgress({ stage }: { stage: TxStage }) {
             : "done",
     },
     {
-      label: "Fund escrow",
+      label: "Send funds",
       status:
         stage.kind === "funding"
           ? "active"

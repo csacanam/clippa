@@ -270,16 +270,16 @@ function FundCampaign() {
                 <div className="rounded-md border-2 border-ink bg-peach p-4">
                   <div className="flex items-baseline justify-between">
                     <span className="font-display text-xs font-bold uppercase tracking-wider text-ink-soft">
-                      Funding amount
+                      Deposit
                     </span>
                     <span className="font-display text-2xl font-bold tracking-tight">
-                      ${campaign.totalBudgetUsd.toFixed(2)} USDT
+                      ${campaign.totalBudgetUsd.toFixed(2)}
                     </span>
                   </div>
                   <p className="mt-2 text-[0.7rem] text-ink-soft">
-                    The flow resumes from wherever the last attempt failed — if
-                    USDT was already approved or the campaign exists on-chain,
-                    those steps are skipped automatically.
+                    We&apos;ll pick up from wherever the last attempt stopped —
+                    any step that already completed will be skipped
+                    automatically.
                   </p>
                 </div>
 
@@ -297,7 +297,7 @@ function FundCampaign() {
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 text-xs text-indigo hover:underline"
                         >
-                          View funding tx
+                          View payment receipt
                           <ArrowUpRight className="size-3" />
                         </a>
                       )}
@@ -326,14 +326,14 @@ function FundCampaign() {
                     >
                       <Coins className={`size-4 ${busy ? "animate-pulse" : ""}`} />
                       {stage.kind === "approving"
-                        ? "Approving USDT..."
+                        ? "Approving transfer..."
                         : stage.kind === "creating"
-                          ? "Creating campaign..."
+                          ? "Setting up campaign..."
                           : stage.kind === "funding"
-                            ? "Funding escrow..."
+                            ? "Sending funds..."
                             : stage.kind === "finalizing"
                               ? "Finalizing..."
-                              : "Resume funding"}
+                              : "Resume deposit"}
                     </Button>
                   </div>
                 )}

@@ -165,7 +165,7 @@ export function FundCampaignDialog({
             Add funds
           </DialogTitle>
           <DialogDescription className="text-sm text-ink-soft">
-            Top up {campaignName}&apos;s escrow with more USDT.
+            Top up {campaignName}&apos;s budget.
           </DialogDescription>
         </DialogHeader>
 
@@ -176,7 +176,7 @@ export function FundCampaignDialog({
             </div>
             <p className="font-display text-lg font-bold">Funds added</p>
             <p className="text-sm text-ink-soft">
-              {formatUsd(numericAmount)} now sits in the escrow.
+              {formatUsd(numericAmount)} added to your campaign budget.
             </p>
             <a
               href={celoExplorerTx(stage.txHash)}
@@ -184,7 +184,7 @@ export function FundCampaignDialog({
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-xs text-indigo hover:underline"
             >
-              View tx
+              View payment receipt
               <ArrowUpRight className="size-3" />
             </a>
             <Button
@@ -225,16 +225,16 @@ export function FundCampaignDialog({
                 disabled={stage.kind !== "form" && stage.kind !== "error"}
               />
               <p className="text-xs text-ink-soft">
-                You&apos;ll sign 1-2 transactions: USDT approval (if needed) and
-                fundCampaign.
+                You&apos;ll confirm 1–2 quick steps from your wallet to send
+                the deposit. Paid in USDT (a digital dollar, 1 USDT = $1).
               </p>
             </div>
 
             {stage.kind === "approving" && (
-              <p className="text-sm text-ink-soft">Approving USDT…</p>
+              <p className="text-sm text-ink-soft">Approving transfer…</p>
             )}
             {stage.kind === "funding" && (
-              <p className="text-sm text-ink-soft">Funding escrow…</p>
+              <p className="text-sm text-ink-soft">Sending funds…</p>
             )}
             {stage.kind === "error" && (
               <p className="text-sm text-error">{stage.message}</p>
@@ -256,7 +256,7 @@ export function FundCampaignDialog({
               {stage.kind === "approving"
                 ? "Approving..."
                 : stage.kind === "funding"
-                  ? "Funding..."
+                  ? "Sending..."
                   : amountValid
                     ? `Add ${formatUsd(numericAmount)}`
                     : "Add funds"}

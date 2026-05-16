@@ -166,8 +166,8 @@ function EmptyCampaignsCard() {
             No campaigns yet
           </p>
           <p className="max-w-sm font-body text-sm text-ink-soft">
-            Launching takes about 2 minutes. Define your product, set a rate per
-            view, fund the escrow, and creators take it from there.
+            Launching takes about 2 minutes. Define your product, set a rate
+            per view, deposit your budget, and creators take it from there.
           </p>
           <Link
             href="/brand/campaigns/new"
@@ -237,22 +237,22 @@ function BrandCampaignCard({
                 Funding incomplete
               </p>
               <p className="text-[0.7rem] text-ink-soft">
-                Finish signing the funding txs to make this campaign live.
+                Finish depositing your budget to make this campaign live.
               </p>
               <Link
                 href={`/brand/campaigns/${campaign.id}/fund`}
                 className={`${buttonVariants({ variant: "default", size: "sm" })} mt-1`}
               >
-                Resume funding
+                Resume deposit
               </Link>
             </div>
           ) : !chain.exists ? (
             <div className="rounded-md border-2 border-dashed border-ink/30 bg-cream/50 p-3 text-center">
               <p className="font-display text-xs font-bold uppercase tracking-wider text-ink-soft">
-                Not funded on-chain yet
+                Budget not deposited yet
               </p>
               <p className="mt-1 text-[0.7rem] text-ink-soft">
-                Complete the funding step to start tracking.
+                Finish the deposit to start tracking views.
               </p>
             </div>
           ) : (

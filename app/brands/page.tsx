@@ -63,8 +63,9 @@ export default function BrandsLanding() {
             transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
             className="mt-6 max-w-md font-body text-base text-ink-soft md:text-lg"
           >
-            Fund a USDT escrow. Creators publish clips on Instagram and TikTok.
-            You only pay when real views land. No agency, no upfront retainer.
+            Real creators turn your product into clips on Instagram and TikTok.
+            You set the price per view, deposit a budget, and only spend on
+            views that actually happen. No agency. No retainer.
           </motion.p>
 
           <motion.div
@@ -88,24 +89,24 @@ export default function BrandsLanding() {
             <Step
               n={1}
               title="Define your campaign"
-              body="Product, rate per view, max payout per clip, and the rules creators must follow."
+              body="Your product, what you pay per view, a cap per clip, and the rules creators follow."
             />
             <Step
               n={2}
-              title="Fund the escrow"
-              body="USDT goes on-chain into your campaign's escrow. You control the budget."
+              title="Deposit your budget"
+              body="Decide how much to spend. The money sits aside, untouched, until views land."
             />
             <Step
               n={3}
               title="Pay on results"
-              body="As creators publish and views land, payouts flow straight to their wallets."
+              body="As clips publish and views accrue, creators get paid automatically. No invoices, no chasing."
             />
           </motion.div>
         </div>
       </section>
 
       <footer className="px-6 py-6 text-center text-xs text-ink-soft/70 md:px-12">
-        Trustless escrow on Celo. Audited contract. No middlemen.
+        No agency markup. No long-term contracts. Only pay for results.
       </footer>
     </main>
   );
