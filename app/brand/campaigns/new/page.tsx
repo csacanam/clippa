@@ -19,6 +19,7 @@ import { celo } from "viem/chains";
 import { AuthGuard } from "@/components/auth-guard";
 import { CampaignPreview } from "@/components/campaign-preview";
 import { ClippaLogo } from "@/components/clippa-logo";
+import { useTranslation } from "@/components/locale-provider";
 import { MarkdownField } from "@/components/markdown-field";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -32,6 +33,7 @@ import {
   type ReserveDraftResult,
 } from "@/lib/actions/campaigns";
 import { type Platform } from "@/lib/campaigns";
+import { LOCALES, type Locale } from "@/lib/i18n/types";
 import {
   CELO_USDT_ADDRESS,
   CLIPPA_CONTRACT_ADDRESS,
@@ -44,6 +46,11 @@ import { useAccessToken } from "@/lib/hooks/use-access-token";
 // ============================================================
 // Helpers
 // ============================================================
+
+const LANGUAGE_LABELS: Record<Locale, string> = {
+  en: "English",
+  es: "Español",
+};
 
 function slugify(name: string): string {
   return name
@@ -78,21 +85,24 @@ const CLIPPA_WRITE_ABI = [
   },
 ] as const;
 
-const DEFAULTS: FormState = {
-  productName: "",
-  slug: "",
-  shortDescription: "",
-  longDescription: "",
-  exampleVideoUrl: "",
-  scriptMarkdown:
-    "**[hook · 0–3s]**\n\nGrab attention here.\n\n**[body · 3–15s]**\n\nShow the product in action.\n\n**[outro · 15–20s]**\n\nClear call to action.",
-  instructionsMarkdown:
-    "**1. Mention the product on screen at least once.**\nName, URL, or logo.\n\n**2. Keep it authentic.**\nNo fake testimonials or unrealistic results.\n\n**3. Avoid X, Y, Z.**\n[Edit this list.]",
-  ratePerViewUsd: "0.01",
-  maxPayoutPerClipUsd: "20",
-  totalBudgetUsd: "100",
-  platforms: { instagram: true, tiktok: true },
-};
+function defaultsFor(locale: Locale): FormState {
+  return {
+    productName: "",
+    slug: "",
+    shortDescription: "",
+    longDescription: "",
+    exampleVideoUrl: "",
+    scriptMarkdown:
+      "**[hook · 0–3s]**\n\nGrab attention here.\n\n**[body · 3–15s]**\n\nShow the product in action.\n\n**[outro · 15–20s]**\n\nClear call to action.",
+    instructionsMarkdown:
+      "**1. Mention the product on screen at least once.**\nName, URL, or logo.\n\n**2. Keep it authentic.**\nNo fake testimonials or unrealistic results.\n\n**3. Avoid X, Y, Z.**\n[Edit this list.]",
+    ratePerViewUsd: "0.01",
+    maxPayoutPerClipUsd: "20",
+    totalBudgetUsd: "100",
+    platforms: { instagram: true, tiktok: true },
+    sourceLanguage: locale,
+  };
+}
 
 type FormState = {
   productName: string;
@@ -106,6 +116,7 @@ type FormState = {
   maxPayoutPerClipUsd: string;
   totalBudgetUsd: string;
   platforms: { instagram: boolean; tiktok: boolean };
+  sourceLanguage: Locale;
 };
 
 function formToInput(f: FormState): CampaignDraftInput {
@@ -113,6 +124,7 @@ function formToInput(f: FormState): CampaignDraftInput {
   if (f.platforms.instagram) platforms.push("instagram");
   if (f.platforms.tiktok) platforms.push("tiktok");
   return {
+    sourceLanguage: f.sourceLanguage,
     productName: f.productName.trim(),
     slug: f.slug.trim(),
     shortDescription: f.shortDescription.trim(),
@@ -146,7 +158,8 @@ function NewCampaignWizard() {
   const { wallets } = useWallets();
 
   const [step, setStep] = useState<1 | 2>(1);
-  const [form, setForm] = useState<FormState>(DEFAULTS);
+  const { locale } = useTranslation();
+  const [form, setForm] = useState<FormState>(() => defaultsFor(locale));
   const [errors, setErrors] = useState<Partial<Record<keyof CampaignDraftInput, string>>>({});
   const [slugTouched, setSlugTouched] = useState(false);
   const [slugStatus, setSlugStatus] = useState<"idle" | "checking" | "available" | "taken">(
@@ -432,6 +445,25 @@ function StepOne({
           <h2 className="font-display text-xl font-bold tracking-tight">
             What you&apos;re promoting
           </h2>
+
+          <Field
+            label="Language you'll write in"
+            error={errors.sourceLanguage}
+            hint="Pick the language you'll author the content in. We'll auto-translate to other supported languages so every creator sees the campaign in their own language."
+          >
+            <div className="flex flex-wrap gap-3">
+              {LOCALES.map((loc) => (
+                <PlatformChip
+                  key={loc}
+                  label={LANGUAGE_LABELS[loc]}
+                  checked={form.sourceLanguage === loc}
+                  onChange={(v) => {
+                    if (v) update("sourceLanguage", loc);
+                  }}
+                />
+              ))}
+            </div>
+          </Field>
 
           <Field
             label="Product name"

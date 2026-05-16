@@ -19,6 +19,10 @@ export type Campaign = {
   spentUsd: number;
   platforms: Platform[];
   status: "pending_funding" | "active" | "paused" | "ended";
+  /** The language the brand authored the campaign in (e.g. 'en'). */
+  sourceLanguage: string;
+  /** Languages the campaign is readable in — source plus any cached translations. */
+  availableLanguages: string[];
 };
 
 /**

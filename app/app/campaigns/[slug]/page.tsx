@@ -41,7 +41,7 @@ type FormState =
 function CampaignDetail() {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const identityToken = useAccessToken();
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
@@ -61,7 +61,7 @@ function CampaignDetail() {
     let cancelled = false;
     (async () => {
       try {
-        const c = await findCampaignBySlug(slug);
+        const c = await findCampaignBySlug(slug, locale);
         if (cancelled) return;
         if (!c) {
           notFound();
@@ -87,7 +87,7 @@ function CampaignDetail() {
     return () => {
       cancelled = true;
     };
-  }, [slug]);
+  }, [slug, locale]);
 
   // Assign (or recover) a tracking code for this creator × campaign.
   useEffect(() => {
@@ -233,12 +233,19 @@ function CampaignDetail() {
               {campaign.shortDescription}
             </p>
           </div>
-          <div className="flex shrink-0 gap-1 pt-1">
-            {campaign.platforms.map((p) => (
-              <Badge key={p} variant="default" className="capitalize">
-                {p}
-              </Badge>
-            ))}
+          <div className="flex shrink-0 flex-col items-end gap-1 pt-1">
+            <div className="flex gap-1">
+              {campaign.platforms.map((p) => (
+                <Badge key={p} variant="default" className="capitalize">
+                  {p}
+                </Badge>
+              ))}
+            </div>
+            {campaign.availableLanguages.length > 0 && (
+              <span className="font-mono text-[0.65rem] uppercase tracking-wider text-ink-soft">
+                {campaign.availableLanguages.join(" · ")}
+              </span>
+            )}
           </div>
         </motion.div>
 

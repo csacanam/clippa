@@ -31,7 +31,7 @@ import { useAccessToken } from "@/lib/hooks/use-access-token";
 function AppHome() {
   const router = useRouter();
   const { user, logout } = usePrivy();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const identityToken = useAccessToken();
   const [checking, setChecking] = useState(true);
   const [clips, setClips] = useState<Clip[]>([]);
@@ -64,7 +64,7 @@ function AppHome() {
       try {
         const [onboarding, activeCampaigns] = await Promise.all([
           getMyOnboarding(identityToken),
-          listActiveCampaigns(),
+          listActiveCampaigns(locale),
         ]);
         if (cancelled) return;
         if (!onboarding) {
@@ -81,7 +81,7 @@ function AppHome() {
     return () => {
       cancelled = true;
     };
-  }, [identityToken, reloadClips, router]);
+  }, [identityToken, reloadClips, router, locale]);
 
   if (checking) {
     return (

@@ -100,6 +100,14 @@ export function CampaignCard({ campaign }: { campaign: Campaign }) {
                 }),
               })}
             </span>
+            {campaign.availableLanguages.length > 0 && (
+              <>
+                <span className="text-ink-soft">·</span>
+                <span className="font-mono text-[0.65rem] uppercase tracking-wider text-ink-soft">
+                  {campaign.availableLanguages.join(" · ")}
+                </span>
+              </>
+            )}
           </div>
         </CardContent>
       </Card>

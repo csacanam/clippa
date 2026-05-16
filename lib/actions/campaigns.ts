@@ -1,9 +1,11 @@
 "use server";
 
 import { requireAdmin, requireUser } from "@/lib/auth-server";
+import { LOCALES, type Locale } from "@/lib/i18n/types";
 import { createServerClient } from "@/lib/supabase/server";
 import type { Campaign, CampaignChainState, Platform } from "@/lib/campaigns";
 import { getCampaignChainState } from "@/lib/payments/celo";
+import { translateCampaignFields } from "@/lib/translation";
 
 type CampaignRow = {
   id: string;
@@ -19,51 +21,108 @@ type CampaignRow = {
   total_budget_usd: string | number;
   spent_usd: string | number;
   platforms: string[];
-  status: "active" | "paused" | "ended";
+  status: Campaign["status"];
+  source_language: string;
+};
+
+type TranslationRow = {
+  language: string;
+  product_name: string;
+  short_description: string;
+  long_description: string;
+  script_markdown: string;
+  instructions_markdown: string;
 };
 
 function n(v: string | number): number {
   return typeof v === "string" ? parseFloat(v) : v;
 }
 
-function rowToCampaign(row: CampaignRow): Campaign {
+function rowToCampaign(
+  row: CampaignRow,
+  translations: TranslationRow[] = [],
+  viewerLocale?: Locale
+): Campaign {
+  // Pick the best content variant for the viewer's locale.
+  // If the campaign's source matches, use the row as-is.
+  // Else look up a translation row for the viewer's locale; fall back to source.
+  let pn = row.product_name;
+  let sd = row.short_description;
+  let ld = row.long_description;
+  let sm = row.script_markdown;
+  let im = row.instructions_markdown;
+  if (viewerLocale && viewerLocale !== row.source_language) {
+    const t = translations.find((x) => x.language === viewerLocale);
+    if (t) {
+      pn = t.product_name;
+      sd = t.short_description;
+      ld = t.long_description;
+      sm = t.script_markdown;
+      im = t.instructions_markdown;
+    }
+  }
+  const availableLanguages = Array.from(
+    new Set([row.source_language, ...translations.map((t) => t.language)])
+  );
   return {
     slug: row.slug,
-    productName: row.product_name,
-    shortDescription: row.short_description,
-    longDescription: row.long_description,
+    productName: pn,
+    shortDescription: sd,
+    longDescription: ld,
     exampleVideoUrl: row.example_video_url ?? undefined,
-    scriptMarkdown: row.script_markdown,
-    instructionsMarkdown: row.instructions_markdown,
+    scriptMarkdown: sm,
+    instructionsMarkdown: im,
     ratePerViewUsd: n(row.rate_per_view_usd),
     maxPayoutPerClipUsd: n(row.max_payout_per_clip_usd),
     totalBudgetUsd: n(row.total_budget_usd),
     spentUsd: n(row.spent_usd),
     platforms: row.platforms as Platform[],
     status: row.status,
+    sourceLanguage: row.source_language,
+    availableLanguages,
   };
 }
 
-export async function listActiveCampaigns(): Promise<Campaign[]> {
+const CAMPAIGN_SELECT_WITH_TRANSLATIONS = `
+  id, slug, product_name, short_description, long_description, example_video_url,
+  script_markdown, instructions_markdown, rate_per_view_usd, max_payout_per_clip_usd,
+  total_budget_usd, spent_usd, platforms, status, source_language,
+  campaign_translations(language, product_name, short_description, long_description, script_markdown, instructions_markdown)
+`;
+
+type CampaignRowWithTranslations = CampaignRow & {
+  campaign_translations: TranslationRow[] | null;
+};
+
+export async function listActiveCampaigns(
+  viewerLocale?: Locale
+): Promise<Campaign[]> {
   const sb = createServerClient();
   const { data, error } = await sb
     .from("campaigns")
-    .select("*")
+    .select(CAMPAIGN_SELECT_WITH_TRANSLATIONS)
     .eq("status", "active")
     .order("created_at", { ascending: true });
   if (error) throw error;
-  return (data ?? []).map((r) => rowToCampaign(r as CampaignRow));
+  return ((data ?? []) as unknown as CampaignRowWithTranslations[]).map((r) =>
+    rowToCampaign(r, r.campaign_translations ?? [], viewerLocale)
+  );
 }
 
-export async function findCampaignBySlug(slug: string): Promise<Campaign | null> {
+export async function findCampaignBySlug(
+  slug: string,
+  viewerLocale?: Locale
+): Promise<Campaign | null> {
   const sb = createServerClient();
   const { data, error } = await sb
     .from("campaigns")
-    .select("*")
+    .select(CAMPAIGN_SELECT_WITH_TRANSLATIONS)
     .eq("slug", slug)
     .maybeSingle();
   if (error) throw error;
-  return data ? rowToCampaign(data as CampaignRow) : null;
+  if (!data) return null;
+  const row = data as unknown as CampaignRowWithTranslations;
+  return rowToCampaign(row, row.campaign_translations ?? [], viewerLocale);
 }
 
 /**
@@ -336,6 +395,7 @@ export type CampaignDraftInput = {
   maxPayoutPerClipUsd: number;
   totalBudgetUsd: number;
   platforms: Platform[];
+  sourceLanguage: Locale;
 };
 
 export type ReserveDraftResult =
@@ -385,6 +445,9 @@ function validateDraft(input: CampaignDraftInput): {
   if (!Array.isArray(input.platforms) || input.platforms.length === 0) {
     return { ok: false, error: "Pick at least one platform.", field: "platforms" };
   }
+  if (!LOCALES.includes(input.sourceLanguage)) {
+    return { ok: false, error: "Pick a supported language.", field: "sourceLanguage" };
+  }
   return { ok: true };
 }
 
@@ -419,6 +482,7 @@ export async function reserveCampaignDraft(
       total_budget_usd: input.totalBudgetUsd,
       platforms: input.platforms,
       status: "pending_funding",
+      source_language: input.sourceLanguage,
       created_by_user_id: user.id,
     })
     .select("id, slug")
@@ -438,6 +502,11 @@ export async function reserveCampaignDraft(
  * Flips a campaign from 'pending_funding' to 'active' after the on-chain
  * createCampaign + fundCampaign txs have succeeded. Only the campaign's
  * creator can call this (and only on their own pending campaigns).
+ *
+ * After the flip, kicks off best-effort translation to every other supported
+ * locale. Translation failures are swallowed — the campaign goes live in its
+ * source language and creators of other locales see the source content with
+ * a "Content in X" badge.
  */
 export async function markCampaignActive(
   identityToken: string,
@@ -453,7 +522,87 @@ export async function markCampaignActive(
     .eq("status", "pending_funding");
   if (error) return { ok: false, error: error.message };
   if (!count) return { ok: false, error: "Campaign not found or already active." };
+
+  // Best-effort: translate now so creators see the campaign in their language.
+  // Failures don't block — the campaign is already active.
+  try {
+    await translateCampaignToAllLocales(campaignId);
+  } catch (e) {
+    console.error(`Translation failed for campaign ${campaignId}:`, e);
+  }
+
   return { ok: true };
+}
+
+/**
+ * Generates translations for a campaign in every supported locale other than
+ * its source. Skips locales that already have a cached translation.
+ * Called from markCampaignActive and the backfill script.
+ */
+export async function translateCampaignToAllLocales(
+  campaignId: string
+): Promise<void> {
+  const sb = createServerClient();
+
+  const { data: campaign, error } = await sb
+    .from("campaigns")
+    .select(
+      "id, source_language, product_name, short_description, long_description, script_markdown, instructions_markdown"
+    )
+    .eq("id", campaignId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!campaign) throw new Error(`Campaign ${campaignId} not found`);
+
+  const row = campaign as {
+    id: string;
+    source_language: string;
+    product_name: string;
+    short_description: string;
+    long_description: string;
+    script_markdown: string;
+    instructions_markdown: string;
+  };
+
+  const targets = LOCALES.filter((l) => l !== row.source_language);
+  if (targets.length === 0) return;
+
+  // Check which translations already exist; skip those.
+  const existing = await sb
+    .from("campaign_translations")
+    .select("language")
+    .eq("campaign_id", campaignId);
+  const have = new Set(
+    ((existing.data ?? []) as { language: string }[]).map((r) => r.language)
+  );
+  const missing = targets.filter((l) => !have.has(l));
+  if (missing.length === 0) return;
+
+  const source = {
+    productName: row.product_name,
+    shortDescription: row.short_description,
+    longDescription: row.long_description,
+    scriptMarkdown: row.script_markdown,
+    instructionsMarkdown: row.instructions_markdown,
+  };
+
+  for (const target of missing) {
+    const translated = await translateCampaignFields(
+      source,
+      row.source_language,
+      target
+    );
+    const { error: insErr } = await sb.from("campaign_translations").insert({
+      campaign_id: campaignId,
+      language: target,
+      product_name: translated.productName,
+      short_description: translated.shortDescription,
+      long_description: translated.longDescription,
+      script_markdown: translated.scriptMarkdown,
+      instructions_markdown: translated.instructionsMarkdown,
+    });
+    if (insErr) throw insErr;
+  }
 }
 
 export type PendingCampaign = {
