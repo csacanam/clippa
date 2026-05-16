@@ -46,8 +46,8 @@ export function CommunityCard() {
 }
 
 /**
- * Compact one-line variant — for places where the full card would be too
- * loud (campaign / clip detail).
+ * Compact sticker variant — for places where the full card would be too
+ * loud (campaign / clip detail), but a plain text link gets missed.
  */
 export function CommunityHint() {
   const { t } = useTranslation();
@@ -56,10 +56,17 @@ export function CommunityHint() {
       href={TELEGRAM_URL}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-1.5 font-display text-xs font-bold uppercase tracking-wider text-ink-soft underline-offset-4 hover:text-ink hover:underline"
+      className="inline-flex items-center gap-2.5 rounded-md border-2 border-ink bg-peach px-3 py-2 shadow-sticker-sm transition-transform hover:-translate-y-[1px] hover:shadow-sticker"
     >
-      <Send className="size-3.5" />
-      {t("community.inlineHint")}
+      <Send className="size-4 shrink-0" />
+      <div className="flex min-w-0 flex-col text-left">
+        <span className="font-display text-xs font-bold uppercase tracking-wider text-ink">
+          {t("community.inlineHintTitle")}
+        </span>
+        <span className="font-body text-xs text-ink-soft">
+          {t("community.inlineHintCta")}
+        </span>
+      </div>
     </a>
   );
 }

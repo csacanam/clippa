@@ -247,7 +247,8 @@ const es: Dict = {
     subtitle:
       "Resuelve dudas, comparte tus clips, conecta con otros creadores y entérate primero de las campañas nuevas. Todo en nuestro Telegram.",
     cta: "Únete a la comunidad →",
-    inlineHint: "¿Atascado? Pregunta en la comunidad en Telegram →",
+    inlineHintTitle: "¿Dudas antes de publicar?",
+    inlineHintCta: "Pregunta en la comunidad de Telegram →",
     welcomeTitle: "Listo. Una última cosa.",
     welcomeSubtitle:
       "Únete al Telegram para no perderte campañas nuevas y para que podamos ayudarte rápido si te atascas.",

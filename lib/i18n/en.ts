@@ -249,7 +249,8 @@ const en = {
     subtitle:
       "Get answers, share your clips, connect with other creators, and hear about new campaigns first. All on our Telegram.",
     cta: "Join the community →",
-    inlineHint: "Stuck? Ask the community on Telegram →",
+    inlineHintTitle: "Questions before you post?",
+    inlineHintCta: "Ask the community on Telegram →",
     welcomeTitle: "You're in. One last thing.",
     welcomeSubtitle:
       "Join our Telegram so you don't miss new campaigns, and so we can help fast if you hit a snag.",
