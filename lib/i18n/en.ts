@@ -88,7 +88,7 @@ const en = {
       "Run a campaign on Clippa: set the rate, fund the budget, and only pay for views that actually happen.",
     brandCtaButton: "See how it works for brands →",
 
-    footerCommunity: "Need help? Join our community on Telegram →",
+    footerCommunity: "Join our community on Telegram →",
 
     finalCtaTitleOne: "{n}+ creator is already earning",
     finalCtaTitleMany: "{n}+ creators are already earning",

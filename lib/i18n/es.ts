@@ -83,7 +83,7 @@ const es: Dict = {
       "Lanza una campaña en Clippa: defines la tarifa, depositas el presupuesto, y solo pagas por las visualizaciones que realmente ocurren.",
     brandCtaButton: "Ver cómo funciona para marcas →",
 
-    footerCommunity: "¿Necesitas ayuda? Únete a nuestra comunidad en Telegram →",
+    footerCommunity: "Únete a nuestra comunidad en Telegram →",
 
     finalCtaTitleOne: "{n}+ creador ya está ganando",
     finalCtaTitleMany: "{n}+ creadores ya están ganando",
