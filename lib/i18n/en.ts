@@ -81,7 +81,7 @@ const en = {
       "Each campaign sets a max per clip. Beyond that, it's up to the campaign and how viral your clips go — the more views, the more you earn.",
     faqQ5: "I'm a brand. How do I run a campaign?",
     faqA5:
-      "Anyone can publish a campaign on Clippa — set your product, your rate per view, fund the budget, and creators take it from there. See the brand page below for the full flow.",
+      "Anyone can launch a campaign on Clippa: set your product, what you pay per view, fund the budget, and creators take it from there.",
 
     brandCtaTitle: "Got a product to promote?",
     brandCtaBody:

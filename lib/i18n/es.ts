@@ -76,7 +76,7 @@ const es: Dict = {
       "Cada campaña define un máximo por clip. De ahí depende de la campaña y de qué tan virales sean tus clips — entre más visualizaciones, más ganas.",
     faqQ5: "Soy una marca. ¿Cómo lanzo una campaña?",
     faqA5:
-      "Cualquiera puede publicar una campaña en Clippa — define tu producto, tu tarifa por visualización, depositas el presupuesto, y los creadores hacen el resto. Mira la sección de abajo para el flujo completo.",
+      "Cualquiera puede lanzar una campaña en Clippa: defines tu producto, qué pagas por visualización, depositas el presupuesto, y los creadores hacen el resto.",
 
     brandCtaTitle: "¿Tienes un producto que promocionar?",
     brandCtaBody:
