@@ -38,7 +38,6 @@ const en = {
     statsCreators: "Creators",
     statsClipsPosted: "Clips posted",
     statsPaymentsSent: "Payments sent",
-    forBrands: "For brands →",
 
     howTitle: "Get paid to make short videos for brands",
     howStep1Title: "Recreate a video",
@@ -80,6 +79,16 @@ const en = {
     faqQ4: "How much can I earn?",
     faqA4:
       "Each campaign sets a max per clip. Beyond that, it's up to the campaign and how viral your clips go — the more views, the more you earn.",
+    faqQ5: "I'm a brand. How do I run a campaign?",
+    faqA5:
+      "Anyone can publish a campaign on Clippa — set your product, your rate per view, fund the budget, and creators take it from there. See the brand page below for the full flow.",
+
+    brandCtaTitle: "Got a product to promote?",
+    brandCtaBody:
+      "Run a campaign on Clippa: set the rate, fund the budget, and only pay for views that actually happen.",
+    brandCtaButton: "See how it works for brands →",
+
+    footerCommunity: "Need help? Join our community on Telegram →",
 
     finalCtaTitleOne: "{n}+ creator is already earning",
     finalCtaTitleMany: "{n}+ creators are already earning",

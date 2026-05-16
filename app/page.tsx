@@ -11,8 +11,9 @@ import { ClippaLogo } from "@/components/clippa-logo";
 import { LocaleToggle } from "@/components/locale-toggle";
 import { useTranslation } from "@/components/locale-provider";
 import { TopClipsShowcase } from "@/components/top-clips-showcase";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { TELEGRAM_URL } from "@/lib/community";
 import {
   getPublicStats,
   listFeaturedClips,
@@ -57,12 +58,6 @@ export default function LandingPage() {
       <header className="flex items-center justify-between px-6 py-6 md:px-12">
         <ClippaLogo />
         <div className="flex items-center gap-4">
-          <Link
-            href="/brands"
-            className="hidden font-body text-sm font-medium text-ink-soft underline-offset-4 hover:underline sm:inline"
-          >
-            {t("landing.forBrands")}
-          </Link>
           <LocaleToggle />
           <button
             onClick={() => login()}
@@ -175,6 +170,38 @@ export default function LandingPage() {
           <Faq q={t("landing.faqQ2")} a={t("landing.faqA2")} />
           <Faq q={t("landing.faqQ3")} a={t("landing.faqA3")} />
           <Faq q={t("landing.faqQ4")} a={t("landing.faqA4")} />
+          <Faq q={t("landing.faqQ5")} a={t("landing.faqA5")} />
+        </motion.div>
+      </section>
+
+      {/* Brand callout — discreet band before the final CTA so brand
+       *  visitors have a clear next step without diluting the creator
+       *  pitch above. */}
+      <section className="mx-auto w-full max-w-3xl px-6 pb-16 md:px-12">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+        >
+          <Card className="bg-indigo text-cream">
+            <CardContent className="flex flex-col items-center gap-4 py-8 text-center">
+              <div>
+                <h3 className="font-display text-xl font-bold tracking-tight md:text-2xl">
+                  {t("landing.brandCtaTitle")}
+                </h3>
+                <p className="mx-auto mt-2 max-w-md font-body text-sm text-cream/85 md:text-base">
+                  {t("landing.brandCtaBody")}
+                </p>
+              </div>
+              <Link
+                href="/brands"
+                className={buttonVariants({ variant: "outline", size: "default" })}
+              >
+                {t("landing.brandCtaButton")}
+              </Link>
+            </CardContent>
+          </Card>
         </motion.div>
       </section>
 
@@ -206,8 +233,16 @@ export default function LandingPage() {
         </motion.div>
       </section>
 
-      <footer className="px-6 py-6 text-center text-xs text-ink-soft/70 md:px-12">
-        {t("landing.footer")}
+      <footer className="flex flex-col items-center gap-2 border-t-2 border-ink/10 px-6 py-8 text-center text-xs text-ink-soft md:px-12">
+        <a
+          href={TELEGRAM_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-display text-sm font-bold uppercase tracking-wider text-indigo underline-offset-4 hover:underline"
+        >
+          {t("landing.footerCommunity")}
+        </a>
+        <p className="text-ink-soft/70">{t("landing.footer")}</p>
       </footer>
     </main>
   );

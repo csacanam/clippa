@@ -32,7 +32,6 @@ const es: Dict = {
     statsCreators: "Creadores",
     statsClipsPosted: "Clips publicados",
     statsPaymentsSent: "Pagos enviados",
-    forBrands: "Para marcas →",
 
     howTitle: "Cobra por hacer videos cortos para marcas",
     howStep1Title: "Recrea un video",
@@ -75,6 +74,16 @@ const es: Dict = {
     faqQ4: "¿Cuánto puedo ganar?",
     faqA4:
       "Cada campaña define un máximo por clip. De ahí depende de la campaña y de qué tan virales sean tus clips — entre más visualizaciones, más ganas.",
+    faqQ5: "Soy una marca. ¿Cómo lanzo una campaña?",
+    faqA5:
+      "Cualquiera puede publicar una campaña en Clippa — define tu producto, tu tarifa por visualización, depositas el presupuesto, y los creadores hacen el resto. Mira la sección de abajo para el flujo completo.",
+
+    brandCtaTitle: "¿Tienes un producto que promocionar?",
+    brandCtaBody:
+      "Lanza una campaña en Clippa: defines la tarifa, depositas el presupuesto, y solo pagas por las visualizaciones que realmente ocurren.",
+    brandCtaButton: "Ver cómo funciona para marcas →",
+
+    footerCommunity: "¿Necesitas ayuda? Únete a nuestra comunidad en Telegram →",
 
     finalCtaTitleOne: "{n}+ creador ya está ganando",
     finalCtaTitleMany: "{n}+ creadores ya están ganando",
