@@ -174,10 +174,10 @@ const en = {
   },
 
   community: {
-    title: "Got questions? Join the community",
+    title: "Join the community",
     subtitle:
-      "Tips, help, and other creators — all on Telegram. We're around if anything breaks or you need a hand.",
-    cta: "Join on Telegram →",
+      "Get answers, share your clips, connect with other creators, and hear about new campaigns first. All on our Telegram.",
+    cta: "Join the community →",
     inlineHint: "Stuck? Ask the community on Telegram →",
     welcomeTitle: "You're in. One last thing.",
     welcomeSubtitle:

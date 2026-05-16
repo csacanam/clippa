@@ -171,10 +171,10 @@ const es: Dict = {
   },
 
   community: {
-    title: "¿Dudas? Únete a la comunidad",
+    title: "Únete a la comunidad",
     subtitle:
-      "Tips, ayuda y otros creadores — todo en Telegram. Estamos ahí si algo se rompe o necesitas una mano.",
-    cta: "Unirme en Telegram →",
+      "Resuelve dudas, comparte tus clips, conecta con otros creadores y entérate primero de las campañas nuevas. Todo en nuestro Telegram.",
+    cta: "Únete a la comunidad →",
     inlineHint: "¿Atascado? Pregunta en la comunidad en Telegram →",
     welcomeTitle: "Listo. Una última cosa.",
     welcomeSubtitle:
