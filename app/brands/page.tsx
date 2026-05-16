@@ -49,7 +49,7 @@ export default function BrandsLanding() {
     };
   }, []);
 
-  const campaignsCount = stats?.activeCampaignsCount ?? 0;
+  const creatorsCount = stats?.creatorsCount ?? 0;
 
   return (
     <main className="flex min-h-dvh flex-col">
@@ -183,10 +183,10 @@ export default function BrandsLanding() {
           transition={{ duration: 0.5, ease: "easeOut" }}
           className="font-display text-2xl font-bold tracking-tight md:text-3xl"
         >
-          {campaignsCount > 0
-            ? campaignsCount === 1
-              ? t("brand.landingFinalCtaTitleOne", { n: String(campaignsCount) })
-              : t("brand.landingFinalCtaTitleMany", { n: String(campaignsCount) })
+          {creatorsCount > 0
+            ? creatorsCount === 1
+              ? t("brand.landingFinalCtaTitleOne", { n: String(creatorsCount) })
+              : t("brand.landingFinalCtaTitleMany", { n: String(creatorsCount) })
             : t("brand.landingFinalCtaTitleFallback")}
         </motion.p>
         <motion.div

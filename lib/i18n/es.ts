@@ -288,33 +288,32 @@ const es: Dict = {
     landingStep3Body:
       "Los creadores publican, nosotros rastreamos visualizaciones cada hora, los pagos fluyen automáticamente. Solo pagas por lo que conseguiste.",
 
-    landingFaqTitle: "Respuestas rápidas",
+    landingFaqTitle: "Aclaremos algunas cosas",
     landingFaqSubtitle:
-      "Todo lo que querías preguntar antes de lanzar una campaña.",
+      "Respuestas cortas antes de que lances tu primera campaña.",
     landingFaqQ1: "¿Cuánto cuesta una campaña?",
     landingFaqA1:
-      "Tú defines la tarifa por visualización (ej. $0.01) y un tope por clip (ej. $20). Empieza con el presupuesto que quieras — no hay mínimo. Solo gastas en las visualizaciones que los creadores realmente generen.",
-    landingFaqQ2: "¿Y si ningún creador toma mi campaña?",
+      "Tú decides. Define la tarifa por visualización (ej. $0.01) y un tope por clip (ej. $20). Empieza con el presupuesto que quieras — no hay mínimo. Solo gastas en las visualizaciones que los creadores realmente generen.",
+    landingFaqQ2: "¿Qué cobra Clippa?",
     landingFaqA2:
-      "Tu dinero sigue siendo tuyo. El depósito queda apartado, sin tocar. Puedes terminar la campaña y recuperar lo que no gastaste cuando quieras.",
-    landingFaqQ3: "¿Cómo verifican las visualizaciones?",
+      "20% de cada depósito. Lo usamos para mantener la plataforma andando y los pagos fluyendo. El otro 80% va directo al presupuesto de tu campaña — tú decides cómo gastarlo.",
+    landingFaqQ3: "¿Y si ningún creador toma mi campaña?",
     landingFaqA3:
-      "Cada hora consultamos los conteos reales de visualizaciones que reporta Instagram y TikTok, y pagamos contra esos números. Sin bots, sin métricas infladas — solo lo que las plataformas mismas reportan.",
-    landingFaqQ4: "¿Quién le paga a los creadores?",
+      "Tu dinero sigue siendo tuyo. El depósito queda apartado, sin tocar. Puedes terminar la campaña y recuperar lo que no gastaste cuando quieras.",
+    landingFaqQ4: "¿Cómo verifican las visualizaciones?",
     landingFaqA4:
-      "Nosotros, automáticamente, desde el presupuesto de tu campaña a medida que llegan visualizaciones. Los creadores reciben su pago directo — tú no tocas el flujo.",
-    landingFaqQ5: "¿Puedo correr varias campañas?",
-    landingFaqQ5Hint: "",
+      "Cada hora consultamos los conteos reales de visualizaciones que reporta Instagram y TikTok, y pagamos contra esos números. Sin bots, sin métricas infladas — solo lo que las plataformas mismas reportan.",
+    landingFaqQ5: "¿Quién le paga a los creadores?",
     landingFaqA5:
-      "Sí. Diferentes apps, diferentes tarifas, diferentes reglas — cada campaña es independiente. Las manejas todas desde tu dashboard en /brand.",
+      "Nosotros, automáticamente, desde el presupuesto de tu campaña a medida que llegan visualizaciones. Los creadores reciben su pago directo — tú no tocas el flujo.",
     landingFaqQ6: "Soy creador. ¿Dónde me registro?",
     landingFaqA6:
       "En la página principal. O haz click en 'Para creadores' abajo en el footer.",
 
     landingFinalCtaTitleOne:
-      "{n}+ campaña ya está corriendo en Clippa",
+      "{n}+ creador listo para promocionar tu app",
     landingFinalCtaTitleMany:
-      "{n}+ campañas ya están corriendo en Clippa",
+      "{n}+ creadores listos para promocionar tu app",
     landingFinalCtaTitleFallback: "Sé la primera campaña en Clippa",
     landingFinalCtaButton: "Lanza tu campaña",
 

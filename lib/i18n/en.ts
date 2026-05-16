@@ -292,33 +292,32 @@ const en = {
     landingStep3Body:
       "Creators post, we track views every hour, payouts flow automatically. You only pay for the views you got.",
 
-    landingFaqTitle: "Quick answers",
+    landingFaqTitle: "Let's clear a few things up",
     landingFaqSubtitle:
-      "Everything you wanted to ask before launching a campaign.",
+      "A short set of answers before you launch your first campaign.",
     landingFaqQ1: "How much does a campaign cost?",
     landingFaqA1:
-      "You set the rate per view (e.g. $0.01) and a cap per clip (e.g. $20). Start with any budget you want — there's no minimum to launch. You only spend on views creators actually deliver.",
-    landingFaqQ2: "What if no creator picks my campaign?",
+      "You decide. Set the rate per view (e.g. $0.01) and a cap per clip (e.g. $20). Start with any budget — there's no minimum to launch. You only spend on views creators actually deliver.",
+    landingFaqQ2: "What does Clippa charge?",
     landingFaqA2:
-      "Your money stays yours. The deposit sits aside, untouched. You can end the campaign and recover anything you didn't spend whenever you want.",
-    landingFaqQ3: "How are views verified?",
+      "20% of every deposit. We use it to keep the platform running and the payouts flowing. The other 80% goes straight to your campaign's budget — you decide how to spend it.",
+    landingFaqQ3: "What if no creator picks my campaign?",
     landingFaqA3:
-      "We scrape the actual view counts from Instagram and TikTok every hour and pay against those numbers. No bots, no fake metrics — only views the platforms themselves report.",
-    landingFaqQ4: "Who pays the creators?",
+      "Your money stays yours. The deposit sits aside, untouched. You can end the campaign and recover anything you didn't spend whenever you want.",
+    landingFaqQ4: "How are views verified?",
     landingFaqA4:
-      "We do, automatically, from your campaign's budget as views land. Creators get paid directly — you never touch the payout flow.",
-    landingFaqQ5: "Can I run multiple campaigns?",
-    landingFaqQ5Hint: "",
+      "We scrape the actual view counts from Instagram and TikTok every hour and pay against those numbers. No bots, no fake metrics — only views the platforms themselves report.",
+    landingFaqQ5: "Who pays the creators?",
     landingFaqA5:
-      "Yes. Different apps, different rates, different rules — each campaign is independent. Manage them all from your /brand dashboard.",
+      "We do, automatically, from your campaign's budget as views land. Creators get paid directly — you never touch the payout flow.",
     landingFaqQ6: "I'm a creator. Where do I sign up?",
     landingFaqA6:
       "On the homepage. Or click 'For creators' in the footer below.",
 
     landingFinalCtaTitleOne:
-      "{n}+ campaign is already running on Clippa",
+      "{n}+ creator is ready to promote your app",
     landingFinalCtaTitleMany:
-      "{n}+ campaigns are already running on Clippa",
+      "{n}+ creators are ready to promote your app",
     landingFinalCtaTitleFallback: "Be the first campaign on Clippa",
     landingFinalCtaButton: "Launch your campaign",
 
