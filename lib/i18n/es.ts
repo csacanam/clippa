@@ -273,8 +273,7 @@ const es: Dict = {
     brandMode: "Cambiar a modo marca",
     forCreators: "Para creadores →",
 
-    landingTitle1: "Consigue gente real",
-    landingTitle2: "hablando de tu app.",
+    landingTitle: "Consigue gente real hablando de tu app.",
     landingSubtitle:
       "Lanza campañas con creadores para tu app. Consigue videos auténticos y llega a nuevos usuarios a través de redes sociales.",
     landingCta: "Lanzar una campaña →",

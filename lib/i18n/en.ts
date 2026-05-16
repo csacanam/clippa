@@ -277,8 +277,7 @@ const en = {
     forCreators: "For creators →",
 
     // /brands landing — targeting builders/founders, not corporate brands
-    landingTitle1: "Get real people",
-    landingTitle2: "talking about your app.",
+    landingTitle: "Get real people talking about your app.",
     landingSubtitle:
       "Launch creator campaigns for your app. Get authentic videos and reach new users through social media.",
     landingCta: "Launch a campaign →",

@@ -75,11 +75,9 @@ export default function BrandsLanding() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
-            className="font-display text-6xl font-bold tracking-tighter md:text-7xl"
+            className="font-display text-5xl font-bold tracking-tighter md:text-6xl"
           >
-            {t("brand.landingTitle1")}
-            <br />
-            {t("brand.landingTitle2")}
+            {t("brand.landingTitle")}
           </motion.h1>
 
           <motion.p
