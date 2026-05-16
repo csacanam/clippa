@@ -356,7 +356,8 @@ export async function rejectClip(
  * Returns counts and first error for UX feedback.
  */
 export async function refreshAllViews(
-  identityToken: string
+  identityToken: string,
+  opts?: { campaignSlug?: string }
 ): Promise<{
   ok: true;
   updated: number;
@@ -367,12 +368,17 @@ export async function refreshAllViews(
   const sb = createServerClient();
 
   // Join campaign rate + cap so we can compute earnings on the fly.
-  const { data: rows, error } = await sb
+  let q = sb
     .from("clips")
     .select(
       "id, platform, post_url, verified_views, campaigns!inner(rate_per_view_usd, max_payout_per_clip_usd)"
     )
     .eq("status", "tracking");
+  if (opts?.campaignSlug) {
+    const id = await getCampaignIdBySlug(opts.campaignSlug);
+    q = q.eq("campaign_id", id);
+  }
+  const { data: rows, error } = await q;
   if (error) throw error;
 
   const live = (rows ?? []) as unknown as Array<{

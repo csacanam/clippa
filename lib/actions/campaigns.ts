@@ -1,5 +1,6 @@
 "use server";
 
+import { requireAdmin } from "@/lib/auth-server";
 import { createServerClient } from "@/lib/supabase/server";
 import type { Campaign, CampaignChainState, Platform } from "@/lib/campaigns";
 import { getCampaignChainState } from "@/lib/payments/celo";
@@ -127,4 +128,89 @@ export async function getCampaignStats(slug: string): Promise<CampaignStats> {
     liveClipsCount: liveClips.count ?? 0,
     paidCreatorsCount: distinctCreators.size,
   };
+}
+
+export type AdminCampaignBudget = {
+  slug: string;
+  productName: string;
+  status: Campaign["status"];
+  /** Number of clips currently tracking on this campaign. */
+  liveClipsCount: number;
+  /** Sum of (earnings - paid_out) across this campaign's tracking clips — what
+   *  runPayouts would try to pay right now. */
+  owedNowUsd: number;
+  /** On-chain escrow state. exists:false if the campaign hasn't been funded yet. */
+  chain: CampaignChainState;
+};
+
+/**
+ * Per-campaign budget snapshot for the admin panel — answers "before I press
+ * Run payouts, does each campaign have enough USDT in its escrow?".
+ *
+ * Lists every non-ended campaign. For each one, reads the on-chain balance
+ * (source of truth for funded money) and aggregates the un-paid earnings of
+ * its tracking clips. Excludes ended campaigns since they can't accrue more.
+ */
+export async function getAdminCampaignBudgets(
+  identityToken: string
+): Promise<AdminCampaignBudget[]> {
+  await requireAdmin(identityToken);
+  const sb = createServerClient();
+
+  const { data: campaignRows, error: campErr } = await sb
+    .from("campaigns")
+    .select("id, slug, product_name, status")
+    .neq("status", "ended")
+    .order("created_at", { ascending: true });
+  if (campErr) throw campErr;
+
+  const campaigns = (campaignRows ?? []) as {
+    id: string;
+    slug: string;
+    product_name: string;
+    status: Campaign["status"];
+  }[];
+  if (campaigns.length === 0) return [];
+
+  const ids = campaigns.map((c) => c.id);
+
+  // One query for all tracking clips across these campaigns; group in memory.
+  const { data: clipRows, error: clipErr } = await sb
+    .from("clips")
+    .select("campaign_id, earnings_usd, paid_out_usd")
+    .in("campaign_id", ids)
+    .eq("status", "tracking");
+  if (clipErr) throw clipErr;
+
+  const owedByCampaign = new Map<string, number>();
+  const liveCountByCampaign = new Map<string, number>();
+  for (const r of (clipRows ?? []) as {
+    campaign_id: string;
+    earnings_usd: string | number;
+    paid_out_usd: string | number;
+  }[]) {
+    const delta = Math.max(0, n(r.earnings_usd) - n(r.paid_out_usd));
+    owedByCampaign.set(
+      r.campaign_id,
+      (owedByCampaign.get(r.campaign_id) ?? 0) + delta
+    );
+    liveCountByCampaign.set(
+      r.campaign_id,
+      (liveCountByCampaign.get(r.campaign_id) ?? 0) + 1
+    );
+  }
+
+  // Fetch on-chain state in parallel — one RPC per campaign.
+  const chainStates = await Promise.all(
+    campaigns.map((c) => getCampaignChainState(c.id))
+  );
+
+  return campaigns.map((c, i) => ({
+    slug: c.slug,
+    productName: c.product_name,
+    status: c.status,
+    liveClipsCount: liveCountByCampaign.get(c.id) ?? 0,
+    owedNowUsd: owedByCampaign.get(c.id) ?? 0,
+    chain: chainStates[i],
+  }));
 }

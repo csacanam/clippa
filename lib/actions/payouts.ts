@@ -1,5 +1,6 @@
 "use server";
 
+import { getCampaignIdBySlug } from "@/lib/actions/campaigns";
 import { requireAdmin, requireCreator } from "@/lib/auth-server";
 import {
   ensureGasStipend,
@@ -50,20 +51,26 @@ function n(v: string | number): number {
  * A per-run cap (DAILY_PAYOUT_CAP_USD) bounds the blast radius.
  */
 export async function runPayouts(
-  identityToken: string
+  identityToken: string,
+  opts?: { campaignSlug?: string }
 ): Promise<RunPayoutsResult> {
   await requireAdmin(identityToken);
   const sb = createServerClient();
 
   const cap = Number(process.env.DAILY_PAYOUT_CAP_USD ?? "500");
 
-  const { data, error } = await sb
+  let q = sb
     .from("clips")
     .select(
       "id, campaign_id, creator_id, verified_views, paid_views, earnings_usd, paid_out_usd, creators!inner(wallet_address)"
     )
     .eq("status", "tracking")
     .order("created_at", { ascending: true });
+  if (opts?.campaignSlug) {
+    const id = await getCampaignIdBySlug(opts.campaignSlug);
+    q = q.eq("campaign_id", id);
+  }
+  const { data, error } = await q;
   if (error) throw error;
 
   const clips = (data ?? []) as unknown as ClipRow[];

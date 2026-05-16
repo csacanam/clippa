@@ -21,6 +21,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
+  getAdminCampaignBudgets,
+  type AdminCampaignBudget,
+} from "@/lib/actions/campaigns";
+import {
   approveClip,
   getOperatorStats,
   listAllClips,
@@ -210,73 +214,64 @@ function PendingClipCard({
   );
 }
 
-function AdminDashboard() {
-  const { user, logout } = usePrivy();
-  const identityToken = useAccessToken();
-  const adminEmail = user?.email?.address ?? "";
+const BUDGET_CARD_COLORS = ["bg-peach", "bg-lime", "bg-cream"] as const;
 
-  const [pending, setPending] = useState<Clip[]>([]);
-  const [allClips, setAll] = useState<Clip[]>([]);
-  const [payouts, setPayouts] = useState<PayoutHistoryRow[]>([]);
-  const [stats, setStats] = useState<OperatorStats | null>(null);
-  const [filter, setFilter] = useState<Filter>("all");
-  const [scraping, setScraping] = useState(false);
-  const [scrapeMsg, setScrapeMsg] = useState<string | null>(null);
+function CampaignBudgetCard({
+  budget,
+  colorIndex,
+  identityToken,
+  onChange,
+}: {
+  budget: AdminCampaignBudget;
+  colorIndex: number;
+  identityToken: string;
+  onChange: () => void | Promise<void>;
+}) {
+  const bg = BUDGET_CARD_COLORS[colorIndex % BUDGET_CARD_COLORS.length];
+  const { chain, owedNowUsd } = budget;
+  const shortfall = owedNowUsd - chain.balanceUsd;
+  // Underfunded only matters when there's actually something to pay.
+  const underfunded = owedNowUsd > 0 && shortfall > 0;
+  const fullyFunded = owedNowUsd > 0 && shortfall <= 0;
+
+  const [syncing, setSyncing] = useState(false);
   const [paying, setPaying] = useState(false);
-  const [payMsg, setPayMsg] = useState<string | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
+  const handleSync = async () => {
     if (!identityToken) return;
+    setSyncing(true);
+    setMsg(null);
     try {
-      const [p, a, s, py] = await Promise.all([
-        listPendingClips(identityToken),
-        listAllClips(identityToken),
-        getOperatorStats(identityToken),
-        listAllPayouts(identityToken),
-      ]);
-      setPending(p);
-      setAll(a);
-      setStats(s);
-      setPayouts(py);
-    } catch (err) {
-      console.error("Failed to refresh:", err);
-    }
-  }, [identityToken]);
-
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  const refreshViews = async () => {
-    if (!identityToken) return;
-    setScraping(true);
-    setScrapeMsg(null);
-    try {
-      const r = await refreshAllViews(identityToken);
-      await refresh();
+      const r = await refreshAllViews(identityToken, {
+        campaignSlug: budget.slug,
+      });
+      await onChange();
       if (r.updated === 0 && r.failed === 0) {
-        setScrapeMsg("No live clips to sync.");
+        setMsg("No live clips to sync.");
       } else if (r.failed === 0) {
-        setScrapeMsg(`Updated ${r.updated} clip${r.updated === 1 ? "" : "s"}.`);
+        setMsg(`Synced ${r.updated} clip${r.updated === 1 ? "" : "s"}.`);
       } else {
-        setScrapeMsg(
-          `Updated ${r.updated}, ${r.failed} failed. ${r.firstError ?? ""}`
+        setMsg(
+          `Synced ${r.updated}, ${r.failed} failed. ${r.firstError ?? ""}`
         );
       }
     } catch (err) {
-      setScrapeMsg(`Failed: ${(err as Error).message}`);
+      setMsg(`Failed: ${(err as Error).message}`);
     } finally {
-      setScraping(false);
+      setSyncing(false);
     }
   };
 
-  const handleRunPayouts = async () => {
+  const handlePay = async () => {
     if (!identityToken) return;
     setPaying(true);
-    setPayMsg(null);
+    setMsg(null);
     try {
-      const r = await runPayouts(identityToken);
-      await refresh();
+      const r = await runPayouts(identityToken, {
+        campaignSlug: budget.slug,
+      });
+      await onChange();
       const parts: string[] = [];
       if (r.paidCount > 0) {
         parts.push(
@@ -286,18 +281,172 @@ function AdminDashboard() {
         );
       }
       if (r.failedCount > 0) {
-        parts.push(`${r.failedCount} failed${r.firstError ? `: ${r.firstError}` : ""}`);
+        parts.push(
+          `${r.failedCount} failed${r.firstError ? `: ${r.firstError}` : ""}`
+        );
       }
       if (r.skippedForCap > 0) {
         parts.push(`${r.skippedForCap} skipped (daily cap)`);
       }
-      setPayMsg(parts.length ? parts.join(" · ") : "Nothing to pay out.");
+      setMsg(parts.length ? parts.join(" · ") : "Nothing to pay out.");
     } catch (err) {
-      setPayMsg(`Failed: ${(err as Error).message}`);
+      setMsg(`Failed: ${(err as Error).message}`);
     } finally {
       setPaying(false);
     }
   };
+
+  const busy = syncing || paying;
+  const payDisabled =
+    busy || owedNowUsd <= 0 || underfunded || !chain.exists || !identityToken;
+  const payTitle = !chain.exists
+    ? "Campaign not yet funded on-chain"
+    : owedNowUsd <= 0
+      ? "Nothing to pay out right now"
+      : underfunded
+        ? `Insufficient escrow balance (short ${formatUsd(shortfall)})`
+        : undefined;
+
+  return (
+    <Card className={bg}>
+      <CardContent className="flex flex-col gap-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <CardTitle className="truncate">{budget.productName}</CardTitle>
+            <p className="mt-1 font-mono text-[0.7rem] text-ink-soft">
+              {budget.slug}
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-col items-end gap-1">
+            {budget.status === "paused" && (
+              <Badge variant="muted" className="px-2 py-0.5 text-[0.6rem]">
+                Paused
+              </Badge>
+            )}
+            {!chain.exists ? (
+              <Badge variant="muted" className="px-2 py-0.5 text-[0.6rem]">
+                Not on-chain
+              </Badge>
+            ) : underfunded ? (
+              <Badge
+                variant="destructive"
+                className="px-2 py-0.5 text-[0.6rem]"
+              >
+                Short {formatUsd(shortfall)}
+              </Badge>
+            ) : fullyFunded ? (
+              <Badge variant="live" className="px-2 py-0.5 text-[0.6rem]">
+                Funded
+              </Badge>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <p className="font-display text-[0.65rem] font-bold uppercase tracking-wider text-ink-soft">
+              Escrow balance
+            </p>
+            <p
+              className={`mt-0.5 font-display text-2xl font-bold tracking-tight ${
+                underfunded ? "text-error" : ""
+              }`}
+            >
+              {formatUsd(chain.balanceUsd)}
+            </p>
+          </div>
+          <div>
+            <p className="font-display text-[0.65rem] font-bold uppercase tracking-wider text-ink-soft">
+              Owed now
+            </p>
+            <p className="mt-0.5 font-display text-2xl font-bold tracking-tight">
+              {formatUsd(owedNowUsd)}
+            </p>
+            <p className="mt-0.5 text-[0.65rem] text-ink-soft">
+              {budget.liveClipsCount}{" "}
+              {budget.liveClipsCount === 1 ? "live clip" : "live clips"}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between border-t-2 border-ink/10 pt-2 text-[0.7rem] text-ink-soft">
+          <span>
+            Funded total{" "}
+            <span className="font-mono font-bold text-ink">
+              {formatUsd(chain.totalFundedUsd)}
+            </span>
+          </span>
+          <span>
+            Paid out{" "}
+            <span className="font-mono font-bold text-ink">
+              {formatUsd(chain.totalPaidOutUsd)}
+            </span>
+          </span>
+        </div>
+
+        <div className="flex flex-wrap gap-2 border-t-2 border-ink/10 pt-3">
+          <Button
+            onClick={handleSync}
+            disabled={busy || !identityToken}
+            variant="indigo"
+            size="sm"
+          >
+            <RefreshCw className={`size-3.5 ${syncing ? "animate-spin" : ""}`} />
+            {syncing ? "Syncing..." : "Sync"}
+          </Button>
+          <Button
+            onClick={handlePay}
+            disabled={payDisabled}
+            variant="default"
+            size="sm"
+            title={payTitle}
+          >
+            <Coins className={`size-3.5 ${paying ? "animate-pulse" : ""}`} />
+            {paying ? "Paying..." : "Run payouts"}
+          </Button>
+        </div>
+
+        {msg && <p className="font-body text-xs text-ink-soft">{msg}</p>}
+      </CardContent>
+    </Card>
+  );
+}
+
+function AdminDashboard() {
+  const { user, logout } = usePrivy();
+  const identityToken = useAccessToken();
+  const adminEmail = user?.email?.address ?? "";
+
+  const [pending, setPending] = useState<Clip[]>([]);
+  const [allClips, setAll] = useState<Clip[]>([]);
+  const [payouts, setPayouts] = useState<PayoutHistoryRow[]>([]);
+  const [stats, setStats] = useState<OperatorStats | null>(null);
+  const [budgets, setBudgets] = useState<AdminCampaignBudget[]>([]);
+  const [filter, setFilter] = useState<Filter>("all");
+
+  const refresh = useCallback(async () => {
+    if (!identityToken) return;
+    try {
+      const [p, a, s, py, b] = await Promise.all([
+        listPendingClips(identityToken),
+        listAllClips(identityToken),
+        getOperatorStats(identityToken),
+        listAllPayouts(identityToken),
+        getAdminCampaignBudgets(identityToken),
+      ]);
+      setPending(p);
+      setAll(a);
+      setStats(s);
+      setPayouts(py);
+      setBudgets(b);
+    } catch (err) {
+      console.error("Failed to refresh:", err);
+    }
+  }, [identityToken]);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   const filtered = useMemo(() => {
     if (filter === "all") return allClips;
@@ -439,21 +588,29 @@ function AdminDashboard() {
             </Card>
           </div>
 
-          {/* Run payouts */}
-          <div className="mt-3 flex flex-wrap items-center gap-3">
-            <Button
-              onClick={handleRunPayouts}
-              disabled={paying || !identityToken}
-              variant="default"
-              size="default"
-            >
-              <Coins className={`size-4 ${paying ? "animate-pulse" : ""}`} />
-              {paying ? "Paying out..." : "Run payouts"}
-            </Button>
-            {payMsg && (
-              <p className="font-body text-xs text-ink-soft">{payMsg}</p>
-            )}
-          </div>
+          {/* Per-campaign budgets — sync + payouts live inside each card. */}
+          {budgets.length > 0 && (
+            <div className="mt-6">
+              <h2 className="font-display text-xl font-bold tracking-tight">
+                Campaign budgets
+              </h2>
+              <p className="mt-1 font-body text-xs text-ink-soft">
+                On-chain escrow balance vs. what creators are owed right now.
+                Sync and pay out per campaign.
+              </p>
+              <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                {budgets.map((b, i) => (
+                  <CampaignBudgetCard
+                    key={b.slug}
+                    budget={b}
+                    colorIndex={i}
+                    identityToken={identityToken ?? ""}
+                    onChange={refresh}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </motion.div>
 
         <motion.div
@@ -492,24 +649,9 @@ function AdminDashboard() {
           transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
           className="mt-12 mb-16"
         >
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="font-display text-xl font-bold tracking-tight">
-              All clips
-            </h2>
-            <Button
-              onClick={refreshViews}
-              disabled={scraping || !identityToken}
-              variant="indigo"
-              size="default"
-            >
-              <RefreshCw className={`size-4 ${scraping ? "animate-spin" : ""}`} />
-              {scraping ? "Syncing..." : "Sync now"}
-            </Button>
-          </div>
-
-          {scrapeMsg && (
-            <p className="mt-2 text-xs text-ink-soft">{scrapeMsg}</p>
-          )}
+          <h2 className="font-display text-xl font-bold tracking-tight">
+            All clips
+          </h2>
 
           <div className="mt-3 flex flex-wrap gap-2">
             {(
