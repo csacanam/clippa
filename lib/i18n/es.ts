@@ -199,8 +199,8 @@ const es: Dict = {
   brand: {
     badgeBrand: "Marca",
     backToDashboard: "← Volver al panel",
-    creatorMode: "Modo creador →",
-    brandMode: "Modo marca →",
+    creatorMode: "Cambiar a modo creador",
+    brandMode: "Cambiar a modo marca",
     forCreators: "Para creadores →",
 
     landingTitle1: "Paga por vista.",

@@ -203,8 +203,8 @@ const en = {
     // Shared
     badgeBrand: "Brand",
     backToDashboard: "← Back to dashboard",
-    creatorMode: "Creator mode →",
-    brandMode: "Brand mode →",
+    creatorMode: "Switch to creator mode",
+    brandMode: "Switch to brand mode",
     forCreators: "For creators →",
 
     // /brands landing

@@ -79,30 +79,31 @@ function BrandDashboard() {
 
   return (
     <main className="flex min-h-dvh flex-col px-6 py-6 md:px-12">
-      <header className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <ClippaLogo />
-          <Badge variant="indigo" className="px-2.5 py-1 text-[0.7rem]">
-            {t("brand.badgeBrand")}
-          </Badge>
-        </div>
-        <div className="flex items-center gap-4">
-          <RoleSwitchLink
-            targetRole="creator"
-            targetHref="/app"
-            label={t("brand.creatorMode")}
-          />
-          <span className="hidden font-body text-xs text-ink-soft md:inline">
-            {email}
-          </span>
-          <Button onClick={() => logout()} variant="ghost" size="sm">
-            {t("common.signOut")}
-          </Button>
-        </div>
-      </header>
+      <div className="mx-auto flex w-full max-w-4xl flex-col">
+        <header className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <ClippaLogo />
+            <Badge variant="indigo" className="px-2.5 py-1 text-[0.7rem]">
+              {t("brand.badgeBrand")}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-4">
+            <RoleSwitchLink
+              targetRole="creator"
+              targetHref="/app"
+              label={t("brand.creatorMode")}
+            />
+            <span className="hidden font-body text-xs text-ink-soft md:inline">
+              {email}
+            </span>
+            <Button onClick={() => logout()} variant="ghost" size="sm">
+              {t("common.signOut")}
+            </Button>
+          </div>
+        </header>
 
-      <section className="mx-auto mt-12 w-full max-w-4xl">
-        <motion.div
+        <section className="mt-12 w-full">
+          <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: "easeOut" }}
@@ -142,7 +143,8 @@ function BrandDashboard() {
             ))}
           </div>
         )}
-      </section>
+        </section>
+      </div>
     </main>
   );
 }

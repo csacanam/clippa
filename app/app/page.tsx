@@ -97,32 +97,33 @@ function AppHome() {
 
   return (
     <main className="flex min-h-dvh flex-col px-6 py-6 md:px-12">
-      <header className="flex items-center justify-between">
-        <ClippaLogo />
-        <div className="flex items-center gap-4">
-          {isAdmin(email) && (
-            <Link href="/admin">
-              <Badge variant="indigo" className="px-2.5 py-1 text-[0.7rem]">
-                {t("home.adminLabel")}
-              </Badge>
-            </Link>
-          )}
-          <RoleSwitchLink
-            targetRole="brand"
-            targetHref="/brand"
-            label={t("brand.brandMode")}
-          />
-          <LocaleToggle />
-          <span className="hidden font-body text-xs text-ink-soft md:inline">
-            {email}
-          </span>
-          <Button onClick={() => logout()} variant="ghost" size="sm">
-            {t("common.signOut")}
-          </Button>
-        </div>
-      </header>
+      <div className="mx-auto flex w-full max-w-3xl flex-col">
+        <header className="flex items-center justify-between gap-3">
+          <ClippaLogo />
+          <div className="flex items-center gap-4">
+            {isAdmin(email) && (
+              <Link href="/admin">
+                <Badge variant="indigo" className="px-2.5 py-1 text-[0.7rem]">
+                  {t("home.adminLabel")}
+                </Badge>
+              </Link>
+            )}
+            <RoleSwitchLink
+              targetRole="brand"
+              targetHref="/brand"
+              label={t("brand.brandMode")}
+            />
+            <LocaleToggle />
+            <span className="hidden font-body text-xs text-ink-soft md:inline">
+              {email}
+            </span>
+            <Button onClick={() => logout()} variant="ghost" size="sm">
+              {t("common.signOut")}
+            </Button>
+          </div>
+        </header>
 
-      <section className="mx-auto mt-12 w-full max-w-3xl">
+        <section className="mt-12 w-full">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -269,7 +270,8 @@ function AppHome() {
             </div>
           )}
         </motion.div>
-      </section>
+        </section>
+      </div>
     </main>
   );
 }
