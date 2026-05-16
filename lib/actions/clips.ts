@@ -267,20 +267,45 @@ export async function submitClip(
   return { ok: true, clip: joinRowToClip(data as unknown as RawJoinRow) };
 }
 
+/**
+ * Deletes a clip. Allowed only while it's still 'pending' (awaiting review)
+ * or 'rejected' — never once it has been tracking. A tracking / paused /
+ * maxed_out clip may have produced on-chain payouts whose DB records
+ * (view_snapshots, payouts) would cascade-delete with the row and break
+ * the audit trail.
+ */
 export async function removeClip(
   identityToken: string,
   clipId: string
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const creator = await requireCreator(identityToken);
   const sb = createServerClient();
-  // Only the owner can delete.
+
+  // Single statement: delete only if status is in the allowed set AND owned.
   const { error, count } = await sb
     .from("clips")
     .delete({ count: "exact" })
     .eq("id", clipId)
-    .eq("creator_id", creator.id);
+    .eq("creator_id", creator.id)
+    .in("status", ["pending", "rejected"]);
   if (error) return { ok: false, error: error.message };
-  if (!count) return { ok: false, error: "Clip not found." };
+  if (!count) {
+    // Either the clip doesn't exist / isn't ours, or it's no longer deletable.
+    // Look it up to give a clearer error.
+    const found = await sb
+      .from("clips")
+      .select("status")
+      .eq("id", clipId)
+      .eq("creator_id", creator.id)
+      .maybeSingle();
+    if (found.data) {
+      return {
+        ok: false,
+        error: "Live clips can't be deleted — they have on-chain payouts.",
+      };
+    }
+    return { ok: false, error: "Clip not found." };
+  }
   return { ok: true };
 }
 

@@ -69,6 +69,9 @@ export function MyClipCard({
   };
 
   const earnedSomething = clip.paidOutUsd > 0;
+  // Match the server-side rule in removeClip — once live it has on-chain
+  // history that we can't safely cascade-delete.
+  const canDelete = clip.status === "pending" || clip.status === "rejected";
 
   return (
     <Card
@@ -99,7 +102,7 @@ export function MyClipCard({
             <Badge variant={badge.variant} className="px-2.5 py-0.5">
               {t(badge.key)}
             </Badge>
-            {!confirming && (
+            {!confirming && canDelete && (
               <button
                 type="button"
                 onClick={(e) => {
