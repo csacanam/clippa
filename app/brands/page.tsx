@@ -8,11 +8,13 @@ import { useEffect } from "react";
 
 import { ClippaLogo } from "@/components/clippa-logo";
 import { LocaleToggle } from "@/components/locale-toggle";
+import { useTranslation } from "@/components/locale-provider";
 import { Button } from "@/components/ui/button";
 
 export default function BrandsLanding() {
   const router = useRouter();
   const { ready, authenticated, login } = usePrivy();
+  const { t } = useTranslation();
 
   // Already signed in? Take them straight to the brand dashboard.
   // The dashboard handles first-time role assignment.
@@ -22,7 +24,6 @@ export default function BrandsLanding() {
 
   return (
     <main className="flex min-h-dvh flex-col">
-      {/* Top bar */}
       <header className="flex items-center justify-between px-6 py-6 md:px-12">
         <ClippaLogo />
         <div className="flex items-center gap-4">
@@ -30,7 +31,7 @@ export default function BrandsLanding() {
             href="/"
             className="hidden font-body text-sm font-medium text-ink-soft underline-offset-4 hover:underline sm:inline"
           >
-            For creators →
+            {t("brand.forCreators")}
           </Link>
           <LocaleToggle />
           <button
@@ -38,12 +39,11 @@ export default function BrandsLanding() {
             disabled={!ready}
             className="font-body text-sm font-medium text-ink underline-offset-4 hover:underline disabled:opacity-50"
           >
-            Sign in
+            {t("common.signIn")}
           </button>
         </div>
       </header>
 
-      {/* Hero */}
       <section className="flex flex-1 items-center justify-center px-6 pb-20 md:px-12">
         <div className="flex w-full max-w-2xl flex-col items-center text-center">
           <motion.h1
@@ -52,9 +52,9 @@ export default function BrandsLanding() {
             transition={{ duration: 0.5, ease: "easeOut" }}
             className="font-display text-6xl font-bold tracking-tighter md:text-7xl"
           >
-            Pay per view.
+            {t("brand.landingTitle1")}
             <br />
-            Not per promise.
+            {t("brand.landingTitle2")}
           </motion.h1>
 
           <motion.p
@@ -63,9 +63,7 @@ export default function BrandsLanding() {
             transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
             className="mt-6 max-w-md font-body text-base text-ink-soft md:text-lg"
           >
-            Real creators turn your product into clips on Instagram and TikTok.
-            You set the price per view, deposit a budget, and only spend on
-            views that actually happen. No agency. No retainer.
+            {t("brand.landingSubtitle")}
           </motion.p>
 
           <motion.div
@@ -75,11 +73,10 @@ export default function BrandsLanding() {
             className="mt-10"
           >
             <Button onClick={() => login()} disabled={!ready} size="xl">
-              Launch a campaign →
+              {t("brand.landingCta")}
             </Button>
           </motion.div>
 
-          {/* How it works — three steps */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -88,25 +85,25 @@ export default function BrandsLanding() {
           >
             <Step
               n={1}
-              title="Define your campaign"
-              body="Your product, what you pay per view, a cap per clip, and the rules creators follow."
+              title={t("brand.landingStep1Title")}
+              body={t("brand.landingStep1Body")}
             />
             <Step
               n={2}
-              title="Deposit your budget"
-              body="Decide how much to spend. The money sits aside, untouched, until views land."
+              title={t("brand.landingStep2Title")}
+              body={t("brand.landingStep2Body")}
             />
             <Step
               n={3}
-              title="Pay on results"
-              body="As clips publish and views accrue, creators get paid automatically. No invoices, no chasing."
+              title={t("brand.landingStep3Title")}
+              body={t("brand.landingStep3Body")}
             />
           </motion.div>
         </div>
       </section>
 
       <footer className="px-6 py-6 text-center text-xs text-ink-soft/70 md:px-12">
-        No agency markup. No long-term contracts. Only pay for results.
+        {t("brand.landingFooter")}
       </footer>
     </main>
   );

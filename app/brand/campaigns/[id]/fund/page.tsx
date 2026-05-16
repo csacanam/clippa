@@ -18,6 +18,7 @@ import { celo } from "viem/chains";
 
 import { AuthGuard } from "@/components/auth-guard";
 import { ClippaLogo } from "@/components/clippa-logo";
+import { useTranslation } from "@/components/locale-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -72,6 +73,7 @@ function FundCampaign() {
   const params = useParams<{ id: string }>();
   const identityToken = useAccessToken();
   const { wallets } = useWallets();
+  const { t } = useTranslation();
 
   const [campaign, setCampaign] = useState<PendingCampaign | null | "missing">(null);
   const [stage, setStage] = useState<Stage>({ kind: "idle" });
@@ -86,13 +88,13 @@ function FundCampaign() {
   const handleFund = async () => {
     if (!identityToken || !campaign || campaign === "missing") return;
     if (!CLIPPA_CONTRACT_ADDRESS) {
-      setStage({ kind: "error", message: "Contract address not configured." });
+      setStage({ kind: "error", message: t("brand.errContractNotConfigured") });
       return;
     }
     try {
       const wallet =
         wallets.find((w) => w.walletClientType === "privy") ?? wallets[0];
-      if (!wallet) throw new Error("No wallet found.");
+      if (!wallet) throw new Error(t("brand.errNoWallet"));
       try {
         await wallet.switchChain(celo.id);
       } catch {
@@ -196,8 +198,8 @@ function FundCampaign() {
     } catch (e) {
       const raw = (e as Error).message ?? "Something went wrong.";
       let message = raw.slice(0, 200);
-      if (/rejected|denied/i.test(raw)) message = "Signing cancelled.";
-      else if (/insufficient/i.test(raw)) message = "Not enough USDT or CELO for gas.";
+      if (/rejected|denied/i.test(raw)) message = t("brand.errSigningCancelled");
+      else if (/insufficient/i.test(raw)) message = t("brand.errInsufficientFunds");
       setStage({ kind: "error", message });
     }
   };
@@ -214,36 +216,36 @@ function FundCampaign() {
         <div className="flex items-center gap-3">
           <ClippaLogo />
           <Badge variant="indigo" className="px-2.5 py-1 text-[0.7rem]">
-            Brand
+            {t("brand.badgeBrand")}
           </Badge>
         </div>
         <Link
           href="/brand"
           className="font-body text-sm font-medium text-ink-soft underline-offset-4 hover:underline"
         >
-          ← Back to dashboard
+          {t("brand.backToDashboard")}
         </Link>
       </header>
 
       <section className="mx-auto mt-12 w-full max-w-2xl">
         {campaign === null ? (
           <p className="text-center font-display text-sm uppercase tracking-wider text-ink-soft">
-            Loading…
+            {t("common.loading")}
           </p>
         ) : campaign === "missing" ? (
           <Card className="bg-peach">
             <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
               <p className="font-display text-lg font-bold tracking-tight">
-                Campaign not found
+                {t("brand.resumeNotFound")}
               </p>
               <p className="text-sm text-ink-soft">
-                It may already be active, or doesn't belong to you.
+                {t("brand.resumeNotFoundBody")}
               </p>
               <Link
                 href="/brand"
                 className="mt-2 font-body text-sm text-indigo underline-offset-4 hover:underline"
               >
-                Back to dashboard
+                {t("brand.resumeBack")}
               </Link>
             </CardContent>
           </Card>
@@ -257,7 +259,7 @@ function FundCampaign() {
               <CardContent className="flex flex-col gap-4">
                 <div>
                   <p className="font-display text-[0.65rem] font-bold uppercase tracking-wider text-ink-soft">
-                    Resume funding
+                    {t("brand.resumeLabel")}
                   </p>
                   <h1 className="mt-1 font-display text-2xl font-bold tracking-tight">
                     {campaign.productName}
@@ -270,16 +272,14 @@ function FundCampaign() {
                 <div className="rounded-md border-2 border-ink bg-peach p-4">
                   <div className="flex items-baseline justify-between">
                     <span className="font-display text-xs font-bold uppercase tracking-wider text-ink-soft">
-                      Deposit
+                      {t("brand.fundAmount")}
                     </span>
                     <span className="font-display text-2xl font-bold tracking-tight">
                       ${campaign.totalBudgetUsd.toFixed(2)}
                     </span>
                   </div>
                   <p className="mt-2 text-[0.7rem] text-ink-soft">
-                    We&apos;ll pick up from wherever the last attempt stopped —
-                    any step that already completed will be skipped
-                    automatically.
+                    {t("brand.resumeNote")}
                   </p>
                 </div>
 
@@ -288,7 +288,7 @@ function FundCampaign() {
                     <div className="flex flex-col items-center gap-2 rounded-md border-2 border-ink bg-lime p-4 text-center">
                       <Check className="size-6" />
                       <p className="font-display text-lg font-bold tracking-tight">
-                        Campaign is live
+                        {t("brand.resumeDoneTitle")}
                       </p>
                       {stage.fundTx && (
                         <a
@@ -297,7 +297,7 @@ function FundCampaign() {
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 text-xs text-indigo hover:underline"
                         >
-                          View payment receipt
+                          {t("brand.fundDoneReceipt")}
                           <ArrowUpRight className="size-3" />
                         </a>
                       )}
@@ -307,7 +307,7 @@ function FundCampaign() {
                       variant="default"
                       size="lg"
                     >
-                      Go to dashboard
+                      {t("brand.fundDoneCta")}
                     </Button>
                   </div>
                 ) : (
@@ -316,7 +316,7 @@ function FundCampaign() {
                       href="/brand"
                       className="inline-flex items-center gap-1 self-center font-body text-sm text-ink-soft underline-offset-4 hover:underline"
                     >
-                      <ArrowLeft className="size-3" /> Cancel
+                      <ArrowLeft className="size-3" /> {t("brand.resumeCancel")}
                     </Link>
                     <Button
                       onClick={handleFund}
@@ -326,14 +326,14 @@ function FundCampaign() {
                     >
                       <Coins className={`size-4 ${busy ? "animate-pulse" : ""}`} />
                       {stage.kind === "approving"
-                        ? "Approving transfer..."
+                        ? t("brand.resumeBtnApproving")
                         : stage.kind === "creating"
-                          ? "Setting up campaign..."
+                          ? t("brand.resumeBtnCreating")
                           : stage.kind === "funding"
-                            ? "Sending funds..."
+                            ? t("brand.resumeBtnFunding")
                             : stage.kind === "finalizing"
-                              ? "Finalizing..."
-                              : "Resume deposit"}
+                              ? t("brand.resumeBtnFinalizing")
+                              : t("brand.resumeBtnIdle")}
                     </Button>
                   </div>
                 )}

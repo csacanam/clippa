@@ -158,7 +158,7 @@ function NewCampaignWizard() {
   const { wallets } = useWallets();
 
   const [step, setStep] = useState<1 | 2>(1);
-  const { locale } = useTranslation();
+  const { t, locale } = useTranslation();
   const [form, setForm] = useState<FormState>(() => defaultsFor(locale));
   const [errors, setErrors] = useState<Partial<Record<keyof CampaignDraftInput, string>>>({});
   const [slugTouched, setSlugTouched] = useState(false);
@@ -223,13 +223,16 @@ function NewCampaignWizard() {
   const handleFund = async () => {
     if (!identityToken || !draftId) return;
     if (!CLIPPA_CONTRACT_ADDRESS) {
-      setStage({ kind: "error", message: "Contract address not configured." });
+      setStage({
+        kind: "error",
+        message: t("brand.errContractNotConfigured"),
+      });
       return;
     }
     try {
       const wallet =
         wallets.find((w) => w.walletClientType === "privy") ?? wallets[0];
-      if (!wallet) throw new Error("No wallet found on your account.");
+      if (!wallet) throw new Error(t("brand.errNoWallet"));
       try {
         await wallet.switchChain(celo.id);
       } catch {
@@ -301,8 +304,9 @@ function NewCampaignWizard() {
     } catch (e) {
       const raw = (e as Error).message ?? "Something went wrong.";
       let message = raw.slice(0, 200);
-      if (/rejected|denied/i.test(raw)) message = "Signing cancelled.";
-      else if (/insufficient/i.test(raw)) message = "Not enough USDT or CELO for gas.";
+      if (/rejected|denied/i.test(raw)) message = t("brand.errSigningCancelled");
+      else if (/insufficient/i.test(raw))
+        message = t("brand.errInsufficientFunds");
       setStage({ kind: "error", message });
     }
   };
@@ -313,14 +317,14 @@ function NewCampaignWizard() {
         <div className="flex items-center gap-3">
           <ClippaLogo />
           <Badge variant="indigo" className="px-2.5 py-1 text-[0.7rem]">
-            Brand
+            {t("brand.badgeBrand")}
           </Badge>
         </div>
         <Link
           href="/brand"
           className="font-body text-sm font-medium text-ink-soft underline-offset-4 hover:underline"
         >
-          ← Back to dashboard
+          {t("brand.backToDashboard")}
         </Link>
       </header>
 
@@ -362,11 +366,12 @@ function NewCampaignWizard() {
 // ============================================================
 
 function StepIndicator({ step }: { step: 1 | 2 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center gap-3">
-      <StepDot n={1} active={step === 1} done={step === 2} label="Details" />
+      <StepDot n={1} active={step === 1} done={step === 2} label={t("brand.wizStep1")} />
       <div className="h-px flex-1 bg-ink/15" />
-      <StepDot n={2} active={step === 2} done={false} label="Review & Fund" />
+      <StepDot n={2} active={step === 2} done={false} label={t("brand.wizStep2")} />
     </div>
   );
 }
@@ -429,9 +434,19 @@ function StepOne({
   reserving: boolean;
   onNext: () => void;
 }) {
+  const { t } = useTranslation();
   const update = <K extends keyof FormState>(k: K, v: FormState[K]) => {
     setForm((f) => ({ ...f, [k]: v }));
   };
+
+  const slugHint =
+    slugStatus === "checking"
+      ? t("brand.fldSlugHintChecking")
+      : slugStatus === "available"
+        ? t("brand.fldSlugHintAvailable", { slug: form.slug })
+        : slugStatus === "taken"
+          ? t("brand.fldSlugHintTaken")
+          : t("brand.fldSlugHintIdle");
 
   return (
     <motion.div
@@ -443,13 +458,13 @@ function StepOne({
       <Card className="bg-cream">
         <CardContent className="flex flex-col gap-5">
           <h2 className="font-display text-xl font-bold tracking-tight">
-            What you&apos;re promoting
+            {t("brand.wizSectionPromoting")}
           </h2>
 
           <Field
-            label="Language you'll write in"
+            label={t("brand.fldLanguage")}
             error={errors.sourceLanguage}
-            hint="Pick the language you'll author the content in. We'll auto-translate to other supported languages so every creator sees the campaign in their own language."
+            hint={t("brand.fldLanguageHint")}
           >
             <div className="flex flex-wrap gap-3">
               {LOCALES.map((loc) => (
@@ -466,9 +481,9 @@ function StepOne({
           </Field>
 
           <Field
-            label="Product name"
+            label={t("brand.fldProductName")}
             error={errors.productName}
-            hint="Shown as the title both in the catalog and on the campaign page."
+            hint={t("brand.fldProductNameHint")}
           >
             <Input
               value={form.productName}
@@ -479,17 +494,9 @@ function StepOne({
           </Field>
 
           <Field
-            label="URL slug"
+            label={t("brand.fldSlug")}
             error={errors.slug}
-            hint={
-              slugStatus === "checking"
-                ? "Checking availability…"
-                : slugStatus === "available"
-                  ? `✓ Available: clippa.fun/app/campaigns/${form.slug}`
-                  : slugStatus === "taken"
-                    ? "✗ Already taken — pick another"
-                    : "Lowercase letters, numbers, dashes. Used in the campaign URL."
-            }
+            hint={slugHint}
             hintColor={
               slugStatus === "available"
                 ? "text-success"
@@ -510,9 +517,9 @@ function StepOne({
           </Field>
 
           <Field
-            label="Catalog tagline"
+            label={t("brand.fldTagline")}
             error={errors.shortDescription}
-            hint="One scannable line that appears under the product name in the catalog. 8–15 words."
+            hint={t("brand.fldTaglineHint")}
           >
             <Input
               value={form.shortDescription}
@@ -523,9 +530,9 @@ function StepOne({
           </Field>
 
           <Field
-            label="About this product"
+            label={t("brand.fldAbout")}
             error={errors.longDescription}
-            hint="A paragraph creators read on the campaign page before deciding to make a clip. What is the product? Why do you want clips? What kind of clips win?"
+            hint={t("brand.fldAboutHint")}
           >
             <textarea
               value={form.longDescription}
@@ -538,9 +545,9 @@ function StepOne({
           </Field>
 
           <Field
-            label="Reference video (optional)"
+            label={t("brand.fldReferenceVideo")}
             error={errors.exampleVideoUrl}
-            hint="If you have a clip that captures the tone you want, link it here."
+            hint={t("brand.fldReferenceVideoHint")}
           >
             <Input
               value={form.exampleVideoUrl}
@@ -554,13 +561,13 @@ function StepOne({
       <Card className="bg-cream">
         <CardContent className="flex flex-col gap-5">
           <h2 className="font-display text-xl font-bold tracking-tight">
-            What you want creators to make
+            {t("brand.wizSectionBrief")}
           </h2>
 
           <Field
-            label="Suggested video script"
+            label={t("brand.fldScript")}
             error={errors.scriptMarkdown}
-            hint="The structure you'd love to see — hook, body, outro, dialogue cues. Creators read this on the campaign page as inspiration and can adapt it. Markdown: **bold** works."
+            hint={t("brand.fldScriptHint")}
           >
             <MarkdownField
               value={form.scriptMarkdown}
@@ -571,9 +578,9 @@ function StepOne({
           </Field>
 
           <Field
-            label="Rules for clips"
+            label={t("brand.fldRules")}
             error={errors.instructionsMarkdown}
-            hint="Hard requirements. Clips that don't follow these get rejected. Be specific — e.g., 'must mention the URL on screen', 'do not use the word X'."
+            hint={t("brand.fldRulesHint")}
           >
             <MarkdownField
               value={form.instructionsMarkdown}
@@ -588,14 +595,14 @@ function StepOne({
       <Card className="bg-cream">
         <CardContent className="flex flex-col gap-5">
           <h2 className="font-display text-xl font-bold tracking-tight">
-            Money
+            {t("brand.wizSectionMoney")}
           </h2>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <Field
-              label="Rate per view"
+              label={t("brand.fldRatePerView")}
               error={errors.ratePerViewUsd}
-              hint="$0.01 = $10 per 1,000 views."
+              hint={t("brand.fldRatePerViewHint")}
             >
               <Input
                 type="number"
@@ -607,9 +614,9 @@ function StepOne({
               />
             </Field>
             <Field
-              label="Max payout / clip"
+              label={t("brand.fldMaxPerClip")}
               error={errors.maxPayoutPerClipUsd}
-              hint="Cap per individual clip — even a viral one stops here."
+              hint={t("brand.fldMaxPerClipHint")}
             >
               <Input
                 type="number"
@@ -621,9 +628,9 @@ function StepOne({
               />
             </Field>
             <Field
-              label="Total budget"
+              label={t("brand.fldTotalBudget")}
               error={errors.totalBudgetUsd}
-              hint="USDT you'll fund the escrow with now. You can top up later."
+              hint={t("brand.fldTotalBudgetHint")}
             >
               <Input
                 type="number"
@@ -637,9 +644,9 @@ function StepOne({
           </div>
 
           <Field
-            label="Platforms"
+            label={t("brand.fldPlatforms")}
             error={errors.platforms}
-            hint="Where can creators submit clips from?"
+            hint={t("brand.fldPlatformsHint")}
           >
             <div className="flex flex-wrap gap-3">
               <PlatformChip
@@ -658,7 +665,7 @@ function StepOne({
               />
             </div>
             {!platformsValid && (
-              <p className="text-xs text-error">Pick at least one platform.</p>
+              <p className="text-xs text-error">{t("brand.fldPlatformsRequired")}</p>
             )}
           </Field>
         </CardContent>
@@ -668,10 +675,10 @@ function StepOne({
         <CardContent className="flex flex-col gap-4">
           <div>
             <h2 className="font-display text-xl font-bold tracking-tight">
-              Preview
+              {t("brand.wizSectionPreview")}
             </h2>
             <p className="mt-1 font-body text-sm text-ink-soft">
-              How your campaign will appear to creators. Updates as you type.
+              {t("brand.wizSectionPreviewHint")}
             </p>
           </div>
           <CampaignPreview
@@ -706,7 +713,7 @@ function StepOne({
           variant="default"
           size="lg"
         >
-          {reserving ? "Reserving..." : "Next: Review & Fund"}
+          {reserving ? t("brand.wizBtnReserving") : t("brand.wizBtnNext")}
           <ArrowRight className="size-4" />
         </Button>
       </div>
@@ -785,6 +792,7 @@ function StepTwo({
   onFund: () => void;
   onDone: () => void;
 }) {
+  const { t } = useTranslation();
   const platforms = useMemo(() => {
     const out: string[] = [];
     if (form.platforms.instagram) out.push("Instagram");
@@ -808,18 +816,18 @@ function StepTwo({
       <Card className="bg-cream">
         <CardContent className="flex flex-col gap-4">
           <h2 className="font-display text-xl font-bold tracking-tight">
-            Terms
+            {t("brand.reviewTermsTitle")}
           </h2>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <ReviewRow label="Product" value={form.productName} />
-            <ReviewRow label="URL slug" value={form.slug} mono />
-            <ReviewRow label="Platforms" value={platforms} />
-            <ReviewRow label="Catalog tagline" value={form.shortDescription} />
+            <ReviewRow label={t("brand.reviewProduct")} value={form.productName} />
+            <ReviewRow label={t("brand.reviewSlug")} value={form.slug} mono />
+            <ReviewRow label={t("brand.reviewPlatforms")} value={platforms} />
+            <ReviewRow label={t("brand.reviewTagline")} value={form.shortDescription} />
           </div>
           <div className="grid grid-cols-1 gap-3 border-t-2 border-ink/10 pt-3 md:grid-cols-3">
-            <ReviewRow label="Rate / view" value={`$${form.ratePerViewUsd}`} />
-            <ReviewRow label="Max / clip" value={`$${form.maxPayoutPerClipUsd}`} />
-            <ReviewRow label="Total budget" value={`$${form.totalBudgetUsd}`} />
+            <ReviewRow label={t("brand.reviewRatePerView")} value={`$${form.ratePerViewUsd}`} />
+            <ReviewRow label={t("brand.reviewMaxPerClip")} value={`$${form.maxPayoutPerClipUsd}`} />
+            <ReviewRow label={t("brand.reviewTotalBudget")} value={`$${form.totalBudgetUsd}`} />
           </div>
         </CardContent>
       </Card>
@@ -828,10 +836,10 @@ function StepTwo({
         <CardContent className="flex flex-col gap-4">
           <div>
             <h2 className="font-display text-xl font-bold tracking-tight">
-              Creator-facing preview
+              {t("brand.reviewPreviewTitle")}
             </h2>
             <p className="mt-1 font-body text-sm text-ink-soft">
-              Exactly what creators will see once you fund this campaign.
+              {t("brand.reviewPreviewHint")}
             </p>
           </div>
           <CampaignPreview
@@ -856,30 +864,27 @@ function StepTwo({
       <Card className="bg-peach">
         <CardContent className="flex flex-col gap-3">
           <h2 className="font-display text-xl font-bold tracking-tight">
-            Deposit your budget
+            {t("brand.fundTitle")}
           </h2>
           <p className="font-body text-sm text-ink-soft">
-            You&apos;ll confirm 3 quick steps from your wallet to put your money
-            into the campaign and make it live. Your money stays in your
-            control — Clippa never holds it for you.
+            {t("brand.fundExplainer")}
           </p>
 
           <div className="mt-2 rounded-md border-2 border-ink bg-cream p-4">
             <div className="flex items-baseline justify-between">
               <span className="font-display text-xs font-bold uppercase tracking-wider text-ink-soft">
-                Deposit
+                {t("brand.fundAmount")}
               </span>
               <span className="font-display text-2xl font-bold tracking-tight">
                 ${fundAmount.toFixed(2)}
               </span>
             </div>
             <div className="mt-3 flex items-baseline justify-between text-sm">
-              <span className="text-ink-soft">→ Available for clips</span>
+              <span className="text-ink-soft">{t("brand.fundGoesTo")}</span>
               <span className="font-mono font-bold">${fundAmount.toFixed(2)}</span>
             </div>
             <p className="mt-3 text-[0.7rem] text-ink-soft">
-              Paid in USDT (a digital dollar, 1 USDT = $1). 100% of this goes
-              to your campaign budget today.
+              {t("brand.fundUsdtNote")}
             </p>
           </div>
 
@@ -890,10 +895,10 @@ function StepTwo({
               <div className="flex flex-col items-center gap-2 rounded-md border-2 border-ink bg-lime p-4 text-center">
                 <Check className="size-6" />
                 <p className="font-display text-lg font-bold tracking-tight">
-                  Campaign launched
+                  {t("brand.fundDoneTitle")}
                 </p>
                 <p className="text-sm text-ink-soft">
-                  Your budget is in. Creators can now submit clips.
+                  {t("brand.fundDoneBody")}
                 </p>
                 <div className="mt-2 flex flex-wrap items-center justify-center gap-3 text-xs">
                   <a
@@ -902,13 +907,13 @@ function StepTwo({
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-indigo hover:underline"
                   >
-                    View payment receipt
+                    {t("brand.fundDoneReceipt")}
                     <ArrowUpRight className="size-3" />
                   </a>
                 </div>
               </div>
               <Button onClick={onDone} variant="default" size="lg">
-                Go to dashboard
+                {t("brand.fundDoneCta")}
               </Button>
             </div>
           ) : (
@@ -920,7 +925,7 @@ function StepTwo({
                 size="default"
               >
                 <ArrowLeft className="size-4" />
-                Edit details
+                {t("brand.fundBtnEdit")}
               </Button>
               <Button
                 onClick={onFund}
@@ -929,7 +934,7 @@ function StepTwo({
                 size="lg"
               >
                 <Coins className={`size-4 ${busy ? "animate-pulse" : ""}`} />
-                {busy ? "Confirming..." : "Confirm and launch"}
+                {busy ? t("brand.fundBtnConfirming") : t("brand.fundBtnConfirm")}
               </Button>
             </div>
           )}
@@ -965,10 +970,11 @@ function ReviewRow({
 }
 
 function TxProgress({ stage }: { stage: TxStage }) {
+  const { t: tr } = useTranslation();
   if (stage.kind === "idle" || stage.kind === "error") return null;
   const txs: { label: string; status: "pending" | "active" | "done" }[] = [
     {
-      label: "Approve transfer",
+      label: tr("brand.fundTxApprove"),
       status:
         stage.kind === "approving"
           ? "active"
@@ -977,7 +983,7 @@ function TxProgress({ stage }: { stage: TxStage }) {
             : "done",
     },
     {
-      label: "Set up campaign",
+      label: tr("brand.fundTxCreate"),
       status:
         stage.kind === "approving"
           ? "pending"
@@ -986,7 +992,7 @@ function TxProgress({ stage }: { stage: TxStage }) {
             : "done",
     },
     {
-      label: "Send funds",
+      label: tr("brand.fundTxSend"),
       status:
         stage.kind === "funding"
           ? "active"

@@ -3,6 +3,7 @@
 import { Eye, Pencil } from "lucide-react";
 import { useState } from "react";
 
+import { useTranslation } from "@/components/locale-provider";
 import { RichText } from "@/components/rich-text";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +28,7 @@ export function MarkdownField({
   maxLength?: number;
   id?: string;
 }) {
+  const { t } = useTranslation();
   const [mode, setMode] = useState<"edit" | "preview">("edit");
 
   return (
@@ -43,7 +45,7 @@ export function MarkdownField({
             )}
           >
             <Pencil className="size-3" />
-            Edit
+            {t("brand.mdEdit")}
           </button>
           <button
             type="button"
@@ -55,12 +57,16 @@ export function MarkdownField({
             )}
           >
             <Eye className="size-3" />
-            Preview
+            {t("brand.mdPreview")}
           </button>
         </div>
         <p className="font-body text-[0.65rem] text-ink-soft">
-          <span className="font-mono font-bold">**bold**</span> · line breaks preserved
-          {maxLength ? ` · ${value.length}/${maxLength}` : ""}
+          {maxLength
+            ? t("brand.mdHintWithCount", {
+                count: String(value.length),
+                max: String(maxLength),
+              })
+            : t("brand.mdHint")}
         </p>
       </div>
 
@@ -80,7 +86,7 @@ export function MarkdownField({
             <RichText>{value}</RichText>
           ) : (
             <p className="font-body text-sm italic text-ink-soft">
-              Nothing to preview yet.
+              {t("brand.mdEmpty")}
             </p>
           )}
         </div>

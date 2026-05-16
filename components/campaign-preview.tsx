@@ -2,6 +2,7 @@
 
 import { Eye } from "lucide-react";
 
+import { useTranslation } from "@/components/locale-provider";
 import { RichText } from "@/components/rich-text";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
@@ -19,17 +20,13 @@ export type CampaignPreviewData = {
   platforms: Platform[];
 };
 
-/**
- * Mirrors what creators see on the public catalog + campaign detail page —
- * but rendered from the brand's in-progress form data so they can preview
- * before paying to fund. Read-only, no on-chain calls. The visual fidelity
- * is intentionally close (same components, same copy patterns) but stripped
- * of the live-data bits (balance bar, clips count) that don't exist yet.
- */
 export function CampaignPreview({ data }: { data: CampaignPreviewData }) {
-  const name = data.productName.trim() || "Your product name";
-  const short = data.shortDescription.trim() || "Your one-line catalog tagline.";
-  const longDesc = data.longDescription.trim() || "Your longer description goes here.";
+  const { t } = useTranslation();
+  const name = data.productName.trim() || t("brand.pvPlaceholderProduct");
+  const short =
+    data.shortDescription.trim() || t("brand.pvPlaceholderShort");
+  const longDesc =
+    data.longDescription.trim() || t("brand.pvPlaceholderLong");
   const script = data.scriptMarkdown.trim();
   const rules = data.instructionsMarkdown.trim();
 
@@ -37,9 +34,9 @@ export function CampaignPreview({ data }: { data: CampaignPreviewData }) {
     <div className="flex flex-col gap-6">
       {/* Catalog card preview */}
       <section>
-        <PreviewLabel>1. In the catalog</PreviewLabel>
+        <PreviewLabel>{t("brand.pvCatalog")}</PreviewLabel>
         <p className="mt-1 text-xs text-ink-soft">
-          What creators see when browsing campaigns.
+          {t("brand.pvCatalogHint")}
         </p>
         <div className="mt-3">
           <Card className="bg-peach">
@@ -64,10 +61,14 @@ export function CampaignPreview({ data }: { data: CampaignPreviewData }) {
               <div>
                 <div className="flex items-baseline justify-between text-xs">
                   <span className="font-display font-bold uppercase tracking-wider">
-                    {formatUsd(data.totalBudgetUsd)} left
+                    {t("brand.pvBudgetLeft", {
+                      amount: formatUsd(data.totalBudgetUsd),
+                    })}
                   </span>
                   <span className="text-ink-soft">
-                    of {formatUsd(data.totalBudgetUsd)}
+                    {t("brand.pvBudgetOf", {
+                      amount: formatUsd(data.totalBudgetUsd),
+                    })}
                   </span>
                 </div>
                 <div className="mt-2 h-2 w-full overflow-hidden rounded-full border-2 border-ink bg-cream">
@@ -76,11 +77,17 @@ export function CampaignPreview({ data }: { data: CampaignPreviewData }) {
               </div>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                 <span className="font-display font-bold">
-                  ${data.ratePerViewUsd.toFixed(2)} / view
+                  {t("brand.pvRatePerView", {
+                    rate: data.ratePerViewUsd.toFixed(2),
+                  })}
                 </span>
                 <span className="text-ink-soft">·</span>
                 <span className="text-ink-soft">
-                  Up to {formatUsd(data.maxPayoutPerClipUsd, { decimals: 0 })} per clip
+                  {t("brand.pvUpTo", {
+                    amount: formatUsd(data.maxPayoutPerClipUsd, {
+                      decimals: 0,
+                    }),
+                  })}
                 </span>
               </div>
             </CardContent>
@@ -90,12 +97,11 @@ export function CampaignPreview({ data }: { data: CampaignPreviewData }) {
 
       {/* Detail page preview */}
       <section>
-        <PreviewLabel>2. On the campaign page</PreviewLabel>
+        <PreviewLabel>{t("brand.pvDetail")}</PreviewLabel>
         <p className="mt-1 text-xs text-ink-soft">
-          What creators see after clicking your card.
+          {t("brand.pvDetailHint")}
         </p>
         <div className="mt-3 flex flex-col gap-4 rounded-card border-2 border-dashed border-ink/40 bg-cream/40 p-5">
-          {/* Title */}
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 className="font-display text-2xl font-bold tracking-tight md:text-3xl">
@@ -116,7 +122,6 @@ export function CampaignPreview({ data }: { data: CampaignPreviewData }) {
             </div>
           </div>
 
-          {/* What you earn */}
           <div className="grid grid-cols-2 gap-3">
             <Card className="bg-lime">
               <CardContent className="py-3">
@@ -124,7 +129,7 @@ export function CampaignPreview({ data }: { data: CampaignPreviewData }) {
                   ${data.ratePerViewUsd.toFixed(2)}
                 </p>
                 <p className="font-display text-[0.65rem] font-bold uppercase tracking-wider text-ink-soft">
-                  Per view
+                  {t("brand.pvPerView")}
                 </p>
               </CardContent>
             </Card>
@@ -134,35 +139,32 @@ export function CampaignPreview({ data }: { data: CampaignPreviewData }) {
                   {formatUsd(data.maxPayoutPerClipUsd, { decimals: 0 })}
                 </p>
                 <p className="font-display text-[0.65rem] font-bold uppercase tracking-wider opacity-90">
-                  Max per clip
+                  {t("brand.pvMaxPerClip")}
                 </p>
               </CardContent>
             </Card>
           </div>
 
-          {/* About */}
-          <Section heading="About">
+          <Section heading={t("brand.pvAbout")}>
             <p className="font-body text-sm leading-relaxed">{longDesc}</p>
           </Section>
 
-          {/* Script */}
-          <Section heading="Script">
+          <Section heading={t("brand.pvScript")}>
             {script ? (
               <RichText className="text-sm leading-relaxed">{script}</RichText>
             ) : (
               <p className="font-body text-sm italic text-ink-soft">
-                Your suggested video script will render here.
+                {t("brand.pvScriptEmpty")}
               </p>
             )}
           </Section>
 
-          {/* Rules */}
-          <Section heading="Rules">
+          <Section heading={t("brand.pvRules")}>
             {rules ? (
               <RichText className="text-sm leading-relaxed">{rules}</RichText>
             ) : (
               <p className="font-body text-sm italic text-ink-soft">
-                Your rules for clips will render here.
+                {t("brand.pvRulesEmpty")}
               </p>
             )}
           </Section>

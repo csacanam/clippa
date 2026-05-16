@@ -195,6 +195,206 @@ const es: Dict = {
     headerStatus: "Estado",
     headerReceipt: "Recibo",
   },
+
+  brand: {
+    badgeBrand: "Marca",
+    backToDashboard: "← Volver al panel",
+    creatorMode: "Modo creador →",
+    brandMode: "Modo marca →",
+    forCreators: "Para creadores →",
+
+    landingTitle1: "Paga por vista.",
+    landingTitle2: "No por promesa.",
+    landingSubtitle:
+      "Creadores reales convierten tu producto en clips para Instagram y TikTok. Tú defines el precio por vista, depositas un presupuesto y solo pagas por las vistas que realmente ocurren. Sin agencia. Sin contrato.",
+    landingCta: "Lanzar una campaña →",
+    landingStep1Title: "Define tu campaña",
+    landingStep1Body:
+      "Tu producto, cuánto pagas por vista, un tope por clip y las reglas que los creadores deben seguir.",
+    landingStep2Title: "Deposita tu presupuesto",
+    landingStep2Body:
+      "Decide cuánto gastar. El dinero queda apartado, sin tocar, hasta que lleguen las vistas.",
+    landingStep3Title: "Paga por resultados",
+    landingStep3Body:
+      "A medida que se publican los clips y suman vistas, los creadores reciben su pago automáticamente. Sin facturas, sin perseguir a nadie.",
+    landingFooter:
+      "Sin sobreprecio de agencia. Sin contratos largos. Solo pagas por resultados.",
+
+    dashTitle: "Tus campañas",
+    dashSubtitle: "Lanza, financia y monitorea tus campañas con creadores.",
+    dashNewCampaign: "Nueva campaña",
+    dashEmptyTitle: "Todavía no hay campañas",
+    dashEmptyBody:
+      "Lanzar toma unos 2 minutos. Define tu producto, fija una tarifa por vista, deposita tu presupuesto y los creadores hacen lo demás.",
+    dashEmptyCta: "Crear tu primera campaña",
+    statusActive: "Activa",
+    statusPaused: "Pausada",
+    statusEnded: "Finalizada",
+    statusAwaitingFunding: "Pendiente de pago",
+    cardFundingIncomplete: "Depósito incompleto",
+    cardFundingIncompleteBody:
+      "Termina de depositar tu presupuesto para que la campaña quede activa.",
+    cardResumeDeposit: "Continuar depósito",
+    cardNotFunded: "Presupuesto sin depositar",
+    cardNotFundedBody: "Termina el depósito para empezar a rastrear vistas.",
+    cardBalanceLeft: "Saldo restante",
+    cardRunningLow: "Quedando poco",
+    cardPaidToCreators: "Pagado a creadores",
+    cardOfFunded: "de {amount} depositados",
+    cardClip: "Clip",
+    cardClips: "Clips",
+    cardLive: "Activos",
+    cardViews: "Vistas",
+    cardRate: "Tarifa",
+    cardPerView: "/ vista",
+    cardMax: "Máx",
+    cardPerClip: "/ clip",
+    cardAddFunds: "Agregar fondos",
+
+    wizStep1: "Detalles",
+    wizStep2: "Revisar y depositar",
+    wizSectionPromoting: "Qué estás promocionando",
+    wizSectionBrief: "Qué quieres que hagan los creadores",
+    wizSectionMoney: "Dinero",
+    wizSectionPreview: "Vista previa",
+    wizSectionPreviewHint:
+      "Cómo se verá tu campaña para los creadores. Se actualiza mientras escribes.",
+
+    fldLanguage: "Idioma en el que escribirás",
+    fldLanguageHint:
+      "Elige el idioma en el que vas a escribir el contenido. Lo traducimos automáticamente a los demás idiomas soportados para que cada creador vea la campaña en su propio idioma.",
+    fldProductName: "Nombre del producto",
+    fldProductNameHint:
+      "Aparece como título tanto en el catálogo como en la página de la campaña.",
+    fldSlug: "Slug de la URL",
+    fldSlugHintIdle:
+      "Letras minúsculas, números y guiones. Se usa en la URL de la campaña.",
+    fldSlugHintChecking: "Comprobando disponibilidad…",
+    fldSlugHintAvailable: "✓ Disponible: clippa.fun/app/campaigns/{slug}",
+    fldSlugHintTaken: "✗ Ya está en uso — elige otro",
+    fldTagline: "Frase de catálogo",
+    fldTaglineHint:
+      "Una línea que aparece debajo del nombre del producto en el catálogo. 8–15 palabras.",
+    fldAbout: "Acerca del producto",
+    fldAboutHint:
+      "Un párrafo que los creadores leen antes de decidir hacer un clip. ¿Qué es el producto? ¿Por qué quieres clips? ¿Qué tipo de clips funcionan mejor?",
+    fldReferenceVideo: "Video de referencia (opcional)",
+    fldReferenceVideoHint:
+      "Si tienes un clip que captura el tono que buscas, pega el link aquí.",
+    fldScript: "Guion sugerido",
+    fldScriptHint:
+      "La estructura que te gustaría ver — gancho, cuerpo, cierre, frases. Los creadores lo leen como inspiración y pueden adaptarlo. Markdown: **negrita** funciona.",
+    fldRules: "Reglas para los clips",
+    fldRulesHint:
+      "Requisitos obligatorios. Los clips que no las cumplan se rechazan. Sé específico — por ejemplo, 'mencionar la URL en pantalla', 'no usar la palabra X'.",
+    fldRatePerView: "Tarifa por vista",
+    fldRatePerViewHint: "$0.01 = $10 por cada 1,000 vistas.",
+    fldMaxPerClip: "Máximo por clip",
+    fldMaxPerClipHint:
+      "Tope por clip individual — incluso uno viral se detiene aquí.",
+    fldTotalBudget: "Presupuesto total",
+    fldTotalBudgetHint:
+      "USDT con los que vas a financiar el escrow ahora. Puedes agregar más después.",
+    fldPlatforms: "Plataformas",
+    fldPlatformsHint: "¿Desde dónde pueden enviar clips los creadores?",
+    fldPlatformsRequired: "Elige al menos una plataforma.",
+
+    wizBtnNext: "Siguiente: revisar y depositar",
+    wizBtnReserving: "Reservando...",
+
+    reviewTermsTitle: "Términos",
+    reviewProduct: "Producto",
+    reviewSlug: "Slug",
+    reviewPlatforms: "Plataformas",
+    reviewTagline: "Frase de catálogo",
+    reviewRatePerView: "Tarifa / vista",
+    reviewMaxPerClip: "Máx / clip",
+    reviewTotalBudget: "Presupuesto total",
+    reviewPreviewTitle: "Vista previa para creadores",
+    reviewPreviewHint:
+      "Exactamente lo que verán los creadores una vez deposites tu presupuesto.",
+
+    fundTitle: "Deposita tu presupuesto",
+    fundExplainer:
+      "Vas a confirmar 3 pasos rápidos desde tu wallet para depositar tu dinero en la campaña y dejarla activa. Tu dinero sigue siendo tuyo — Clippa nunca lo retiene.",
+    fundAmount: "Depósito",
+    fundGoesTo: "→ Disponible para clips",
+    fundUsdtNote:
+      "Se paga en USDT (un dólar digital, 1 USDT = $1). El 100% de este monto va al presupuesto de tu campaña hoy.",
+    fundTxApprove: "Aprobar transferencia",
+    fundTxCreate: "Crear campaña",
+    fundTxSend: "Enviar fondos",
+    fundBtnConfirm: "Confirmar y lanzar",
+    fundBtnConfirming: "Confirmando...",
+    fundBtnEdit: "Editar detalles",
+    fundDoneTitle: "Campaña lanzada",
+    fundDoneBody: "Tu presupuesto ya está. Los creadores pueden enviar clips.",
+    fundDoneReceipt: "Ver recibo del pago",
+    fundDoneCta: "Ir al panel",
+
+    resumeLabel: "Continuar depósito",
+    resumeNotFound: "Campaña no encontrada",
+    resumeNotFoundBody:
+      "Puede que ya esté activa, o que no te pertenezca.",
+    resumeBack: "Volver al panel",
+    resumeNote:
+      "Continuamos desde donde se quedó el último intento — los pasos que ya se completaron se omiten automáticamente.",
+    resumeDoneTitle: "Campaña activa",
+    resumeBtnApproving: "Aprobando transferencia...",
+    resumeBtnCreating: "Creando campaña...",
+    resumeBtnFunding: "Enviando fondos...",
+    resumeBtnFinalizing: "Finalizando...",
+    resumeBtnIdle: "Continuar depósito",
+    resumeCancel: "Cancelar",
+
+    addFundsTitle: "Agregar fondos",
+    addFundsSubtitle: "Recarga el presupuesto de {name}.",
+    addFundsCurrent: "Saldo actual",
+    addFundsLabel: "Monto a agregar (USD)",
+    addFundsHint:
+      "Vas a confirmar 1–2 pasos rápidos desde tu wallet para enviar el depósito. Se paga en USDT (un dólar digital, 1 USDT = $1).",
+    addFundsApproving: "Aprobando transferencia…",
+    addFundsSending: "Enviando fondos…",
+    addFundsBtnApproving: "Aprobando...",
+    addFundsBtnSending: "Enviando...",
+    addFundsBtnIdleFilled: "Agregar {amount}",
+    addFundsBtnIdle: "Agregar fondos",
+    addFundsDoneTitle: "Fondos agregados",
+    addFundsDoneBody: "{amount} agregados al presupuesto de tu campaña.",
+    addFundsDoneReceipt: "Ver recibo del pago",
+
+    errContractNotConfigured: "Dirección del contrato no configurada.",
+    errNoWallet: "No se encontró una wallet en tu cuenta.",
+    errSigningCancelled: "Firma cancelada.",
+    errInsufficientFunds:
+      "No hay suficiente USDT, o no hay CELO para la tarifa de red.",
+
+    mdEdit: "Editar",
+    mdPreview: "Vista previa",
+    mdHint: "**negrita** · saltos de línea conservados",
+    mdHintWithCount:
+      "**negrita** · saltos de línea conservados · {count}/{max}",
+    mdEmpty: "Nada para previsualizar todavía.",
+
+    pvCatalog: "1. En el catálogo",
+    pvCatalogHint: "Lo que ven los creadores al explorar campañas.",
+    pvDetail: "2. En la página de la campaña",
+    pvDetailHint: "Lo que ven los creadores después de abrir tu card.",
+    pvAbout: "Acerca de",
+    pvScript: "Guion",
+    pvRules: "Reglas",
+    pvScriptEmpty: "Tu guion sugerido aparecerá aquí.",
+    pvRulesEmpty: "Tus reglas para los clips aparecerán aquí.",
+    pvBudgetLeft: "{amount} restantes",
+    pvBudgetOf: "de {amount}",
+    pvRatePerView: "${rate} / vista",
+    pvUpTo: "Hasta {amount} por clip",
+    pvPlaceholderProduct: "Nombre de tu producto",
+    pvPlaceholderShort: "Tu frase de catálogo en una línea.",
+    pvPlaceholderLong: "Aquí va tu descripción más larga.",
+    pvPerView: "Por vista",
+    pvMaxPerClip: "Máx por clip",
+  },
 };
 
 export default es;

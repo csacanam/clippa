@@ -110,7 +110,7 @@ function AppHome() {
           <RoleSwitchLink
             targetRole="brand"
             targetHref="/brand"
-            label="Brand mode →"
+            label={t("brand.brandMode")}
           />
           <LocaleToggle />
           <span className="hidden font-body text-xs text-ink-soft md:inline">

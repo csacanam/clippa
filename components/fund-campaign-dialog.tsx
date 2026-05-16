@@ -13,6 +13,7 @@ import {
 } from "viem";
 import { celo } from "viem/chains";
 
+import { useTranslation } from "@/components/locale-provider";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -71,6 +72,7 @@ export function FundCampaignDialog({
   onDone?: () => void;
 }) {
   const { wallets } = useWallets();
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [stage, setStage] = useState<Stage>({ kind: "form" });
@@ -86,13 +88,13 @@ export function FundCampaignDialog({
 
   const handleFund = async () => {
     if (!CLIPPA_CONTRACT_ADDRESS) {
-      setStage({ kind: "error", message: "Contract address not configured." });
+      setStage({ kind: "error", message: t("brand.errContractNotConfigured") });
       return;
     }
     try {
       const wallet =
         wallets.find((w) => w.walletClientType === "privy") ?? wallets[0];
-      if (!wallet) throw new Error("No wallet found.");
+      if (!wallet) throw new Error(t("brand.errNoWallet"));
       try {
         await wallet.switchChain(celo.id);
       } catch {
@@ -143,9 +145,9 @@ export function FundCampaignDialog({
     } catch (e) {
       const raw = (e as Error).message ?? "Something went wrong.";
       let message = raw.slice(0, 200);
-      if (/rejected|denied/i.test(raw)) message = "Signing cancelled.";
+      if (/rejected|denied/i.test(raw)) message = t("brand.errSigningCancelled");
       else if (/insufficient/i.test(raw))
-        message = "Not enough USDT or CELO for gas.";
+        message = t("brand.errInsufficientFunds");
       setStage({ kind: "error", message });
     }
   };
@@ -162,10 +164,10 @@ export function FundCampaignDialog({
       <DialogContent className="max-w-md !rounded-card !border-2 !border-ink !bg-cream !shadow-sticker-lg">
         <DialogHeader>
           <DialogTitle className="font-display text-xl font-bold tracking-tight">
-            Add funds
+            {t("brand.addFundsTitle")}
           </DialogTitle>
           <DialogDescription className="text-sm text-ink-soft">
-            Top up {campaignName}&apos;s budget.
+            {t("brand.addFundsSubtitle", { name: campaignName })}
           </DialogDescription>
         </DialogHeader>
 
@@ -174,9 +176,13 @@ export function FundCampaignDialog({
             <div className="flex size-12 items-center justify-center rounded-full border-2 border-ink bg-lime">
               <Check className="size-6" />
             </div>
-            <p className="font-display text-lg font-bold">Funds added</p>
+            <p className="font-display text-lg font-bold">
+              {t("brand.addFundsDoneTitle")}
+            </p>
             <p className="text-sm text-ink-soft">
-              {formatUsd(numericAmount)} added to your campaign budget.
+              {t("brand.addFundsDoneBody", {
+                amount: formatUsd(numericAmount),
+              })}
             </p>
             <a
               href={celoExplorerTx(stage.txHash)}
@@ -184,7 +190,7 @@ export function FundCampaignDialog({
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-xs text-indigo hover:underline"
             >
-              View payment receipt
+              {t("brand.addFundsDoneReceipt")}
               <ArrowUpRight className="size-3" />
             </a>
             <Button
@@ -196,14 +202,14 @@ export function FundCampaignDialog({
               size="default"
               className="mt-2"
             >
-              Done
+              {t("common.done")}
             </Button>
           </div>
         ) : (
           <div className="flex flex-col gap-4">
             <div className="rounded-md border-2 border-ink bg-peach/60 p-3 text-xs text-ink">
               <p className="font-display font-bold uppercase tracking-wider">
-                Current balance
+                {t("brand.addFundsCurrent")}
               </p>
               <p className="mt-1 font-display text-2xl font-bold tracking-tight">
                 {formatUsd(currentBalanceUsd)}
@@ -212,7 +218,7 @@ export function FundCampaignDialog({
 
             <div className="flex flex-col gap-1.5">
               <label className="font-display text-sm font-bold uppercase tracking-wide">
-                Amount to add (USD)
+                {t("brand.addFundsLabel")}
               </label>
               <Input
                 type="number"
@@ -225,16 +231,19 @@ export function FundCampaignDialog({
                 disabled={stage.kind !== "form" && stage.kind !== "error"}
               />
               <p className="text-xs text-ink-soft">
-                You&apos;ll confirm 1–2 quick steps from your wallet to send
-                the deposit. Paid in USDT (a digital dollar, 1 USDT = $1).
+                {t("brand.addFundsHint")}
               </p>
             </div>
 
             {stage.kind === "approving" && (
-              <p className="text-sm text-ink-soft">Approving transfer…</p>
+              <p className="text-sm text-ink-soft">
+                {t("brand.addFundsApproving")}
+              </p>
             )}
             {stage.kind === "funding" && (
-              <p className="text-sm text-ink-soft">Sending funds…</p>
+              <p className="text-sm text-ink-soft">
+                {t("brand.addFundsSending")}
+              </p>
             )}
             {stage.kind === "error" && (
               <p className="text-sm text-error">{stage.message}</p>
@@ -254,12 +263,14 @@ export function FundCampaignDialog({
                 }`}
               />
               {stage.kind === "approving"
-                ? "Approving..."
+                ? t("brand.addFundsBtnApproving")
                 : stage.kind === "funding"
-                  ? "Sending..."
+                  ? t("brand.addFundsBtnSending")
                   : amountValid
-                    ? `Add ${formatUsd(numericAmount)}`
-                    : "Add funds"}
+                    ? t("brand.addFundsBtnIdleFilled", {
+                        amount: formatUsd(numericAmount),
+                      })
+                    : t("brand.addFundsBtnIdle")}
             </Button>
           </div>
         )}
