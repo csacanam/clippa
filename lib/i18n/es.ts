@@ -24,7 +24,7 @@ const es: Dict = {
 
   landing: {
     title1: "Haz clips.",
-    title2: "Cobra.",
+    title2: "Gana dinero.",
     subtitle:
       "Videos cortos para marcas en Instagram o TikTok. Pega el link. Gana por cada vista.",
     cta: "Empezar a ganar →",

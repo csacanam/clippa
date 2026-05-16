@@ -1,6 +1,6 @@
 "use server";
 
-import { requireAdmin } from "@/lib/auth-server";
+import { requireAdmin, requireUser } from "@/lib/auth-server";
 import { createServerClient } from "@/lib/supabase/server";
 import type { Campaign, CampaignChainState, Platform } from "@/lib/campaigns";
 import { getCampaignChainState } from "@/lib/payments/celo";
@@ -212,5 +212,107 @@ export async function getAdminCampaignBudgets(
     liveClipsCount: liveCountByCampaign.get(c.id) ?? 0,
     owedNowUsd: owedByCampaign.get(c.id) ?? 0,
     chain: chainStates[i],
+  }));
+}
+
+export type BrandCampaign = {
+  slug: string;
+  productName: string;
+  shortDescription: string;
+  status: Campaign["status"];
+  ratePerViewUsd: number;
+  maxPayoutPerClipUsd: number;
+  /** Count of clips on this campaign, all statuses. */
+  totalClipsCount: number;
+  /** Count of clips currently tracking. */
+  liveClipsCount: number;
+  /** Sum of verified_views across all clips on this campaign. */
+  totalViews: number;
+  /** On-chain escrow state. exists:false if not funded on-chain yet. */
+  chain: CampaignChainState;
+  createdAt: string;
+};
+
+/**
+ * Lists every campaign the current user has created, with per-campaign
+ * stats they care about: balance left, money spent, clips count, total
+ * views delivered. This powers the brand dashboard.
+ */
+export async function listMyBrandCampaigns(
+  identityToken: string
+): Promise<BrandCampaign[]> {
+  const user = await requireUser(identityToken);
+  const sb = createServerClient();
+
+  const { data: campaignRows, error: campErr } = await sb
+    .from("campaigns")
+    .select(
+      "id, slug, product_name, short_description, status, rate_per_view_usd, max_payout_per_clip_usd, created_at"
+    )
+    .eq("created_by_user_id", user.id)
+    .order("created_at", { ascending: false });
+  if (campErr) throw campErr;
+
+  const campaigns = (campaignRows ?? []) as {
+    id: string;
+    slug: string;
+    product_name: string;
+    short_description: string;
+    status: Campaign["status"];
+    rate_per_view_usd: string | number;
+    max_payout_per_clip_usd: string | number;
+    created_at: string;
+  }[];
+  if (campaigns.length === 0) return [];
+
+  const ids = campaigns.map((c) => c.id);
+
+  // Aggregate clip stats per campaign in memory — small enough.
+  const { data: clipRows, error: clipErr } = await sb
+    .from("clips")
+    .select("campaign_id, status, verified_views")
+    .in("campaign_id", ids);
+  if (clipErr) throw clipErr;
+
+  const totalByCampaign = new Map<string, number>();
+  const liveByCampaign = new Map<string, number>();
+  const viewsByCampaign = new Map<string, number>();
+  for (const r of (clipRows ?? []) as {
+    campaign_id: string;
+    status: string;
+    verified_views: number;
+  }[]) {
+    totalByCampaign.set(
+      r.campaign_id,
+      (totalByCampaign.get(r.campaign_id) ?? 0) + 1
+    );
+    if (r.status === "tracking") {
+      liveByCampaign.set(
+        r.campaign_id,
+        (liveByCampaign.get(r.campaign_id) ?? 0) + 1
+      );
+    }
+    viewsByCampaign.set(
+      r.campaign_id,
+      (viewsByCampaign.get(r.campaign_id) ?? 0) + (r.verified_views ?? 0)
+    );
+  }
+
+  const chainStates = await Promise.all(
+    campaigns.map((c) => getCampaignChainState(c.id))
+  );
+
+  return campaigns.map((c, i) => ({
+    slug: c.slug,
+    productName: c.product_name,
+    shortDescription: c.short_description,
+    status: c.status,
+    ratePerViewUsd: n(c.rate_per_view_usd),
+    maxPayoutPerClipUsd: n(c.max_payout_per_clip_usd),
+    totalClipsCount: totalByCampaign.get(c.id) ?? 0,
+    liveClipsCount: liveByCampaign.get(c.id) ?? 0,
+    totalViews: viewsByCampaign.get(c.id) ?? 0,
+    chain: chainStates[i],
+    createdAt: c.created_at,
   }));
 }
