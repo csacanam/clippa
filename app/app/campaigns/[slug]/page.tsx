@@ -238,21 +238,22 @@ function CampaignDetail() {
 
   return (
     <main className="flex min-h-dvh flex-col px-6 py-6 md:px-12">
-      <header className="flex items-center justify-between">
-        <ClippaLogo />
-        <div className="flex items-center gap-4">
-          <LocaleToggle />
-          <Link
-            href="/app"
-            className="flex items-center gap-1 font-body text-sm font-medium text-ink hover:underline"
-          >
-            <ChevronLeft className="size-4" />
-            {t("common.back")}
-          </Link>
-        </div>
-      </header>
+      <div className="mx-auto flex w-full max-w-2xl flex-col">
+        <header className="flex items-center justify-between gap-3">
+          <ClippaLogo />
+          <div className="flex items-center gap-4">
+            <LocaleToggle />
+            <Link
+              href="/app"
+              className="flex items-center gap-1 font-body text-sm font-medium text-ink hover:underline"
+            >
+              <ChevronLeft className="size-4" />
+              {t("common.back")}
+            </Link>
+          </div>
+        </header>
 
-      <section className="mx-auto mt-8 w-full max-w-2xl">
+        <section className="mt-8 w-full">
         {/* Title */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -612,7 +613,8 @@ function CampaignDetail() {
             </Card>
           )}
         </motion.div>
-      </section>
+        </section>
+      </div>
     </main>
   );
 }

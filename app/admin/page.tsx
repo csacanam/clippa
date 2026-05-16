@@ -535,24 +535,25 @@ function AdminDashboard() {
 
   return (
     <main className="flex min-h-dvh flex-col px-6 py-6 md:px-12">
-      <header className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <ClippaLogo />
-          <Badge variant="indigo" className="px-2.5 py-1 text-[0.7rem]">
-            Admin
-          </Badge>
-        </div>
-        <div className="flex items-center gap-4">
-          <span className="hidden font-body text-xs text-ink-soft md:inline">
-            {adminEmail}
-          </span>
-          <Button onClick={() => logout()} variant="ghost" size="sm">
-            Sign out
-          </Button>
-        </div>
-      </header>
+      <div className="mx-auto flex w-full max-w-4xl flex-col">
+        <header className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <ClippaLogo />
+            <Badge variant="indigo" className="px-2.5 py-1 text-[0.7rem]">
+              Admin
+            </Badge>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="hidden font-body text-xs text-ink-soft md:inline">
+              {adminEmail}
+            </span>
+            <Button onClick={() => logout()} variant="ghost" size="sm">
+              Sign out
+            </Button>
+          </div>
+        </header>
 
-      <section className="mx-auto mt-8 w-full max-w-4xl">
+        <section className="mt-8 w-full">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1000,7 +1001,8 @@ function AdminDashboard() {
             </Card>
           )}
         </motion.div>
-      </section>
+        </section>
+      </div>
     </main>
   );
 }

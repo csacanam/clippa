@@ -66,17 +66,18 @@ function OnboardingForm() {
 
   return (
     <main className="flex min-h-dvh flex-col px-6 py-6 md:px-12">
-      <header className="flex items-center justify-between">
-        <ClippaLogo />
-        <div className="flex items-center gap-4">
-          <LocaleToggle />
-          <span className="hidden font-body text-xs text-ink-soft md:inline">
-            {user?.email?.address}
-          </span>
-        </div>
-      </header>
+      <div className="mx-auto flex w-full max-w-xl flex-col">
+        <header className="flex items-center justify-between gap-3">
+          <ClippaLogo />
+          <div className="flex items-center gap-4">
+            <LocaleToggle />
+            <span className="hidden font-body text-xs text-ink-soft md:inline">
+              {user?.email?.address}
+            </span>
+          </div>
+        </header>
 
-      <section className="mx-auto mt-12 w-full max-w-xl">
+        <section className="mt-12 w-full">
         {showWelcome ? (
           <motion.div
             initial={{ opacity: 0, y: 16 }}
@@ -164,7 +165,8 @@ function OnboardingForm() {
             </motion.div>
           </>
         )}
-      </section>
+        </section>
+      </div>
     </main>
   );
 }
