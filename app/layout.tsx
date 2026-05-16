@@ -24,6 +24,12 @@ export const metadata: Metadata = {
   title: "Clippa — Make clips. Get paid.",
   description:
     "Make short videos for brands. Post them to your socials. Earn for every view.",
+  icons: {
+    icon: [
+      { url: "/clippa-logo.png", type: "image/png" },
+    ],
+    apple: "/clippa-logo.png",
+  },
 };
 
 export default async function RootLayout({
