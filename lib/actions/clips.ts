@@ -232,14 +232,26 @@ export async function listMyClipPayouts(
 export async function submitClip(
   identityToken: string,
   input: {
+    /** Client-generated UUID. Becomes the clip's primary key + the video
+     *  filename in Storage, so the file and row stay in lockstep. */
+    clipId: string;
     campaignSlug: string;
     platform: Platform;
     postUrl: string;
     trackingCode: string;
+    /** Public URL of the MP4 already uploaded via uploadClipVideo. Required —
+     *  the brand needs to be able to download the original clip. */
+    featuredVideoUrl: string;
   }
 ): Promise<{ ok: true; clip: Clip } | { ok: false; error: string }> {
+  if (!UUID_RE.test(input.clipId)) {
+    return { ok: false, error: "Invalid clip id." };
+  }
   const v = validatePostUrl(input.platform, input.postUrl);
   if (!v.ok) return v;
+  if (!input.featuredVideoUrl?.startsWith("http")) {
+    return { ok: false, error: "Video upload is required." };
+  }
 
   const creator = await requireCreator(identityToken);
   const campaignId = await getCampaignIdBySlug(input.campaignSlug);
@@ -248,12 +260,14 @@ export async function submitClip(
   const { data, error } = await sb
     .from("clips")
     .insert({
+      id: input.clipId,
       creator_id: creator.id,
       campaign_id: campaignId,
       platform: input.platform,
       post_url: input.postUrl.trim(),
       tracking_code: input.trackingCode,
       status: "pending",
+      featured_video_url: input.featuredVideoUrl,
     })
     .select(CLIP_SELECT)
     .single();
@@ -376,6 +390,77 @@ export async function rejectClip(
   if (error) return { ok: false, error: error.message };
   if (!count) return { ok: false, error: "Clip not pending." };
   return { ok: true };
+}
+
+const STORAGE_BUCKET = "featured_clips";
+const MAX_VIDEO_BYTES = 25 * 1024 * 1024; // 25 MB
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Uploads a clip's video file to Storage and returns the public URL. The
+ * caller must pre-generate the clipId (UUID) so the filename matches the
+ * eventual DB row id — that way `sync-featured-videos` and the brand
+ * download flow find the file by id without any join table.
+ *
+ * Goes through the service-role key — the bucket is public read but only
+ * the server can write, which keeps anonymous spam out.
+ */
+export async function uploadClipVideo(
+  identityToken: string,
+  clipId: string,
+  formData: FormData
+): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
+  await requireCreator(identityToken);
+  if (!UUID_RE.test(clipId)) return { ok: false, error: "Invalid clip id." };
+
+  const file = formData.get("file");
+  if (!(file instanceof File)) {
+    return { ok: false, error: "No video file provided." };
+  }
+  if (file.size === 0) return { ok: false, error: "Video file is empty." };
+  if (file.size > MAX_VIDEO_BYTES) {
+    return {
+      ok: false,
+      error: `Video is too large (max ${Math.round(MAX_VIDEO_BYTES / 1024 / 1024)}MB).`,
+    };
+  }
+  if (!file.type.startsWith("video/")) {
+    return { ok: false, error: "File must be a video." };
+  }
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const secret = process.env.SUPABASE_SECRET_KEY;
+  if (!supabaseUrl || !secret) {
+    return { ok: false, error: "Storage is not configured." };
+  }
+
+  const filename = `${clipId}.mp4`;
+  const uploadUrl = `${supabaseUrl}/storage/v1/object/${STORAGE_BUCKET}/${filename}`;
+  const buf = await file.arrayBuffer();
+
+  // upsert: true so the creator can re-submit / replace if their first
+  // upload was corrupted before they ever called submitClip.
+  const res = await fetch(uploadUrl, {
+    method: "POST",
+    headers: {
+      apikey: secret,
+      Authorization: `Bearer ${secret}`,
+      "Content-Type": file.type || "video/mp4",
+      "x-upsert": "true",
+    },
+    body: buf,
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    return {
+      ok: false,
+      error: `Upload failed (${res.status}): ${text.slice(0, 200)}`,
+    };
+  }
+
+  const publicUrl = `${supabaseUrl}/storage/v1/object/public/${STORAGE_BUCKET}/${filename}`;
+  return { ok: true, url: publicUrl };
 }
 
 /**

@@ -335,7 +335,13 @@ function BrandCampaignCard({
           </div>
 
           {chain.exists && !isPending && (
-            <div className="flex justify-end border-t-2 border-ink/10 pt-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t-2 border-ink/10 pt-3">
+              <Link
+                href={`/brand/campaigns/${campaign.slug}/clips`}
+                className="font-display text-[0.7rem] font-bold uppercase tracking-wider text-indigo hover:underline"
+              >
+                {t("brand.cardViewClips")}
+              </Link>
               <FundCampaignDialog
                 campaignId={campaign.id}
                 campaignName={campaign.productName}

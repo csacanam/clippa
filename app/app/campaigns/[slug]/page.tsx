@@ -22,7 +22,7 @@ import {
   getCampaignStats,
   type CampaignStats,
 } from "@/lib/actions/campaigns";
-import { submitClip } from "@/lib/actions/clips";
+import { submitClip, uploadClipVideo } from "@/lib/actions/clips";
 import { getOrCreateTrackingCode } from "@/lib/actions/tracking-codes";
 import {
   budgetPercentSpent,
@@ -53,6 +53,10 @@ function CampaignDetail() {
   const [trackingCode, setTrackingCode] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingStage, setUploadingStage] = useState<
+    "idle" | "uploading" | "submitting"
+  >("idle");
+  const [videoFile, setVideoFile] = useState<File | null>(null);
   const [formState, setFormState] = useState<FormState>({ stage: "form" });
   const [copied, setCopied] = useState(false);
 
@@ -153,6 +157,18 @@ function CampaignDetail() {
       setError(t("campaign.errAuthNotReady"));
       return;
     }
+    if (!videoFile) {
+      setError(t("campaign.errPickFile"));
+      return;
+    }
+    if (!videoFile.type.startsWith("video/")) {
+      setError(t("campaign.errFileNotVideo"));
+      return;
+    }
+    if (videoFile.size > 25 * 1024 * 1024) {
+      setError(t("campaign.errFileTooLarge"));
+      return;
+    }
 
     setSubmitting(true);
 
@@ -185,13 +201,32 @@ function CampaignDetail() {
       return;
     }
 
+    // Generate the clip's UUID up-front so the uploaded file and the eventual
+    // DB row share an id. Use crypto.randomUUID; widely supported.
+    const clipId = crypto.randomUUID();
+
+    setUploadingStage("uploading");
+    const formData = new FormData();
+    formData.set("file", videoFile);
+    const upload = await uploadClipVideo(identityToken, clipId, formData);
+    if (!upload.ok) {
+      setError(upload.error);
+      setUploadingStage("idle");
+      setSubmitting(false);
+      return;
+    }
+
+    setUploadingStage("submitting");
     const result = await submitClip(identityToken, {
+      clipId,
       campaignSlug: campaign.slug,
       platform,
       postUrl: finalUrl,
       trackingCode,
+      featuredVideoUrl: upload.url,
     });
     setSubmitting(false);
+    setUploadingStage("idle");
 
     if (!result.ok) {
       setError(result.error);
@@ -505,6 +540,33 @@ function CampaignDetail() {
                     />
                   </div>
 
+                  <div className="flex flex-col gap-2">
+                    <label className="font-display text-sm font-bold uppercase tracking-wide">
+                      {t("campaign.step4Title")}
+                    </label>
+                    <label className="inline-flex cursor-pointer items-center justify-between gap-3 rounded-md border-2 border-dashed border-ink/40 bg-cream/50 px-4 py-3 transition-colors hover:bg-peach/60">
+                      <span className="truncate font-body text-sm text-ink-soft">
+                        {videoFile
+                          ? t("campaign.step4FileReady", { name: videoFile.name })
+                          : t("campaign.step4PickFile")}
+                      </span>
+                      <span className="shrink-0 rounded-md border-2 border-ink bg-cream px-2.5 py-1 font-display text-[0.7rem] font-bold uppercase tracking-wider">
+                        {t("campaign.step4PickFile")}
+                      </span>
+                      <input
+                        type="file"
+                        accept="video/mp4,video/quicktime,video/*"
+                        className="sr-only"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0] ?? null;
+                          setVideoFile(f);
+                          setError(null);
+                        }}
+                      />
+                    </label>
+                    <p className="text-xs text-ink-soft">{t("campaign.step4Hint")}</p>
+                  </div>
+
                   {error && (
                     <p className="font-body text-sm text-error">{error}</p>
                   )}
@@ -516,9 +578,11 @@ function CampaignDetail() {
                       variant="magenta"
                       size="lg"
                     >
-                      {submitting
-                        ? t("campaign.submitting")
-                        : t("campaign.submitButton")}
+                      {uploadingStage === "uploading"
+                        ? t("campaign.uploading")
+                        : submitting
+                          ? t("campaign.submitting")
+                          : t("campaign.submitButton")}
                     </Button>
                   </div>
                 </form>

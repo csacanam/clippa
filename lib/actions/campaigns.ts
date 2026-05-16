@@ -649,6 +649,90 @@ export async function getMyPendingCampaign(
   };
 }
 
+export type BrandCampaignClip = {
+  id: string;
+  platform: Platform;
+  postUrl: string;
+  status: "pending" | "tracking" | "rejected" | "paused" | "maxed_out";
+  verifiedViews: number;
+  earningsUsd: number;
+  paidOutUsd: number;
+  createdAt: string;
+  featuredVideoUrl?: string;
+};
+
+export type BrandCampaignClipsResult =
+  | {
+      ok: true;
+      campaignName: string;
+      clips: BrandCampaignClip[];
+    }
+  | { ok: false; error: string };
+
+/**
+ * Returns all clips on a campaign the current user owns. Used by the
+ * brand-side clip list page where the brand can download each MP4.
+ */
+export async function listClipsForBrandCampaign(
+  identityToken: string,
+  slug: string
+): Promise<BrandCampaignClipsResult> {
+  const user = await requireUser(identityToken);
+  const sb = createServerClient();
+
+  const camp = await sb
+    .from("campaigns")
+    .select("id, product_name, created_by_user_id")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (camp.error) return { ok: false, error: camp.error.message };
+  if (!camp.data) return { ok: false, error: "Campaign not found." };
+  const row = camp.data as {
+    id: string;
+    product_name: string;
+    created_by_user_id: string | null;
+  };
+  if (row.created_by_user_id !== user.id) {
+    return { ok: false, error: "Not your campaign." };
+  }
+
+  const { data, error } = await sb
+    .from("clips")
+    .select(
+      "id, platform, post_url, status, verified_views, earnings_usd, paid_out_usd, featured_video_url, created_at"
+    )
+    .eq("campaign_id", row.id)
+    .order("earnings_usd", { ascending: false });
+  if (error) return { ok: false, error: error.message };
+
+  type R = {
+    id: string;
+    platform: Platform;
+    post_url: string;
+    status: BrandCampaignClip["status"];
+    verified_views: number;
+    earnings_usd: string | number;
+    paid_out_usd: string | number;
+    featured_video_url: string | null;
+    created_at: string;
+  };
+  return {
+    ok: true,
+    campaignName: row.product_name,
+    clips: ((data ?? []) as R[]).map((r) => ({
+      id: r.id,
+      platform: r.platform,
+      postUrl: r.post_url,
+      status: r.status,
+      verifiedViews: r.verified_views,
+      earningsUsd: n(r.earnings_usd),
+      paidOutUsd: n(r.paid_out_usd),
+      createdAt: r.created_at,
+      featuredVideoUrl: r.featured_video_url ?? undefined,
+    })),
+  };
+}
+
 /**
  * Checks if a slug is available. Cheap pre-check so the form can show
  * inline feedback before submit.
