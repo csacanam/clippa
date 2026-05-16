@@ -408,11 +408,10 @@ function PaidCard() {
           <p className="font-body text-sm text-cream/90">
             {t("landing.howStep3Body")}
           </p>
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-display text-[0.65rem] font-bold uppercase tracking-wider text-cream/80">
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 font-display text-[0.65rem] font-bold uppercase tracking-wider text-cream/80">
             <span className="inline-flex items-center gap-1">
               <Check className="size-3" /> {t("landing.receiptInstant")}
             </span>
-            <span>·</span>
             <span className="inline-flex items-center gap-1">
               <Check className="size-3" /> {t("landing.receiptNoFees")}
             </span>
