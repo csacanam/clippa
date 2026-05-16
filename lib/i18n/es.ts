@@ -26,14 +26,14 @@ const es: Dict = {
     title1: "Haz clips.",
     title2: "Gana dinero.",
     subtitle:
-      "Haz videos cortos para marcas. Publícalos en tus redes sociales. Gana por cada visualización.",
+      "Haz videos cortos para apps. Publícalos en tus redes sociales. Gana por cada visualización.",
     cta: "Empezar a ganar →",
     footer: "Hecho para creadores en todo el mundo. Pagos donde estés.",
     statsCreators: "Creadores",
     statsClipsPosted: "Clips publicados",
     statsPaymentsSent: "Pagos enviados",
 
-    howTitle: "Cobra por hacer videos cortos para marcas",
+    howTitle: "Cobra por hacer videos cortos para apps",
     howStep1Title: "Recrea un video",
     howStep1Body:
       "Te mostramos exactamente qué video hacer, con un ejemplo y un guion.",
@@ -74,14 +74,14 @@ const es: Dict = {
     faqQ4: "¿Cuánto puedo ganar?",
     faqA4:
       "Cada campaña define un máximo por clip. De ahí depende de la campaña y de qué tan virales sean tus clips — entre más visualizaciones, más ganas.",
-    faqQ5: "Soy una marca. ¿Cómo lanzo una campaña?",
+    faqQ5: "Tengo una app que promocionar. ¿Por dónde empiezo?",
     faqA5:
-      "Cualquiera puede lanzar una campaña en Clippa: defines tu producto, qué pagas por visualización, depositas el presupuesto, y los creadores hacen el resto.",
+      "Cualquiera puede lanzar una campaña en Clippa: defines tu app, qué pagas por visualización, depositas el presupuesto, y los creadores hacen el resto.",
 
-    brandCtaTitle: "¿Tienes un producto que promocionar?",
+    brandCtaTitle: "¿Tienes una app que promocionar?",
     brandCtaBody:
-      "Conviértelo en clips con creadores reales. Define cuánto pagas por visualización, deposita el presupuesto, y solo gastas en las visualizaciones que realmente conseguiste.",
-    brandCtaButton: "Ver cómo funciona para marcas →",
+      "Conviértela en clips con creadores reales. Define cuánto pagas por visualización, deposita el presupuesto, y solo gastas en las visualizaciones que realmente conseguiste.",
+    brandCtaButton: "Promociona tu app →",
     brandCtaBullet1: "Paga por visualización, no por seguidor",
     brandCtaBullet2: "Presupuesto reembolsable, cuando quieras",
     brandCtaBullet3: "Activo en 2 minutos",
@@ -161,7 +161,7 @@ const es: Dict = {
     step3Title: "Paso 3 — Pega el link",
     step4Title: "Paso 4 — Sube el video",
     step4Hint:
-      "El archivo MP4. Nos sirve para mostrar tu clip en el home y para que la marca pueda reutilizarlo. Máx 25MB.",
+      "El archivo MP4. Nos sirve para mostrar tu clip en el home y para que el equipo de la app pueda reutilizarlo. Máx 25MB.",
     step4PickFile: "Elegir video",
     step4FileReady: "Listo: {name}",
     submitButton: "Subir clip →",
@@ -276,12 +276,12 @@ const es: Dict = {
     landingTitle1: "Consigue usuarios.",
     landingTitle2: "Paga por resultados.",
     landingSubtitle:
-      "Creadores reales convierten tu producto en videos cortos en Instagram y TikTok. Tú defines el precio por visualización, depositas un presupuesto y solo gastas en visualizaciones que realmente ocurren. Sin agencias. Sin contratos.",
+      "Creadores reales convierten tu app en videos cortos en Instagram y TikTok. Tú defines el precio por visualización, depositas un presupuesto y solo gastas en visualizaciones que realmente ocurren. Sin agencias. Sin contratos.",
     landingCta: "Lanzar una campaña →",
     landingHowTitle: "Adquisición de usuarios que se paga sola",
     landingStep1Title: "Define tu campaña",
     landingStep1Body:
-      "Producto, cuánto pagas por visualización, un tope por clip y las reglas que los creadores siguen. Toma 2 minutos.",
+      "Tu app, cuánto pagas por visualización, un tope por clip y las reglas que los creadores siguen. Toma 2 minutos.",
     landingStep2Title: "Deposita tu presupuesto",
     landingStep2Body:
       "Empieza con lo que quieras. El dinero se queda en un escrow on-chain — tuyo hasta que lleguen las visualizaciones.",
@@ -307,7 +307,7 @@ const es: Dict = {
     landingFaqQ5: "¿Puedo correr varias campañas?",
     landingFaqQ5Hint: "",
     landingFaqA5:
-      "Sí. Diferentes productos, diferentes tarifas, diferentes reglas — cada campaña es independiente. Las manejas todas desde tu dashboard en /brand.",
+      "Sí. Diferentes apps, diferentes tarifas, diferentes reglas — cada campaña es independiente. Las manejas todas desde tu dashboard en /brand.",
     landingFaqQ6: "Soy creador. ¿Dónde me registro?",
     landingFaqA6:
       "En la página principal. O haz click en 'Para creadores' abajo en el footer.",
@@ -326,7 +326,7 @@ const es: Dict = {
 
     // Etiquetas de los mockups visuales en /brands
     mockTitleCampaign: "Nueva campaña",
-    mockProduct: "Producto",
+    mockProduct: "App",
     mockProductValue: "Nerdos.fun",
     mockRate: "Tarifa / visualización",
     mockRateValue: "$0.01",
@@ -345,7 +345,7 @@ const es: Dict = {
     dashNewCampaign: "Nueva campaña",
     dashEmptyTitle: "Todavía no hay campañas",
     dashEmptyBody:
-      "Lanzar toma unos 2 minutos. Define tu producto, fija una tarifa por visualización, deposita tu presupuesto y los creadores hacen lo demás.",
+      "Lanzar toma unos 2 minutos. Define tu app, fija una tarifa por visualización, deposita tu presupuesto y los creadores hacen lo demás.",
     dashEmptyCta: "Crear tu primera campaña",
     statusActive: "Activa",
     statusPaused: "Pausada",
@@ -400,7 +400,7 @@ const es: Dict = {
     fldLanguage: "Idioma en el que escribirás",
     fldLanguageHint:
       "Elige el idioma en el que vas a escribir el contenido. Lo traducimos automáticamente a los demás idiomas soportados para que cada creador vea la campaña en su propio idioma.",
-    fldProductName: "Nombre del producto",
+    fldProductName: "Nombre de la app",
     fldProductNameHint:
       "Aparece como título tanto en el catálogo como en la página de la campaña.",
     fldSlug: "Slug de la URL",
@@ -411,10 +411,10 @@ const es: Dict = {
     fldSlugHintTaken: "✗ Ya está en uso — elige otro",
     fldTagline: "Frase de catálogo",
     fldTaglineHint:
-      "Una línea que aparece debajo del nombre del producto en el catálogo. 8–15 palabras.",
-    fldAbout: "Acerca del producto",
+      "Una línea que aparece debajo del nombre de la app en el catálogo. 8–15 palabras.",
+    fldAbout: "Acerca de la app",
     fldAboutHint:
-      "Un párrafo que los creadores leen antes de decidir hacer un clip. ¿Qué es el producto? ¿Por qué quieres clips? ¿Qué tipo de clips funcionan mejor?",
+      "Un párrafo que los creadores leen antes de decidir hacer un clip. ¿Qué hace la app? ¿Por qué quieres clips? ¿Qué tipo de clips funcionan mejor?",
     fldReferenceVideo: "Video de referencia (opcional)",
     fldReferenceVideoHint:
       "Si tienes un clip que captura el tono que buscas, pega el link aquí.",
@@ -440,7 +440,7 @@ const es: Dict = {
     wizBtnReserving: "Reservando...",
 
     reviewTermsTitle: "Términos",
-    reviewProduct: "Producto",
+    reviewProduct: "App",
     reviewSlug: "Slug",
     reviewPlatforms: "Plataformas",
     reviewTagline: "Frase de catálogo",
@@ -526,7 +526,7 @@ const es: Dict = {
     pvBudgetOf: "de {amount}",
     pvRatePerView: "${rate} / visualización",
     pvUpTo: "Hasta {amount} por clip",
-    pvPlaceholderProduct: "Nombre de tu producto",
+    pvPlaceholderProduct: "Nombre de tu app",
     pvPlaceholderShort: "Tu frase de catálogo en una línea.",
     pvPlaceholderLong: "Aquí va tu descripción más larga.",
     pvPerView: "Por visualización",

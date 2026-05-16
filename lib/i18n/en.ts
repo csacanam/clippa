@@ -32,14 +32,14 @@ const en = {
     title1: "Make clips.",
     title2: "Get paid.",
     subtitle:
-      "Make short videos for brands. Post them to your socials. Earn for every view.",
+      "Make short videos for apps. Post them to your socials. Earn for every view.",
     cta: "Start earning →",
     footer: "Built for creators worldwide. Payments anywhere.",
     statsCreators: "Creators",
     statsClipsPosted: "Clips posted",
     statsPaymentsSent: "Payments sent",
 
-    howTitle: "Get paid to make short videos for brands",
+    howTitle: "Get paid to make short videos for apps",
     howStep1Title: "Recreate a video",
     howStep1Body:
       "We show you exactly what video to make with an example and a script.",
@@ -79,14 +79,14 @@ const en = {
     faqQ4: "How much can I earn?",
     faqA4:
       "Each campaign sets a max per clip. Beyond that, it's up to the campaign and how viral your clips go — the more views, the more you earn.",
-    faqQ5: "I'm a brand. How do I run a campaign?",
+    faqQ5: "I have an app to promote. Where do I start?",
     faqA5:
-      "Anyone can launch a campaign on Clippa: set your product, what you pay per view, fund the budget, and creators take it from there.",
+      "Anyone can launch a campaign on Clippa: set your app, what you pay per view, fund the budget, and creators take it from there.",
 
-    brandCtaTitle: "Got a product to promote?",
+    brandCtaTitle: "Got an app to promote?",
     brandCtaBody:
       "Turn it into clips with real creators. Set what you pay per view, fund the budget, and only spend on views you actually got.",
-    brandCtaButton: "See how it works for brands →",
+    brandCtaButton: "Promote your app →",
     brandCtaBullet1: "Pay per view, not per follower",
     brandCtaBullet2: "Refundable budget, anytime",
     brandCtaBullet3: "Live in 2 minutes",
@@ -165,7 +165,7 @@ const en = {
     step3Title: "Step 3 — Paste the link",
     step4Title: "Step 4 — Upload the video",
     step4Hint:
-      "The MP4 file. Lets us showcase your clip on the homepage and lets the brand reuse it. Max 25MB.",
+      "The MP4 file. Lets us showcase your clip on the homepage and lets the app's team reuse it. Max 25MB.",
     step4PickFile: "Pick a video",
     step4FileReady: "Ready: {name}",
     submitButton: "Submit clip →",
@@ -280,12 +280,12 @@ const en = {
     landingTitle1: "Get users.",
     landingTitle2: "Pay for results.",
     landingSubtitle:
-      "Real creators turn your product into short videos on Instagram and TikTok. You set the price per view, deposit a budget, and only spend on views that actually happen. No agencies. No retainers.",
+      "Real creators turn your app into short videos on Instagram and TikTok. You set the price per view, deposit a budget, and only spend on views that actually happen. No agencies. No retainers.",
     landingCta: "Launch a campaign →",
     landingHowTitle: "User acquisition that pays for itself",
     landingStep1Title: "Define your campaign",
     landingStep1Body:
-      "Product, what you pay per view, a cap per clip, and the rules creators follow. Takes 2 minutes.",
+      "Your app, what you pay per view, a cap per clip, and the rules creators follow. Takes 2 minutes.",
     landingStep2Title: "Deposit your budget",
     landingStep2Body:
       "Start with as little as you want. The money sits in an on-chain escrow — yours until views land.",
@@ -311,7 +311,7 @@ const en = {
     landingFaqQ5: "Can I run multiple campaigns?",
     landingFaqQ5Hint: "",
     landingFaqA5:
-      "Yes. Different products, different rates, different rules — each campaign is independent. Manage them all from your /brand dashboard.",
+      "Yes. Different apps, different rates, different rules — each campaign is independent. Manage them all from your /brand dashboard.",
     landingFaqQ6: "I'm a creator. Where do I sign up?",
     landingFaqA6:
       "On the homepage. Or click 'For creators' in the footer below.",
@@ -330,7 +330,7 @@ const en = {
 
     // Mockup labels for the visual cards on /brands
     mockTitleCampaign: "New campaign",
-    mockProduct: "Product",
+    mockProduct: "App",
     mockProductValue: "Nerdos.fun",
     mockRate: "Rate / view",
     mockRateValue: "$0.01",
@@ -350,7 +350,7 @@ const en = {
     dashNewCampaign: "New campaign",
     dashEmptyTitle: "No campaigns yet",
     dashEmptyBody:
-      "Launching takes about 2 minutes. Define your product, set a rate per view, deposit your budget, and creators take it from there.",
+      "Launching takes about 2 minutes. Define your app, set a rate per view, deposit your budget, and creators take it from there.",
     dashEmptyCta: "Create your first campaign",
     statusActive: "Active",
     statusPaused: "Paused",
@@ -407,7 +407,7 @@ const en = {
     fldLanguage: "Language you'll write in",
     fldLanguageHint:
       "Pick the language you'll author the content in. We'll auto-translate to other supported languages so every creator sees the campaign in their own language.",
-    fldProductName: "Product name",
+    fldProductName: "App name",
     fldProductNameHint:
       "Shown as the title both in the catalog and on the campaign page.",
     fldSlug: "URL slug",
@@ -418,10 +418,10 @@ const en = {
     fldSlugHintTaken: "✗ Already taken — pick another",
     fldTagline: "Catalog tagline",
     fldTaglineHint:
-      "One scannable line that appears under the product name in the catalog. 8–15 words.",
-    fldAbout: "About this product",
+      "One scannable line that appears under the app name in the catalog. 8–15 words.",
+    fldAbout: "About this app",
     fldAboutHint:
-      "A paragraph creators read on the campaign page before deciding to make a clip. What is the product? Why do you want clips? What kind of clips win?",
+      "A paragraph creators read on the campaign page before deciding to make a clip. What does the app do? Why do you want clips? What kind of clips win?",
     fldReferenceVideo: "Reference video (optional)",
     fldReferenceVideoHint:
       "If you have a clip that captures the tone you want, link it here.",
@@ -448,7 +448,7 @@ const en = {
 
     // Wizard — step 2 review
     reviewTermsTitle: "Terms",
-    reviewProduct: "Product",
+    reviewProduct: "App",
     reviewSlug: "URL slug",
     reviewPlatforms: "Platforms",
     reviewTagline: "Catalog tagline",
@@ -537,7 +537,7 @@ const en = {
     pvBudgetOf: "of {amount}",
     pvRatePerView: "${rate} / view",
     pvUpTo: "Up to {amount} per clip",
-    pvPlaceholderProduct: "Your product name",
+    pvPlaceholderProduct: "Your app name",
     pvPlaceholderShort: "Your one-line catalog tagline.",
     pvPlaceholderLong: "Your longer description goes here.",
     pvPerView: "Per view",
