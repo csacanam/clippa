@@ -56,7 +56,7 @@ export function CommunityHint() {
       href={TELEGRAM_URL}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-2.5 rounded-md border-2 border-ink bg-peach px-3 py-2 shadow-sticker-sm transition-transform hover:-translate-y-[1px] hover:shadow-sticker"
+      className="flex w-full items-center gap-2.5 rounded-md border-2 border-ink bg-peach px-3 py-2 shadow-sticker-sm transition-transform hover:-translate-y-[1px] hover:shadow-sticker"
     >
       <Send className="size-4 shrink-0" />
       <div className="flex min-w-0 flex-col text-left">
