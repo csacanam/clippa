@@ -26,7 +26,7 @@ const es: Dict = {
     title1: "Haz clips.",
     title2: "Gana dinero.",
     subtitle:
-      "Videos cortos para marcas en Instagram o TikTok. Pega el link. Gana por cada vista.",
+      "Haz videos cortos para marcas. Publícalos en tus redes sociales. Gana por cada visualización.",
     cta: "Empezar a ganar →",
     footer: "Hecho para creadores en todo el mundo. Pagos donde estés.",
     statsCreators: "Creadores",
@@ -37,24 +37,24 @@ const es: Dict = {
     howTitle: "Cómo funciona",
     howStep1Title: "Elige una campaña",
     howStep1Body:
-      "Las marcas pagan por views reales. Tú eliges la campaña que combine con tu estilo.",
+      "Las marcas pagan por visualizaciones reales. Tú eliges la campaña que combine con tu estilo.",
     howStep2Title: "Haz un clip y postéalo",
     howStep2Body:
       "15–60 segundos, en Instagram o TikTok. Sin guion fijo — te damos uno para que lo adaptes.",
-    howStep3Title: "Cobra por views",
+    howStep3Title: "Cobra por visualizaciones",
     howStep3Body:
-      "Te enviamos USDT a tu wallet conforme lleguen las views. Sin facturas, sin esperar fin de mes.",
+      "Te enviamos USDT a tu wallet conforme lleguen las visualizaciones. Sin facturas, sin esperar fin de mes.",
 
     whyTitle: "Por qué empezar hoy",
     why1: "Sin mínimo de seguidores — sirve cualquier cuenta",
     why2: "Postea desde cualquier perfil, incluso uno nuevo",
-    why3: "Pagos automáticos cuando llegan las views — nada que facturar",
+    why3: "Pagos automáticos cuando llegan las visualizaciones — nada que facturar",
     why4: "Sin contratos, sin compromisos, sin letra chica",
 
     topClipsTitle: "Clips reales. Pagos reales.",
     topClipsSubtitle:
       "Clips recientes de la comunidad y cuánto han ganado hasta ahora.",
-    topClipsViewsLabel: "views",
+    topClipsViewsLabel: "visualizaciones",
     topClipsEarnedLabel: "Ganado",
     topClipsWatchOn: "Ver en {platform} →",
     topClipsEmpty: "Los clips destacados aparecerán aquí pronto.",
@@ -62,14 +62,14 @@ const es: Dict = {
     faqTitle: "Respuestas rápidas",
     faqQ1: "¿Necesito mucha audiencia?",
     faqA1:
-      "No. Contamos views por post, no seguidores. Una cuenta nueva puede ganar lo mismo que una grande si el clip pega.",
+      "No. Contamos visualizaciones por post, no seguidores. Una cuenta nueva puede ganar lo mismo que una grande si el clip pega.",
     faqQ2: "¿Cuándo me pagan?",
     faqA2:
-      "Automáticamente, en USDT, conforme suman las views. Pagamos continuamente — no envías facturas ni esperas a fin de mes.",
+      "Automáticamente, en USDT, conforme suman las visualizaciones. Pagamos continuamente — no envías facturas ni esperas a fin de mes.",
     faqQ3: "¿Tengo que ser creador con experiencia?",
     faqA3:
       "No hace falta experiencia previa. Cada campaña viene con un guion sugerido y las reglas a seguir. Si sabes presionar grabar, puedes ganar.",
-    faqQ4: "¿Y si mi clip no genera views?",
+    faqQ4: "¿Y si mi clip no genera visualizaciones?",
     faqA4:
       "No ganas por ese, pero no hay penalización — sigue posteando en otras campañas. Con que pegue uno solo, valió la pena.",
   },
@@ -105,7 +105,7 @@ const es: Dict = {
 
   campaign: {
     whatYouEarn: "Lo que ganas",
-    perView: "por vista",
+    perView: "por visualización",
     maxPerClip: "máximo por clip",
     budgetLabel: "Presupuesto de la campaña",
     budgetLeft: "Quedan {amount}",
@@ -119,7 +119,7 @@ const es: Dict = {
     clipsLiveOne: "{n} clip en vivo",
     clipsLiveMany: "{n} clips en vivo",
     beFirst: "Sé el primero en clipear esto.",
-    cardPerView: "{amount} por vista",
+    cardPerView: "{amount} por visualización",
     cardUpTo: "hasta {amount} por clip",
     about: "Sobre esta campaña",
     script: "Guion sugerido",
@@ -130,7 +130,7 @@ const es: Dict = {
     howItWorks3:
       "Pega tu código único en la descripción — así sabemos que el post es tuyo.",
     howItWorks4:
-      "Seguimos las vistas cada hora. Tu balance se actualiza solo.",
+      "Seguimos las visualizaciones cada hora. Tu balance se actualiza solo.",
     submitTitle: "Sube tu clip",
     submitSubtitle:
       "Pega el código en tu descripción, publícalo en IG o TikTok, y deja el link aquí.",
@@ -164,30 +164,30 @@ const es: Dict = {
 
   clipDetail: {
     submitted: "Enviado {ago}",
-    statTotalViews: "Vistas totales",
+    statTotalViews: "Visualizaciones totales",
     statEarned: "Ganado",
     statPaid: "Pagado",
     statComingNext: "Próximo pago",
-    viewsOverTime: "Vistas en el tiempo",
-    noChartData: "Aún no hay datos. Seguimos las vistas cada hora.",
+    viewsOverTime: "Visualizaciones en el tiempo",
+    noChartData: "Aún no hay datos. Seguimos las visualizaciones cada hora.",
     notApprovedTitle: "Por qué no se aprobó",
     paymentHistory: "Historial de pagos",
     noPayments:
-      "Todavía no hay pagos. Aparecerán aquí a medida que entren vistas.",
+      "Todavía no hay pagos. Aparecerán aquí a medida que entren visualizaciones.",
     headerWhen: "Cuándo",
-    headerViews: "Vistas",
+    headerViews: "Visualizaciones",
     headerAmount: "Monto",
     headerReceipt: "Recibo",
   },
 
   clipCard: {
-    viewsLabel: "{n} vistas",
+    viewsLabel: "{n} visualizaciones",
     earnedLabel: "{amount} ganados",
     paidLabel: "{amount} pagados",
     removeAria: "Eliminar clip",
     confirmRemove: "¿Eliminar este clip?",
     payoutsStay:
-      "Los pagos ya enviados son tuyos. Dejamos de seguir vistas nuevas.",
+      "Los pagos ya enviados son tuyos. Dejamos de seguir visualizaciones nuevas.",
     noLoss: "Todavía no ganaste nada, así que no se pierde nada.",
     yesRemove: "Sí, eliminar",
     removing: "Eliminando...",
@@ -253,20 +253,20 @@ const es: Dict = {
     brandMode: "Cambiar a modo marca",
     forCreators: "Para creadores →",
 
-    landingTitle1: "Paga por vista.",
+    landingTitle1: "Paga por visualización.",
     landingTitle2: "No por promesa.",
     landingSubtitle:
-      "Creadores reales convierten tu producto en clips para Instagram y TikTok. Tú defines el precio por vista, depositas un presupuesto y solo pagas por las vistas que realmente ocurren. Sin agencia. Sin contrato.",
+      "Creadores reales convierten tu producto en clips para Instagram y TikTok. Tú defines el precio por visualización, depositas un presupuesto y solo pagas por las visualizaciones que realmente ocurren. Sin agencia. Sin contrato.",
     landingCta: "Lanzar una campaña →",
     landingStep1Title: "Define tu campaña",
     landingStep1Body:
-      "Tu producto, cuánto pagas por vista, un tope por clip y las reglas que los creadores deben seguir.",
+      "Tu producto, cuánto pagas por visualización, un tope por clip y las reglas que los creadores deben seguir.",
     landingStep2Title: "Deposita tu presupuesto",
     landingStep2Body:
-      "Decide cuánto gastar. El dinero queda apartado, sin tocar, hasta que lleguen las vistas.",
+      "Decide cuánto gastar. El dinero queda apartado, sin tocar, hasta que lleguen las visualizaciones.",
     landingStep3Title: "Paga por resultados",
     landingStep3Body:
-      "A medida que se publican los clips y suman vistas, los creadores reciben su pago automáticamente. Sin facturas, sin perseguir a nadie.",
+      "A medida que se publican los clips y suman visualizaciones, los creadores reciben su pago automáticamente. Sin facturas, sin perseguir a nadie.",
     landingFooter:
       "Sin sobreprecio de agencia. Sin contratos largos. Solo pagas por resultados.",
 
@@ -275,7 +275,7 @@ const es: Dict = {
     dashNewCampaign: "Nueva campaña",
     dashEmptyTitle: "Todavía no hay campañas",
     dashEmptyBody:
-      "Lanzar toma unos 2 minutos. Define tu producto, fija una tarifa por vista, deposita tu presupuesto y los creadores hacen lo demás.",
+      "Lanzar toma unos 2 minutos. Define tu producto, fija una tarifa por visualización, deposita tu presupuesto y los creadores hacen lo demás.",
     dashEmptyCta: "Crear tu primera campaña",
     statusActive: "Activa",
     statusPaused: "Pausada",
@@ -286,7 +286,7 @@ const es: Dict = {
       "Termina de depositar tu presupuesto para que la campaña quede activa.",
     cardResumeDeposit: "Continuar depósito",
     cardNotFunded: "Presupuesto sin depositar",
-    cardNotFundedBody: "Termina el depósito para empezar a rastrear vistas.",
+    cardNotFundedBody: "Termina el depósito para empezar a rastrear visualizaciones.",
     cardBalanceLeft: "Saldo restante",
     cardRunningLow: "Quedando poco",
     cardPaidToCreators: "Pagado a creadores",
@@ -294,9 +294,9 @@ const es: Dict = {
     cardClip: "Clip",
     cardClips: "Clips",
     cardLive: "Activos",
-    cardViews: "Vistas",
+    cardViews: "Visualizaciones",
     cardRate: "Tarifa",
-    cardPerView: "/ vista",
+    cardPerView: "/ visualización",
     cardMax: "Máx",
     cardPerClip: "/ clip",
     cardAddFunds: "Agregar fondos",
@@ -314,7 +314,7 @@ const es: Dict = {
     clipsStatusRejected: "Rechazado",
     clipsStatusPaused: "Pausado",
     clipsStatusMaxed: "Tope alcanzado",
-    clipsViews: "vistas",
+    clipsViews: "visualizaciones",
     clipsEarned: "ganado",
     clipsPaid: "pagado",
 
@@ -354,8 +354,8 @@ const es: Dict = {
     fldRules: "Reglas para los clips",
     fldRulesHint:
       "Requisitos obligatorios. Los clips que no las cumplan se rechazan. Sé específico — por ejemplo, 'mencionar la URL en pantalla', 'no usar la palabra X'.",
-    fldRatePerView: "Tarifa por vista",
-    fldRatePerViewHint: "$0.01 = $10 por cada 1,000 vistas.",
+    fldRatePerView: "Tarifa por visualización",
+    fldRatePerViewHint: "$0.01 = $10 por cada 1,000 visualizaciones.",
     fldMaxPerClip: "Máximo por clip",
     fldMaxPerClipHint:
       "Tope por clip individual — incluso uno viral se detiene aquí.",
@@ -374,7 +374,7 @@ const es: Dict = {
     reviewSlug: "Slug",
     reviewPlatforms: "Plataformas",
     reviewTagline: "Frase de catálogo",
-    reviewRatePerView: "Tarifa / vista",
+    reviewRatePerView: "Tarifa / visualización",
     reviewMaxPerClip: "Máx / clip",
     reviewTotalBudget: "Presupuesto total",
     reviewPreviewTitle: "Vista previa para creadores",
@@ -454,12 +454,12 @@ const es: Dict = {
     pvRulesEmpty: "Tus reglas para los clips aparecerán aquí.",
     pvBudgetLeft: "{amount} restantes",
     pvBudgetOf: "de {amount}",
-    pvRatePerView: "${rate} / vista",
+    pvRatePerView: "${rate} / visualización",
     pvUpTo: "Hasta {amount} por clip",
     pvPlaceholderProduct: "Nombre de tu producto",
     pvPlaceholderShort: "Tu frase de catálogo en una línea.",
     pvPlaceholderLong: "Aquí va tu descripción más larga.",
-    pvPerView: "Por vista",
+    pvPerView: "Por visualización",
     pvMaxPerClip: "Máx por clip",
   },
 };

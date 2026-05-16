@@ -23,7 +23,7 @@ const body = Inter({
 export const metadata: Metadata = {
   title: "Clippa — Make clips. Get paid.",
   description:
-    "Short videos for products on Instagram or TikTok. Drop the link. Earn for every view.",
+    "Make short videos for brands. Post them to your socials. Earn for every view.",
 };
 
 export default async function RootLayout({

@@ -32,7 +32,7 @@ const en = {
     title1: "Make clips.",
     title2: "Get paid.",
     subtitle:
-      "Short videos for products on Instagram or TikTok. Drop the link. Earn for every view.",
+      "Make short videos for brands. Post them to your socials. Earn for every view.",
     cta: "Start earning →",
     footer: "Built for creators worldwide. Payments anywhere.",
     statsCreators: "Creators",
