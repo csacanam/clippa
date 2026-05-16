@@ -33,6 +33,45 @@ const es: Dict = {
     statsClipsPosted: "Clips publicados",
     statsPaymentsSent: "Pagos enviados",
     forBrands: "Para marcas →",
+
+    howTitle: "Cómo funciona",
+    howStep1Title: "Elige una campaña",
+    howStep1Body:
+      "Las marcas pagan por views reales. Tú eliges la campaña que combine con tu estilo.",
+    howStep2Title: "Haz un clip y postéalo",
+    howStep2Body:
+      "15–60 segundos, en Instagram o TikTok. Sin guion fijo — te damos uno para que lo adaptes.",
+    howStep3Title: "Cobra por views",
+    howStep3Body:
+      "Te enviamos USDT a tu wallet conforme lleguen las views. Sin facturas, sin esperar fin de mes.",
+
+    whyTitle: "Por qué empezar hoy",
+    why1: "Sin mínimo de seguidores — sirve cualquier cuenta",
+    why2: "Postea desde cualquier perfil, incluso uno nuevo",
+    why3: "Pagos automáticos cuando llegan las views — nada que facturar",
+    why4: "Sin contratos, sin compromisos, sin letra chica",
+
+    topClipsTitle: "Clips reales. Pagos reales.",
+    topClipsSubtitle:
+      "Clips recientes de la comunidad y cuánto han ganado hasta ahora.",
+    topClipsViewsLabel: "views",
+    topClipsEarnedLabel: "Ganado",
+    topClipsWatchOn: "Ver en {platform} →",
+    topClipsEmpty: "Los clips destacados aparecerán aquí pronto.",
+
+    faqTitle: "Respuestas rápidas",
+    faqQ1: "¿Necesito mucha audiencia?",
+    faqA1:
+      "No. Contamos views por post, no seguidores. Una cuenta nueva puede ganar lo mismo que una grande si el clip pega.",
+    faqQ2: "¿Cuándo me pagan?",
+    faqA2:
+      "Automáticamente, en USDT, conforme suman las views. Pagamos continuamente — no envías facturas ni esperas a fin de mes.",
+    faqQ3: "¿Tengo que ser creador con experiencia?",
+    faqA3:
+      "No hace falta experiencia previa. Cada campaña viene con un guion sugerido y las reglas a seguir. Si sabes presionar grabar, puedes ganar.",
+    faqQ4: "¿Y si mi clip no genera views?",
+    faqA4:
+      "No ganas por ese, pero no hay penalización — sigue posteando en otras campañas. Con que pegue uno solo, valió la pena.",
   },
 
   onboarding: {

@@ -39,6 +39,45 @@ const en = {
     statsClipsPosted: "Clips posted",
     statsPaymentsSent: "Payments sent",
     forBrands: "For brands →",
+
+    howTitle: "How it works",
+    howStep1Title: "Pick a campaign",
+    howStep1Body:
+      "Brands pay per real view. You choose the campaign that fits your style.",
+    howStep2Title: "Make a clip and post it",
+    howStep2Body:
+      "15–60 seconds, on Instagram or TikTok. No fixed script — we give you one to riff on.",
+    howStep3Title: "Get paid per view",
+    howStep3Body:
+      "We send USDT to your wallet as views land. No invoices, no waiting until month-end.",
+
+    whyTitle: "Why start today",
+    why1: "No follower minimum — works for any account",
+    why2: "Post from any profile, even a brand new one",
+    why3: "Automatic payouts as views land — nothing to invoice",
+    why4: "No contracts, no commitment, no fine print",
+
+    topClipsTitle: "Real clips. Real payouts.",
+    topClipsSubtitle:
+      "Recent clips from the community and what they've earned so far.",
+    topClipsViewsLabel: "views",
+    topClipsEarnedLabel: "Earned",
+    topClipsWatchOn: "Watch on {platform} →",
+    topClipsEmpty: "Top-earning clips will show up here soon.",
+
+    faqTitle: "Quick answers",
+    faqQ1: "Do I need a big audience?",
+    faqA1:
+      "No. We track views per post, not follower count. A brand-new account can earn the same as a big one if the clip lands.",
+    faqQ2: "When do I get paid?",
+    faqA2:
+      "Automatically, in USDT, as views accumulate. We pay out continuously — you don't submit invoices or wait until month-end.",
+    faqQ3: "Do I need to be a content creator already?",
+    faqA3:
+      "No prior experience needed. Each campaign comes with a suggested script and the rules to follow. If you can hit record on your phone, you can earn.",
+    faqQ4: "What happens if my clip doesn't get views?",
+    faqA4:
+      "You don't earn for that one. There's no penalty — keep posting on other campaigns. It only takes one clip landing to make it worth it.",
   },
 
   onboarding: {
