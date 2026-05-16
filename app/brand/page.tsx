@@ -3,11 +3,13 @@
 import { usePrivy } from "@privy-io/react-auth";
 import { motion } from "motion/react";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Coins, Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import { AuthGuard } from "@/components/auth-guard";
 import { ClippaLogo } from "@/components/clippa-logo";
+import { FundCampaignDialog } from "@/components/fund-campaign-dialog";
+import { RoleSwitchLink } from "@/components/role-switch-link";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
@@ -83,12 +85,11 @@ function BrandDashboard() {
           </Badge>
         </div>
         <div className="flex items-center gap-4">
-          <Link
-            href="/app"
-            className="hidden font-body text-sm font-medium text-ink-soft underline-offset-4 hover:underline sm:inline"
-          >
-            Creator mode →
-          </Link>
+          <RoleSwitchLink
+            targetRole="creator"
+            targetHref="/app"
+            label="Creator mode →"
+          />
           <span className="hidden font-body text-xs text-ink-soft md:inline">
             {email}
           </span>
@@ -129,7 +130,12 @@ function BrandDashboard() {
         ) : (
           <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
             {campaigns.map((c, i) => (
-              <BrandCampaignCard key={c.slug} campaign={c} index={i} />
+              <BrandCampaignCard
+                key={c.slug}
+                campaign={c}
+                index={i}
+                onChange={refresh}
+              />
             ))}
           </div>
         )}
@@ -180,9 +186,11 @@ const CARD_COLORS = ["bg-cream", "bg-peach", "bg-lime"] as const;
 function BrandCampaignCard({
   campaign,
   index,
+  onChange,
 }: {
   campaign: BrandCampaign;
   index: number;
+  onChange: () => void | Promise<void>;
 }) {
   const bg = CARD_COLORS[index % CARD_COLORS.length];
   const { chain } = campaign;
@@ -321,6 +329,23 @@ function BrandCampaignCard({
               / clip
             </span>
           </div>
+
+          {chain.exists && !isPending && (
+            <div className="flex justify-end border-t-2 border-ink/10 pt-3">
+              <FundCampaignDialog
+                campaignId={campaign.id}
+                campaignName={campaign.productName}
+                currentBalanceUsd={chain.balanceUsd}
+                onDone={onChange}
+                trigger={
+                  <Button variant="default" size="sm">
+                    <Coins className="size-3.5" />
+                    Add funds
+                  </Button>
+                }
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
     </motion.div>
