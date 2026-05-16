@@ -236,7 +236,7 @@ function CampaignBudgetCard({
 
   const [syncing, setSyncing] = useState(false);
   const [paying, setPaying] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
+  const [msg, setMsg] = useState<React.ReactNode | null>(null);
 
   const handleSync = async () => {
     if (!identityToken) return;
@@ -272,12 +272,33 @@ function CampaignBudgetCard({
         campaignSlug: budget.slug,
       });
       await onChange();
-      const parts: string[] = [];
-      if (r.paidCount > 0) {
+      const parts: React.ReactNode[] = [];
+      if (r.paidCount === 1 && r.paidTxs[0]) {
         parts.push(
-          `Paid ${r.paidCount} clip${r.paidCount === 1 ? "" : "s"} (${formatUsd(
-            r.totalPaidUsd
-          )})`
+          <>
+            Paid {formatUsd(r.totalPaidUsd)} ·{" "}
+            <a
+              href={r.paidTxs[0].explorerUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-0.5 text-indigo hover:underline"
+            >
+              View tx
+              <ArrowUpRight className="size-3" />
+            </a>
+          </>
+        );
+      } else if (r.paidCount > 1) {
+        parts.push(
+          <>
+            Paid {r.paidCount} clips ({formatUsd(r.totalPaidUsd)}) ·{" "}
+            <a
+              href="#payout-history"
+              className="text-indigo hover:underline"
+            >
+              View receipts ↓
+            </a>
+          </>
         );
       }
       if (r.failedCount > 0) {
@@ -288,7 +309,20 @@ function CampaignBudgetCard({
       if (r.skippedForCap > 0) {
         parts.push(`${r.skippedForCap} skipped (daily cap)`);
       }
-      setMsg(parts.length ? parts.join(" · ") : "Nothing to pay out.");
+      if (parts.length === 0) {
+        setMsg("Nothing to pay out.");
+      } else {
+        setMsg(
+          <>
+            {parts.map((p, i) => (
+              <span key={i}>
+                {i > 0 ? " · " : ""}
+                {p}
+              </span>
+            ))}
+          </>
+        );
+      }
     } catch (err) {
       setMsg(`Failed: ${(err as Error).message}`);
     } finally {
@@ -384,7 +418,7 @@ function CampaignBudgetCard({
           </span>
         </div>
 
-        <div className="flex flex-wrap gap-2 border-t-2 border-ink/10 pt-3">
+        <div className="flex flex-wrap items-center gap-2 border-t-2 border-ink/10 pt-3">
           <Button
             onClick={handleSync}
             disabled={busy || !identityToken}
@@ -394,16 +428,28 @@ function CampaignBudgetCard({
             <RefreshCw className={`size-3.5 ${syncing ? "animate-spin" : ""}`} />
             {syncing ? "Syncing..." : "Sync"}
           </Button>
-          <Button
-            onClick={handlePay}
-            disabled={payDisabled}
-            variant="default"
-            size="sm"
-            title={payTitle}
-          >
-            <Coins className={`size-3.5 ${paying ? "animate-pulse" : ""}`} />
-            {paying ? "Paying..." : "Run payouts"}
-          </Button>
+          {paying ? (
+            <Button disabled variant="default" size="sm">
+              <Coins className="size-3.5 animate-pulse" />
+              Paying...
+            </Button>
+          ) : owedNowUsd <= 0 && chain.exists ? (
+            <Badge variant="live" className="px-2.5 py-1 text-[0.65rem]">
+              <Check className="size-3.5" />
+              All paid
+            </Badge>
+          ) : (
+            <Button
+              onClick={handlePay}
+              disabled={payDisabled}
+              variant="default"
+              size="sm"
+              title={payTitle}
+            >
+              <Coins className="size-3.5" />
+              Run payouts
+            </Button>
+          )}
         </div>
 
         {msg && <p className="font-body text-xs text-ink-soft">{msg}</p>}
@@ -838,7 +884,10 @@ function AdminDashboard() {
           transition={{ duration: 0.4, ease: "easeOut", delay: 0.15 }}
           className="mt-12 mb-16"
         >
-          <h2 className="font-display text-xl font-bold tracking-tight">
+          <h2
+            id="payout-history"
+            className="scroll-mt-6 font-display text-xl font-bold tracking-tight"
+          >
             Payout history
           </h2>
           <p className="mt-1 font-body text-xs text-ink-soft">

@@ -18,6 +18,8 @@ export type RunPayoutsResult = {
   skippedForCap: number;
   totalPaidUsd: number;
   firstError?: string;
+  /** One entry per successful on-chain payout (one tx per clip). */
+  paidTxs: { txHash: string; explorerUrl: string }[];
 };
 
 type ClipRow = {
@@ -80,6 +82,7 @@ export async function runPayouts(
   let skippedForCap = 0;
   let totalPaidUsd = 0;
   let firstError: string | undefined;
+  const paidTxs: { txHash: string; explorerUrl: string }[] = [];
   // Campaigns touched this run — their spent_usd is recomputed at the end.
   const touchedCampaigns = new Set<string>();
 
@@ -149,6 +152,7 @@ export async function runPayouts(
       paidCount++;
       totalPaidUsd += delta;
       touchedCampaigns.add(clip.campaign_id);
+      paidTxs.push({ txHash: res.txHash, explorerUrl: explorerTxUrl(res.txHash) });
 
       // Best-effort gas stipend so the creator can sign their own withdrawal.
       // Privy embedded wallets can't pay gas in USDT, so they need a little
@@ -193,6 +197,7 @@ export async function runPayouts(
     skippedForCap,
     totalPaidUsd,
     firstError,
+    paidTxs,
   };
 }
 
