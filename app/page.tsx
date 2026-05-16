@@ -265,10 +265,11 @@ function RecreateCard({ clips }: { clips: FeaturedClip[] }) {
   const colB = clips.slice(half).length > 0 ? clips.slice(half) : colA;
 
   return (
-    <Card className="bg-lime overflow-hidden">
-      <CardContent className="flex h-full flex-col gap-3 p-0">
-        <div className="relative h-64 overflow-hidden border-b-2 border-ink bg-ink">
-          {/* Vertical-gradient masks to fade videos at the edges */}
+    <Card className="bg-lime">
+      <CardContent className="flex h-full flex-col gap-4">
+        {/* Inner sticker — own ink border + rounded on all sides so the
+         *  card reads as a sticker inside a sticker. */}
+        <div className="relative h-56 overflow-hidden rounded-md border-2 border-ink bg-ink">
           <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-12 bg-gradient-to-b from-ink to-transparent" />
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-12 bg-gradient-to-t from-ink to-transparent" />
           {clips.length === 0 ? (
@@ -284,7 +285,7 @@ function RecreateCard({ clips }: { clips: FeaturedClip[] }) {
             </div>
           )}
         </div>
-        <div className="flex flex-col gap-2 px-4 pb-4 pt-2">
+        <div className="flex flex-col gap-2">
           <div className="flex size-7 items-center justify-center rounded-full border-2 border-ink bg-cream font-display text-sm font-bold">
             1
           </div>
@@ -345,13 +346,13 @@ function VideoColumn({
 function PostCard() {
   const { t } = useTranslation();
   return (
-    <Card className="bg-peach overflow-hidden">
-      <CardContent className="flex h-full flex-col gap-3 p-0">
-        <div className="flex h-64 items-center justify-center gap-4 border-b-2 border-ink bg-cream p-6 sm:gap-6">
+    <Card className="bg-peach">
+      <CardContent className="flex h-full flex-col gap-4">
+        <div className="flex h-56 items-center justify-center gap-4 rounded-md border-2 border-ink bg-cream p-6 sm:gap-6">
           <PlatformBadge icon={<Camera className="size-10" />} label="Instagram" />
           <PlatformBadge icon={<Music2 className="size-10" />} label="TikTok" />
         </div>
-        <div className="flex flex-col gap-2 px-4 pb-4 pt-2">
+        <div className="flex flex-col gap-2">
           <div className="flex size-7 items-center justify-center rounded-full border-2 border-ink bg-cream font-display text-sm font-bold">
             2
           </div>
@@ -393,12 +394,12 @@ function PlatformBadge({
 function PaidCard() {
   const { t } = useTranslation();
   return (
-    <Card className="bg-magenta overflow-hidden text-cream">
-      <CardContent className="flex h-full flex-col gap-3 p-0">
-        <div className="flex h-64 items-center justify-center border-b-2 border-ink bg-ink p-6">
+    <Card className="bg-magenta text-cream">
+      <CardContent className="flex h-full flex-col gap-4">
+        <div className="flex h-56 items-center justify-center rounded-md border-2 border-ink bg-ink p-6">
           <ReceiptMockup />
         </div>
-        <div className="flex flex-col gap-2 px-4 pb-4 pt-2">
+        <div className="flex flex-col gap-2">
           <div className="flex size-7 items-center justify-center rounded-full border-2 border-ink bg-cream font-display text-sm font-bold text-ink">
             3
           </div>
