@@ -259,30 +259,13 @@ function CampaignDetail() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: "easeOut" }}
-          className="flex items-start justify-between gap-3"
         >
-          <div>
-            <h1 className="font-display text-3xl font-bold tracking-tight md:text-4xl">
-              {campaign.productName}
-            </h1>
-            <p className="mt-1 font-body text-sm text-ink-soft md:text-base">
-              {campaign.shortDescription}
-            </p>
-          </div>
-          <div className="flex shrink-0 flex-col items-end gap-1 pt-1">
-            <div className="flex gap-1">
-              {campaign.platforms.map((p) => (
-                <Badge key={p} variant="default" className="capitalize">
-                  {p}
-                </Badge>
-              ))}
-            </div>
-            {campaign.availableLanguages.length > 0 && (
-              <span className="font-mono text-[0.65rem] uppercase tracking-wider text-ink-soft">
-                {campaign.availableLanguages.join(" · ")}
-              </span>
-            )}
-          </div>
+          <h1 className="font-display text-3xl font-bold tracking-tight md:text-4xl">
+            {campaign.productName}
+          </h1>
+          <p className="mt-1 font-body text-sm text-ink-soft md:text-base">
+            {campaign.shortDescription}
+          </p>
         </motion.div>
 
         {/* Payout terms — what the creator earns */}
@@ -391,6 +374,47 @@ function CampaignDetail() {
           <p className="mt-2 font-body text-sm md:text-base">
             {campaign.longDescription}
           </p>
+        </motion.div>
+
+        {/* Where to post & what languages are accepted */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut", delay: 0.12 }}
+          className="mt-8 flex flex-col gap-6 sm:flex-row sm:gap-12"
+        >
+          <div className="min-w-0">
+            <h3 className="font-display text-xs font-bold uppercase tracking-wider text-ink-soft">
+              {t("campaign.postOnLabel")}
+            </h3>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {campaign.platforms.map((p) => (
+                <Badge key={p} variant="default" className="capitalize">
+                  {p}
+                </Badge>
+              ))}
+            </div>
+            <p className="mt-2 font-body text-xs text-ink-soft">
+              {t("campaign.postOnHint")}
+            </p>
+          </div>
+          {campaign.availableLanguages.length > 0 && (
+            <div className="min-w-0">
+              <h3 className="font-display text-xs font-bold uppercase tracking-wider text-ink-soft">
+                {t("campaign.languagesLabel")}
+              </h3>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {campaign.availableLanguages.map((l) => (
+                  <Badge key={l} variant="default" className="uppercase">
+                    {l}
+                  </Badge>
+                ))}
+              </div>
+              <p className="mt-2 font-body text-xs text-ink-soft">
+                {t("campaign.languagesHint")}
+              </p>
+            </div>
+          )}
         </motion.div>
 
         {/* Script */}
