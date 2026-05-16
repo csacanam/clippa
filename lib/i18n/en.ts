@@ -374,6 +374,9 @@ const en = {
     cardPerClip: "/ clip",
     cardAddFunds: "Add funds",
     cardViewClips: "View clips →",
+    cardPendingReviewOne: "{n} clip waiting for review",
+    cardPendingReviewMany: "{n} clips waiting for review",
+    cardReviewNow: "Review →",
 
     clipsTitle: "Clips on {campaign}",
     clipsSubtitle:
@@ -390,6 +393,15 @@ const en = {
     clipsViews: "views",
     clipsEarned: "earned",
     clipsPaid: "paid",
+
+    clipsApprove: "Approve",
+    clipsReject: "Reject",
+    clipsRejectReason: "Reason (shown to the creator)",
+    clipsConfirmReject: "Confirm reject",
+    clipsCancel: "Cancel",
+    clipsReasonLabel: "Reason:",
+    clipsApproved: "Approved",
+    clipsRejected: "Rejected",
 
     // Wizard — sections
     wizStep1: "Details",

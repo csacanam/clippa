@@ -142,6 +142,13 @@ const ADMINS = new Set(
     .filter(Boolean)
 );
 
+/** True if the email is in the operator allowlist. Useful for actions
+ *  that allow either an admin or a specific owner (e.g. brand moderating
+ *  clips on their own campaign). */
+export function isAdminEmail(email: string): boolean {
+  return ADMINS.has(email.toLowerCase());
+}
+
 export async function requireAdmin(accessToken: string): Promise<User> {
   const user = await requireUser(accessToken);
   if (!ADMINS.has(user.email)) {

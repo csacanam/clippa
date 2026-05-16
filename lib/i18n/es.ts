@@ -369,6 +369,9 @@ const es: Dict = {
     cardPerClip: "/ clip",
     cardAddFunds: "Agregar fondos",
     cardViewClips: "Ver clips →",
+    cardPendingReviewOne: "{n} clip esperando revisión",
+    cardPendingReviewMany: "{n} clips esperando revisión",
+    cardReviewNow: "Revisar →",
 
     clipsTitle: "Clips en {campaign}",
     clipsSubtitle:
@@ -385,6 +388,15 @@ const es: Dict = {
     clipsViews: "visualizaciones",
     clipsEarned: "ganado",
     clipsPaid: "pagado",
+
+    clipsApprove: "Aprobar",
+    clipsReject: "Rechazar",
+    clipsRejectReason: "Motivo (visible para el creador)",
+    clipsConfirmReject: "Confirmar rechazo",
+    clipsCancel: "Cancelar",
+    clipsReasonLabel: "Motivo:",
+    clipsApproved: "Aprobado",
+    clipsRejected: "Rechazado",
 
     wizStep1: "Detalles",
     wizStep2: "Revisar y depositar",

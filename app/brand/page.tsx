@@ -317,6 +317,29 @@ function BrandCampaignCard({
             </>
           )}
 
+          {/* Pending-review banner — surfaces the brand's moderation
+           *  responsibility right on the campaign card, only when there's
+           *  actually something waiting. */}
+          {campaign.pendingClipsCount > 0 && (
+            <Link
+              href={`/brand/campaigns/${campaign.slug}/clips`}
+              className="-mx-1 flex items-center justify-between gap-2 rounded-md border-2 border-ink bg-magenta px-3 py-2 text-cream shadow-sticker-sm transition-transform hover:-translate-y-[1px] hover:shadow-sticker"
+            >
+              <span className="font-display text-[0.7rem] font-bold uppercase tracking-wider">
+                {campaign.pendingClipsCount === 1
+                  ? t("brand.cardPendingReviewOne", {
+                      n: String(campaign.pendingClipsCount),
+                    })
+                  : t("brand.cardPendingReviewMany", {
+                      n: String(campaign.pendingClipsCount),
+                    })}
+              </span>
+              <span className="font-display text-[0.7rem] font-bold uppercase tracking-wider">
+                {t("brand.cardReviewNow")}
+              </span>
+            </Link>
+          )}
+
           <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[0.7rem] text-ink-soft">
             <span>
               {t("brand.cardRate")}{" "}

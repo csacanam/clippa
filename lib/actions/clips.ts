@@ -1,6 +1,6 @@
 "use server";
 
-import { requireAdmin, requireCreator } from "@/lib/auth-server";
+import { isAdminEmail, requireAdmin, requireCreator, requireUser } from "@/lib/auth-server";
 import { getCampaignIdBySlug } from "@/lib/actions/campaigns";
 import type { Platform } from "@/lib/campaigns";
 import type { Clip, ClipStatus } from "@/lib/clips";
@@ -352,20 +352,61 @@ export async function listAllClips(identityToken: string): Promise<Clip[]> {
   return ((data ?? []) as unknown as AdminRawJoinRow[]).map(adminJoinRowToClip);
 }
 
+/**
+ * Authorizes a user to moderate a specific clip — admin globally, or the
+ * brand that owns the clip's campaign. Returns the user record so the
+ * caller can stamp `approved_by`. Throws on unauthorized.
+ *
+ * The whole point: the brand owns the campaign and should be the one
+ * approving its clips. Admin keeps the same power as a fallback /
+ * moderation backstop.
+ */
+async function requireClipModerator(
+  identityToken: string,
+  clipId: string
+): Promise<{ user: { id: string; email: string }; isAdmin: boolean }> {
+  const user = await requireUser(identityToken);
+  if (isAdminEmail(user.email)) return { user, isAdmin: true };
+
+  const sb = createServerClient();
+  const { data, error } = await sb
+    .from("clips")
+    .select("campaigns!inner(created_by_user_id)")
+    .eq("id", clipId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) throw new Error("Clip not found.");
+  const owner = (data as unknown as {
+    campaigns: { created_by_user_id: string | null };
+  }).campaigns.created_by_user_id;
+  if (owner !== user.id) {
+    throw new Error("Not authorized to moderate this clip.");
+  }
+  return { user, isAdmin: false };
+}
+
 export async function approveClip(
   identityToken: string,
   clipId: string
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const admin = await requireAdmin(identityToken);
+  let actor: { email: string };
+  try {
+    actor = (await requireClipModerator(identityToken, clipId)).user;
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
   const sb = createServerClient();
   const { error, count } = await sb
     .from("clips")
-    .update({
-      status: "tracking",
-      approved_at: new Date().toISOString(),
-      approved_by: admin.email,
-      rejection_reason: null,
-    }, { count: "exact" })
+    .update(
+      {
+        status: "tracking",
+        approved_at: new Date().toISOString(),
+        approved_by: actor.email,
+        rejection_reason: null,
+      },
+      { count: "exact" }
+    )
     .eq("id", clipId)
     .eq("status", "pending");
   if (error) return { ok: false, error: error.message };
@@ -380,7 +421,11 @@ export async function rejectClip(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const r = reason.trim();
   if (!r) return { ok: false, error: "A reason is required." };
-  await requireAdmin(identityToken);
+  try {
+    await requireClipModerator(identityToken, clipId);
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
   const sb = createServerClient();
   const { error, count } = await sb
     .from("clips")

@@ -286,6 +286,8 @@ export type BrandCampaign = {
   totalClipsCount: number;
   /** Count of clips currently tracking. */
   liveClipsCount: number;
+  /** Count of clips waiting for the brand's review. */
+  pendingClipsCount: number;
   /** Sum of verified_views across all clips on this campaign. */
   totalViews: number;
   /** On-chain escrow state. exists:false if not funded on-chain yet. */
@@ -337,6 +339,7 @@ export async function listMyBrandCampaigns(
 
   const totalByCampaign = new Map<string, number>();
   const liveByCampaign = new Map<string, number>();
+  const pendingByCampaign = new Map<string, number>();
   const viewsByCampaign = new Map<string, number>();
   for (const r of (clipRows ?? []) as {
     campaign_id: string;
@@ -351,6 +354,12 @@ export async function listMyBrandCampaigns(
       liveByCampaign.set(
         r.campaign_id,
         (liveByCampaign.get(r.campaign_id) ?? 0) + 1
+      );
+    }
+    if (r.status === "pending") {
+      pendingByCampaign.set(
+        r.campaign_id,
+        (pendingByCampaign.get(r.campaign_id) ?? 0) + 1
       );
     }
     viewsByCampaign.set(
@@ -373,6 +382,7 @@ export async function listMyBrandCampaigns(
     maxPayoutPerClipUsd: n(c.max_payout_per_clip_usd),
     totalClipsCount: totalByCampaign.get(c.id) ?? 0,
     liveClipsCount: liveByCampaign.get(c.id) ?? 0,
+    pendingClipsCount: pendingByCampaign.get(c.id) ?? 0,
     totalViews: viewsByCampaign.get(c.id) ?? 0,
     chain: chainStates[i],
     createdAt: c.created_at,
@@ -659,6 +669,7 @@ export type BrandCampaignClip = {
   paidOutUsd: number;
   createdAt: string;
   featuredVideoUrl?: string;
+  rejectionReason?: string;
 };
 
 export type BrandCampaignClipsResult =
@@ -699,7 +710,7 @@ export async function listClipsForBrandCampaign(
   const { data, error } = await sb
     .from("clips")
     .select(
-      "id, platform, post_url, status, verified_views, earnings_usd, paid_out_usd, featured_video_url, created_at"
+      "id, platform, post_url, status, verified_views, earnings_usd, paid_out_usd, featured_video_url, rejection_reason, created_at"
     )
     .eq("campaign_id", row.id)
     .order("earnings_usd", { ascending: false });
@@ -714,6 +725,7 @@ export async function listClipsForBrandCampaign(
     earnings_usd: string | number;
     paid_out_usd: string | number;
     featured_video_url: string | null;
+    rejection_reason: string | null;
     created_at: string;
   };
   return {
@@ -729,6 +741,7 @@ export async function listClipsForBrandCampaign(
       paidOutUsd: n(r.paid_out_usd),
       createdAt: r.created_at,
       featuredVideoUrl: r.featured_video_url ?? undefined,
+      rejectionReason: r.rejection_reason ?? undefined,
     })),
   };
 }
