@@ -106,3 +106,24 @@
     letter-spacing: -0.02em;
   }
 }
+
+/* Continuous horizontal marquee for the featured-clips strip on the
+ * landing. The JSX renders the list twice so the loop is seamless —
+ * once -50% is reached the second copy is where the first started.
+ * Pauses on hover so visitors can read the earnings. */
+@keyframes marquee-x {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+.animate-marquee {
+  animation: marquee-x var(--marquee-duration, 40s) linear infinite;
+  will-change: transform;
+}
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee {
+    animation: none;
+  }
+}

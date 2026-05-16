@@ -1,24 +1,24 @@
 "use client";
 
 import { ArrowUpRight } from "lucide-react";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
 import { useTranslation } from "@/components/locale-provider";
 import { formatUsd, type Platform } from "@/lib/campaigns";
 import type { FeaturedClip } from "@/lib/actions/stats";
 
 /**
- * Bounty-style social-proof carousel: each card plays a muted-loop video
- * (admin-curated, hosted anywhere reachable by URL) with the earnings
- * pinned on top. Click anywhere on the card to open the original post.
+ * Bounty-style social-proof marquee: cards slide left-to-right
+ * continuously; each card plays a muted-loop video with earnings pinned
+ * on top. Click anywhere on a card to open the original post.
  *
- * Horizontal scroll with CSS scroll-snap — no JS carousel lib needed.
- * Arrow buttons scroll a card-width at a time on desktop; mobile users
- * swipe natively.
+ * The track is rendered twice; once the first copy has scrolled half its
+ * width off-screen the second copy is exactly where the first started,
+ * so the loop is seamless. Pauses on hover so visitors can read the
+ * earnings, and respects prefers-reduced-motion.
  */
 export function TopClipsShowcase({ clips }: { clips: FeaturedClip[] }) {
   const { t } = useTranslation();
-  const scrollerRef = useRef<HTMLDivElement>(null);
 
   if (clips.length === 0) {
     return (
@@ -28,45 +28,28 @@ export function TopClipsShowcase({ clips }: { clips: FeaturedClip[] }) {
     );
   }
 
-  const scrollBy = (dir: 1 | -1) => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    // Card width incl. gap — keep in sync with the card sizing below.
-    const step = el.clientWidth * 0.85;
-    el.scrollBy({ left: step * dir, behavior: "smooth" });
-  };
+  // Slower for fewer cards so each is on-screen long enough to register;
+  // faster for many so the loop doesn't feel sluggish.
+  const duration = Math.max(20, clips.length * 8);
+  const doubled = [...clips, ...clips];
 
   return (
-    <div className="relative">
+    <div className="relative w-full overflow-hidden">
       <div
-        ref={scrollerRef}
-        className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex w-max gap-4 animate-marquee"
+        style={{ ["--marquee-duration" as string]: `${duration}s` }}
       >
-        {clips.map((c) => (
-          <ClipVideoCard key={c.id} clip={c} />
+        {doubled.map((c, i) => (
+          // The second half of the list shares ids with the first half;
+          // tag each render with the index so React doesn't get confused.
+          <ClipVideoCard key={`${c.id}-${i}`} clip={c} />
         ))}
       </div>
 
-      {clips.length > 1 && (
-        <div className="mt-2 flex items-center justify-center gap-3">
-          <button
-            type="button"
-            onClick={() => scrollBy(-1)}
-            aria-label="Previous"
-            className="inline-flex size-9 items-center justify-center rounded-full border-2 border-ink bg-cream text-ink shadow-sticker transition-transform hover:-translate-y-[1px] active:translate-y-0"
-          >
-            ←
-          </button>
-          <button
-            type="button"
-            onClick={() => scrollBy(1)}
-            aria-label="Next"
-            className="inline-flex size-9 items-center justify-center rounded-full border-2 border-ink bg-cream text-ink shadow-sticker transition-transform hover:-translate-y-[1px] active:translate-y-0"
-          >
-            →
-          </button>
-        </div>
-      )}
+      {/* Soft cream fades on the edges so the marquee feels like it
+       *  emerges from / disappears into the page instead of a hard cut. */}
+      <div className="pointer-events-none absolute inset-y-0 left-0 w-12 bg-gradient-to-r from-cream to-transparent sm:w-24" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-cream to-transparent sm:w-24" />
     </div>
   );
 }
@@ -78,24 +61,41 @@ const PLATFORM_LABELS: Record<Platform, string> = {
 
 function ClipVideoCard({ clip }: { clip: FeaturedClip }) {
   const { t } = useTranslation();
+  const videoRef = useRef<HTMLVideoElement>(null);
   const platformLabel = PLATFORM_LABELS[clip.platform];
+
+  // Belt-and-suspenders: ask for play once the file is loaded enough.
+  // Some browsers ignore the autoplay attribute on a freshly-mounted
+  // <video> until interaction; calling .play() explicitly works around it
+  // (it'll succeed silently because the video is muted + playsInline).
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    const tryPlay = () => {
+      void v.play().catch(() => {});
+    };
+    if (v.readyState >= 2) tryPlay();
+    else v.addEventListener("loadeddata", tryPlay, { once: true });
+    return () => v.removeEventListener("loadeddata", tryPlay);
+  }, []);
 
   return (
     <a
       href={clip.postUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="group relative block w-[70vw] max-w-[280px] shrink-0 snap-center overflow-hidden rounded-card border-2 border-ink bg-ink shadow-sticker transition-transform hover:-translate-y-[2px] hover:shadow-sticker-lg sm:w-[280px]"
+      className="group relative block w-[68vw] max-w-[260px] shrink-0 overflow-hidden rounded-card border-2 border-ink bg-ink shadow-sticker transition-transform hover:-translate-y-[2px] hover:shadow-sticker-lg sm:w-[260px]"
     >
       {/* 9:16 vertical video aspect — matches TikTok / Instagram Reels */}
       <div className="relative aspect-[9/16] w-full overflow-hidden bg-ink">
         <video
+          ref={videoRef}
           src={clip.featuredVideoUrl}
           autoPlay
           loop
           muted
           playsInline
-          preload="metadata"
+          preload="auto"
           className="h-full w-full object-cover"
         />
 

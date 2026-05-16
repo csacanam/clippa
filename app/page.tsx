@@ -14,17 +14,14 @@ import { TopClipsShowcase } from "@/components/top-clips-showcase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  getPublicStats,
   listFeaturedClips,
   type FeaturedClip,
-  type PublicStats,
 } from "@/lib/actions/stats";
 
 export default function LandingPage() {
   const router = useRouter();
   const { ready, authenticated, login } = usePrivy();
   const { t } = useTranslation();
-  const [stats, setStats] = useState<PublicStats | null>(null);
   const [topClips, setTopClips] = useState<FeaturedClip[] | null>(null);
 
   // If user is already signed in and lands here, send them to /app.
@@ -32,17 +29,16 @@ export default function LandingPage() {
     if (ready && authenticated) router.replace("/app");
   }, [ready, authenticated, router]);
 
-  // Social-proof counts and top clips — non-critical, load in the background.
+  // Featured clips for the marquee — non-critical, load in the background.
   useEffect(() => {
     let cancelled = false;
-    Promise.all([
-      getPublicStats().catch(() => null),
-      listFeaturedClips(8).catch(() => []),
-    ]).then(([s, clips]) => {
-      if (cancelled) return;
-      if (s) setStats(s);
-      setTopClips(clips ?? []);
-    });
+    listFeaturedClips(8)
+      .then((clips) => {
+        if (!cancelled) setTopClips(clips ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setTopClips([]);
+      });
     return () => {
       cancelled = true;
     };
@@ -104,42 +100,18 @@ export default function LandingPage() {
               {t("landing.cta")}
             </Button>
           </motion.div>
-
-          {stats && (
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, ease: "easeOut", delay: 0.3 }}
-              className="mt-14 flex items-stretch gap-6 sm:gap-10"
-            >
-              <Stat
-                value={stats.creatorsCount}
-                label={t("landing.statsCreators")}
-              />
-              <div className="w-px bg-ink/15" />
-              <Stat
-                value={stats.clipsCount}
-                label={t("landing.statsClipsPosted")}
-              />
-              <div className="w-px bg-ink/15" />
-              <Stat
-                value={stats.payoutsCount}
-                label={t("landing.statsPaymentsSent")}
-              />
-            </motion.div>
-          )}
         </div>
       </section>
 
-      {/* Top clips — only render once we know there's at least one */}
+      {/* Top clips — full-bleed marquee, only render once we have at least one */}
       {topClips && topClips.length > 0 && (
-        <section className="mx-auto w-full max-w-5xl px-6 pb-16 md:px-12">
+        <section className="pb-16">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.5, ease: "easeOut" }}
-            className="text-center"
+            className="px-6 text-center md:px-12"
           >
             <h2 className="font-display text-3xl font-bold tracking-tight md:text-4xl">
               {t("landing.topClipsTitle")}
@@ -273,19 +245,6 @@ export default function LandingPage() {
         {t("landing.footer")}
       </footer>
     </main>
-  );
-}
-
-function Stat({ value, label }: { value: number; label: string }) {
-  return (
-    <div className="flex flex-col items-center">
-      <span className="font-display text-3xl font-bold tracking-tight md:text-4xl">
-        {value.toLocaleString()}
-      </span>
-      <span className="mt-1 font-display text-[0.7rem] font-bold uppercase tracking-wider text-ink-soft">
-        {label}
-      </span>
-    </div>
   );
 }
 
