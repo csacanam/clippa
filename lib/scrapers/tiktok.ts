@@ -33,32 +33,6 @@ function tiktokVideoId(url: string): string | null {
 }
 
 /**
- * Short links (vt.tiktok.com/XXX, vm.tiktok.com/XXX) don't carry a video id,
- * which breaks the id-based matching below. Follow redirects server-side to
- * get the canonical `www.tiktok.com/@user/video/<id>` form before passing
- * the URL to Apify.
- */
-async function resolveTiktokShortLink(url: string): Promise<string> {
-  if (tiktokVideoId(url)) return url;
-  if (!/^https?:\/\/(vt|vm)\.tiktok\.com\//i.test(url)) return url;
-  try {
-    // HEAD + follow keeps the round-trip cheap. TikTok redirects to the full
-    // URL with a 301; the resolved final URL lives in `res.url`.
-    const res = await fetch(url, {
-      method: "HEAD",
-      redirect: "follow",
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-      },
-    });
-    return res.url || url;
-  } catch {
-    return url;
-  }
-}
-
-/**
  * Scrapes many TikTok posts in a single Apify run. Returns a map keyed by the
  * input URL — every input URL gets an entry (a ScrapeError if it had no match).
  */
@@ -78,10 +52,6 @@ export async function scrapeTiktokBatch(
     return out;
   }
 
-  // Resolve short links up-front so the id-based matching below works for
-  // every input. Already-canonical URLs are a no-op.
-  const resolvedUrls = await Promise.all(urls.map(resolveTiktokShortLink));
-
   const endpoint = `https://api.apify.com/v2/acts/clockworks~tiktok-scraper/run-sync-get-dataset-items?token=${encodeURIComponent(
     APIFY_TOKEN
   )}`;
@@ -92,7 +62,7 @@ export async function scrapeTiktokBatch(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        postURLs: resolvedUrls,
+        postURLs: urls,
         resultsPerPage: 1,
         shouldDownloadVideos: false,
         shouldDownloadCovers: false,
@@ -121,18 +91,40 @@ export async function scrapeTiktokBatch(
     return out;
   }
 
-  // Index returned items by video id so we can match them back to inputs.
-  const byId = new Map<string, ApifyItem>();
-  for (const it of items) {
-    if (it.id) byId.set(it.id, it);
-    const fromUrl = it.webVideoUrl ? tiktokVideoId(it.webVideoUrl) : null;
-    if (fromUrl) byId.set(fromUrl, it);
+  // Match each input URL to its result item. First pass: by video id.
+  // Second pass: positional fallback for short links (vt.tiktok.com/XXX)
+  // whose id we couldn't extract — Apify resolves them internally and
+  // returns the item in input order, so the next unclaimed item is the one.
+  const matched: (ApifyItem | undefined)[] = new Array(urls.length);
+  const claimedItem = new Set<number>();
+  for (let i = 0; i < urls.length; i++) {
+    const id = tiktokVideoId(urls[i]);
+    if (!id) continue;
+    for (let j = 0; j < items.length; j++) {
+      if (claimedItem.has(j)) continue;
+      const it = items[j];
+      const itemId = it.id ?? (it.webVideoUrl ? tiktokVideoId(it.webVideoUrl) : null);
+      if (itemId === id) {
+        matched[i] = it;
+        claimedItem.add(j);
+        break;
+      }
+    }
+  }
+  let cursor = 0;
+  for (let i = 0; i < urls.length; i++) {
+    if (matched[i]) continue;
+    while (cursor < items.length && claimedItem.has(cursor)) cursor++;
+    if (cursor < items.length) {
+      matched[i] = items[cursor];
+      claimedItem.add(cursor);
+      cursor++;
+    }
   }
 
   for (let i = 0; i < urls.length; i++) {
     const u = urls[i];
-    const id = tiktokVideoId(resolvedUrls[i]);
-    const item = id ? byId.get(id) : undefined;
+    const item = matched[i];
     if (!item) {
       out.set(u, {
         ok: false,
