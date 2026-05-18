@@ -33,6 +33,32 @@ function tiktokVideoId(url: string): string | null {
 }
 
 /**
+ * Short links (vt.tiktok.com/XXX, vm.tiktok.com/XXX) don't carry a video id,
+ * which breaks the id-based matching below. Follow redirects server-side to
+ * get the canonical `www.tiktok.com/@user/video/<id>` form before passing
+ * the URL to Apify.
+ */
+async function resolveTiktokShortLink(url: string): Promise<string> {
+  if (tiktokVideoId(url)) return url;
+  if (!/^https?:\/\/(vt|vm)\.tiktok\.com\//i.test(url)) return url;
+  try {
+    // HEAD + follow keeps the round-trip cheap. TikTok redirects to the full
+    // URL with a 301; the resolved final URL lives in `res.url`.
+    const res = await fetch(url, {
+      method: "HEAD",
+      redirect: "follow",
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+      },
+    });
+    return res.url || url;
+  } catch {
+    return url;
+  }
+}
+
+/**
  * Scrapes many TikTok posts in a single Apify run. Returns a map keyed by the
  * input URL — every input URL gets an entry (a ScrapeError if it had no match).
  */
@@ -52,6 +78,10 @@ export async function scrapeTiktokBatch(
     return out;
   }
 
+  // Resolve short links up-front so the id-based matching below works for
+  // every input. Already-canonical URLs are a no-op.
+  const resolvedUrls = await Promise.all(urls.map(resolveTiktokShortLink));
+
   const endpoint = `https://api.apify.com/v2/acts/clockworks~tiktok-scraper/run-sync-get-dataset-items?token=${encodeURIComponent(
     APIFY_TOKEN
   )}`;
@@ -62,7 +92,7 @@ export async function scrapeTiktokBatch(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        postURLs: urls,
+        postURLs: resolvedUrls,
         resultsPerPage: 1,
         shouldDownloadVideos: false,
         shouldDownloadCovers: false,
@@ -99,8 +129,9 @@ export async function scrapeTiktokBatch(
     if (fromUrl) byId.set(fromUrl, it);
   }
 
-  for (const u of urls) {
-    const id = tiktokVideoId(u);
+  for (let i = 0; i < urls.length; i++) {
+    const u = urls[i];
+    const id = tiktokVideoId(resolvedUrls[i]);
     const item = id ? byId.get(id) : undefined;
     if (!item) {
       out.set(u, {
