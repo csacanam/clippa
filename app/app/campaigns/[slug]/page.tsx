@@ -400,6 +400,9 @@ function CampaignDetail() {
             <h3 className="font-display text-xs font-bold uppercase tracking-wider text-ink-soft">
               {t("campaign.postOnLabel")}
             </h3>
+            <p className="mt-2 font-body text-xs text-ink-soft">
+              {t("campaign.postOnHint")}
+            </p>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {campaign.platforms.map((p) => (
                 <Badge key={p} variant="default" className="capitalize">
@@ -407,15 +410,15 @@ function CampaignDetail() {
                 </Badge>
               ))}
             </div>
-            <p className="mt-2 font-body text-xs text-ink-soft">
-              {t("campaign.postOnHint")}
-            </p>
           </div>
           {campaign.availableLanguages.length > 0 && (
             <div className="min-w-0">
               <h3 className="font-display text-xs font-bold uppercase tracking-wider text-ink-soft">
                 {t("campaign.languagesLabel")}
               </h3>
+              <p className="mt-2 font-body text-xs text-ink-soft">
+                {t("campaign.languagesHint")}
+              </p>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {campaign.availableLanguages.map((l) => (
                   <Badge key={l} variant="default">
@@ -423,9 +426,6 @@ function CampaignDetail() {
                   </Badge>
                 ))}
               </div>
-              <p className="mt-2 font-body text-xs text-ink-soft">
-                {t("campaign.languagesHint")}
-              </p>
             </div>
           )}
         </motion.div>
