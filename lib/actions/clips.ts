@@ -475,12 +475,16 @@ export async function getClipVideoUploadAuthorization(
     .from(STORAGE_BUCKET)
     .createSignedUploadUrl(filename, { upsert: true });
   if (error || !data?.signedUrl) {
+    console.error(
+      `[upload-auth] failed clipId=${clipId} ${error?.message ?? "no signed URL"}`
+    );
     return {
       ok: false,
       error: `Authorization failed: ${error?.message ?? "no signed URL"}`,
     };
   }
 
+  console.log(`[upload-auth] minted clipId=${clipId}`);
   const publicUrl = `${supabaseUrl}/storage/v1/object/public/${STORAGE_BUCKET}/${filename}`;
   return { ok: true, uploadUrl: data.signedUrl, publicUrl };
 }

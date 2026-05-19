@@ -180,6 +180,16 @@ const es: Dict = {
       "La sesión aún no está lista — prueba de nuevo en un momento.",
     errCouldntVerify:
       "No pudimos verificar el post. Revisa tu conexión y prueba de nuevo.",
+    errPostNotFound:
+      "No encontramos ese post en TikTok. Asegúrate de que sea público y el link esté bien.",
+    errTrackingCodeMissing:
+      "Tu código {code} no está en la descripción. Edita el post para incluirlo y prueba de nuevo.",
+    errScraperTimeout:
+      "TikTok está tardando demasiado. Espera un minuto y prueba de nuevo.",
+    errUploadFailed:
+      "No pudimos subir el video. Prueba de nuevo — si sigue fallando, el archivo puede estar muy pesado o el formato no es compatible.",
+    errUploadAuth:
+      "No pudimos pedir permiso para subir tu video. Prueba de nuevo en un momento.",
     doneTitle: "Listo.",
     doneSubtitleLine1: "Tu clip está siendo revisado.",
     doneSubtitleLine2: "Te avisamos apenas esté en vivo.",

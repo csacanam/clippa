@@ -183,6 +183,14 @@ const en = {
     errAuthNotReady: "Auth not ready yet — try again in a sec.",
     errCouldntVerify:
       "Couldn't verify the post. Check your connection and try again.",
+    errPostNotFound:
+      "We couldn't find that post on TikTok. Make sure it's public and the link is correct.",
+    errTrackingCodeMissing:
+      "Your code {code} isn't in the caption. Edit your post to include it, then try again.",
+    errScraperTimeout:
+      "TikTok is taking too long to respond. Wait a minute and try again.",
+    errUploadFailed: "We couldn't upload the video. Try again — if it keeps failing, the file might be too big or the format unsupported.",
+    errUploadAuth: "We couldn't get permission to upload your video. Try again in a moment.",
     doneTitle: "Got it.",
     doneSubtitleLine1: "Your clip is being reviewed.",
     doneSubtitleLine2: "We'll let you know as soon as it's live.",

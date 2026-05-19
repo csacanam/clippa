@@ -71,16 +71,23 @@ async function resolveTiktokShortLink(url: string): Promise<string> {
     const res = await fetch(
       `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`
     );
-    if (!res.ok) return url;
+    if (!res.ok) {
+      console.error(`[tiktok] oembed http=${res.status} url=${url}`);
+      return url;
+    }
     const data = (await res.json()) as {
       author_unique_id?: string;
       embed_product_id?: string;
     };
     if (data.author_unique_id && data.embed_product_id) {
-      return `https://www.tiktok.com/@${data.author_unique_id}/video/${data.embed_product_id}`;
+      const canonical = `https://www.tiktok.com/@${data.author_unique_id}/video/${data.embed_product_id}`;
+      console.log(`[tiktok] oembed resolved ${url} → ${canonical}`);
+      return canonical;
     }
+    console.error(`[tiktok] oembed missing fields url=${url} payload=${JSON.stringify(data).slice(0, 200)}`);
     return url;
-  } catch {
+  } catch (e) {
+    console.error(`[tiktok] oembed error url=${url} ${(e as Error).message}`);
     return url;
   }
 }
@@ -192,11 +199,13 @@ export async function scrapeTiktokBatch(
   const resolved = await Promise.all(urls.map(resolveTiktokShortLink));
 
   // 2. Cheap path: scrape by postURLs.
+  console.log(`[tiktok] postURLs scrape n=${resolved.length}`);
   const primary = await runApifyScraper({
     postURLs: resolved,
     resultsPerPage: 1,
   });
   if (!primary.ok) {
+    console.error(`[tiktok] postURLs FATAL ${primary.error}`);
     const err: ScrapeResult = {
       ok: false,
       error: primary.error,
@@ -206,6 +215,10 @@ export async function scrapeTiktokBatch(
     return out;
   }
   const matched = matchByPostURLs(resolved, primary.items);
+  const primaryHits = matched.filter((m) => m && !m.error).length;
+  console.log(
+    `[tiktok] postURLs done hits=${primaryHits}/${resolved.length} items=${primary.items.length}`
+  );
 
   // 3. Fallback: for inputs the postURLs path couldn't recover, scrape the
   //    author's profile and filter by video id. Group inputs by author so
@@ -220,16 +233,29 @@ export async function scrapeTiktokBatch(
     byAuthor.get(author)!.push(i);
   }
   for (const [author, indices] of byAuthor) {
+    console.log(
+      `[tiktok] profile fallback @${author} stuckInputs=${indices.length} resultsPerPage=${PROFILE_FALLBACK_RESULTS}`
+    );
     const profile = await runApifyScraper({
       profiles: [author],
       resultsPerPage: PROFILE_FALLBACK_RESULTS,
     });
-    if (!profile.ok) continue; // best-effort — leave the primary error in place
+    if (!profile.ok) {
+      console.error(`[tiktok] profile @${author} FATAL ${profile.error}`);
+      continue; // best-effort — leave the primary error in place
+    }
     for (const i of indices) {
       const id = tiktokVideoId(resolved[i]);
       if (!id) continue;
       const found = profile.items.find((it) => it.id === id);
-      if (found) matched[i] = found;
+      if (found) {
+        console.log(`[tiktok] profile @${author} recovered id=${id}`);
+        matched[i] = found;
+      } else {
+        console.error(
+          `[tiktok] profile @${author} id=${id} not in last ${PROFILE_FALLBACK_RESULTS} posts (returned ${profile.items.length})`
+        );
+      }
     }
   }
 

@@ -204,14 +204,30 @@ function CampaignDetail() {
       });
       const data = (await res.json()) as
         | { ok: true; canonicalUrl?: string; warning?: string }
-        | { ok: false; error: string };
+        | { ok: false; code?: string; error: string };
       if (!data.ok) {
-        setError(data.error);
+        console.error("[validate] client", data);
+        // Map server error codes to localized messages.
+        let msg = data.error;
+        switch (data.code) {
+          case "post_not_found":
+            msg = t("campaign.errPostNotFound");
+            break;
+          case "code_missing":
+            msg = t("campaign.errTrackingCodeMissing", { code: trackingCode });
+            break;
+          case "rate_limited":
+          case "network_error":
+            msg = t("campaign.errScraperTimeout");
+            break;
+        }
+        setError(msg);
         setSubmitting(false);
         return;
       }
       if (data.canonicalUrl) finalUrl = data.canonicalUrl;
-    } catch {
+    } catch (e) {
+      console.error("[validate] client network", e);
       setError(t("campaign.errCouldntVerify"));
       setSubmitting(false);
       return;
@@ -222,11 +238,15 @@ function CampaignDetail() {
     const clipId = crypto.randomUUID();
 
     setUploadingStage("uploading");
+    console.log(
+      `[upload] clipId=${clipId} size=${videoFile.size} type=${videoFile.type}`
+    );
     // Get a signed Supabase Storage URL and upload directly from the browser.
     // Going through Vercel was timing out on bigger files.
     const auth = await getClipVideoUploadAuthorization(identityToken, clipId);
     if (!auth.ok) {
-      setError(auth.error);
+      console.error("[upload] auth failed", auth.error);
+      setError(t("campaign.errUploadAuth"));
       setUploadingStage("idle");
       setSubmitting(false);
       return;
@@ -238,13 +258,19 @@ function CampaignDetail() {
         body: videoFile,
       });
       if (!putRes.ok) {
-        setError(`Upload failed (${putRes.status}).`);
+        const body = await putRes.text().catch(() => "");
+        console.error(
+          `[upload] PUT failed status=${putRes.status} body=${body.slice(0, 200)}`
+        );
+        setError(t("campaign.errUploadFailed"));
         setUploadingStage("idle");
         setSubmitting(false);
         return;
       }
-    } catch {
-      setError(t("campaign.errCouldntVerify"));
+      console.log("[upload] PUT ok");
+    } catch (e) {
+      console.error("[upload] network", e);
+      setError(t("campaign.errUploadFailed"));
       setUploadingStage("idle");
       setSubmitting(false);
       return;

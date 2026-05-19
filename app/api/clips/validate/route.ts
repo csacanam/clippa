@@ -28,7 +28,20 @@ type Ok = {
   warning?: string;
 };
 
-type Err = { ok: false; error: string };
+/**
+ * `code` is a stable identifier the frontend uses to render a localized
+ * message. `error` is a human-readable English fallback (so anything that
+ * doesn't pattern-match still shows *something*).
+ */
+type ErrCode =
+  | "post_not_found"
+  | "code_missing"
+  | "rate_limited"
+  | "network_error"
+  | "scraper_unknown"
+  | "bad_request";
+
+type Err = { ok: false; code: ErrCode; error: string };
 
 function captionHasCode(caption: string, code: string): boolean {
   // Case-insensitive substring match. Accepts "#CLIPPA-X8K2", "CLIPPA-X8K2",
@@ -41,21 +54,33 @@ export async function POST(req: Request): Promise<NextResponse<Ok | Err>> {
   try {
     body = (await req.json()) as Body;
   } catch {
-    return NextResponse.json({ ok: false, error: "Invalid JSON body" }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, code: "bad_request", error: "Invalid JSON body" },
+      { status: 400 }
+    );
   }
 
   if (!body.platform || !body.postUrl || !body.trackingCode) {
     return NextResponse.json(
-      { ok: false, error: "platform, postUrl and trackingCode are required" },
+      {
+        ok: false,
+        code: "bad_request",
+        error: "platform, postUrl and trackingCode are required",
+      },
       { status: 400 }
     );
   }
+
+  console.log(
+    `[validate] in platform=${body.platform} url=${body.postUrl.slice(0, 80)} code=${body.trackingCode}`
+  );
 
   // Instagram: short-circuit. Apify's IG scraper uses a headless browser
   // and takes 30-120 s; the user was watching "Verifying..." for the whole
   // run only to land on manual review anyway. Skip the scrape entirely —
   // every IG submission goes straight to manual review.
   if (body.platform === "instagram") {
+    console.log("[validate] instagram → soft-pass to manual review");
     return NextResponse.json({
       ok: true,
       views: 0,
@@ -69,35 +94,47 @@ export async function POST(req: Request): Promise<NextResponse<Ok | Err>> {
   const result = await scrapePost(body.platform, body.postUrl);
 
   if (!result.ok) {
-    // Map scraper errors to user-friendly messages.
     const msg = result.error.toLowerCase();
-    let userError = result.error;
+    let code: ErrCode = "scraper_unknown";
     if (
+      msg.includes("post not found") ||
+      msg.includes("private") ||
       msg.includes("blob not found") ||
       msg.includes("iteminfo missing") ||
-      msg.includes("deleted or private")
+      msg.includes("deleted")
     ) {
-      userError =
-        "We couldn't load that post. It might be private, deleted, or the link is wrong.";
+      code = "post_not_found";
     } else if (msg.includes("http 403") || msg.includes("http 429")) {
-      userError =
-        "Too many checks right now. Wait a minute and try submitting again.";
+      code = "rate_limited";
     } else if (msg.includes("network error")) {
-      userError = "We couldn't reach the post. Check the link and try again.";
+      code = "network_error";
     }
-    return NextResponse.json({ ok: false, error: userError }, { status: 400 });
+    console.error(
+      `[validate] scrape failed code=${code} url=${body.postUrl} raw=${result.error}`
+    );
+    return NextResponse.json(
+      { ok: false, code, error: result.error },
+      { status: 400 }
+    );
   }
 
   if (!captionHasCode(result.caption, body.trackingCode)) {
+    console.error(
+      `[validate] code missing code=${body.trackingCode} url=${body.postUrl} caption=${result.caption.slice(0, 120)}`
+    );
     return NextResponse.json(
       {
         ok: false,
-        error: `We couldn't find your code ${body.trackingCode} in the caption. Edit your post to include it, then try again.`,
+        code: "code_missing",
+        error: `We couldn't find your code ${body.trackingCode} in the caption.`,
       },
       { status: 400 }
     );
   }
 
+  console.log(
+    `[validate] ok url=${result.canonicalUrl ?? body.postUrl} views=${result.views} author=@${result.authorHandle ?? "?"}`
+  );
   return NextResponse.json({
     ok: true,
     views: result.views,

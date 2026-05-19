@@ -70,7 +70,10 @@ type Stage =
 
 function FundCampaign() {
   const router = useRouter();
-  const params = useParams<{ id: string }>();
+  // Param is named "slug" to match the sibling /clips route, but the link
+  // from /brand passes the campaign's UUID since the fund flow needs to
+  // look up by id (the slug isn't unique while status=pending_funding).
+  const params = useParams<{ slug: string }>();
   const identityToken = useAccessToken();
   const { wallets } = useWallets();
   const { t } = useTranslation();
@@ -79,11 +82,11 @@ function FundCampaign() {
   const [stage, setStage] = useState<Stage>({ kind: "idle" });
 
   useEffect(() => {
-    if (!identityToken || !params.id) return;
-    getMyPendingCampaign(identityToken, params.id)
+    if (!identityToken || !params.slug) return;
+    getMyPendingCampaign(identityToken, params.slug)
       .then((c) => setCampaign(c ?? "missing"))
       .catch(() => setCampaign("missing"));
-  }, [identityToken, params.id]);
+  }, [identityToken, params.slug]);
 
   const handleFund = async () => {
     if (!identityToken || !campaign || campaign === "missing") return;
