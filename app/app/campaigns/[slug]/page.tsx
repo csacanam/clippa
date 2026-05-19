@@ -213,6 +213,9 @@ function CampaignDetail() {
           case "post_not_found":
             msg = t("campaign.errPostNotFound");
             break;
+          case "short_link_unresolved":
+            msg = t("campaign.errShortLinkUnresolved");
+            break;
           case "code_missing":
             msg = t("campaign.errTrackingCodeMissing", { code: trackingCode });
             break;

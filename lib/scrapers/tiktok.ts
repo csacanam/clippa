@@ -64,32 +64,90 @@ function tiktokAuthor(url: string): string | null {
  *
  * Already-canonical URLs are a no-op.
  */
-async function resolveTiktokShortLink(url: string): Promise<string> {
-  if (tiktokVideoId(url)) return url;
-  if (!/^https?:\/\/(vt|vm)\.tiktok\.com\//i.test(url)) return url;
+type TiktokOembed = {
+  canonical: string; // www.tiktok.com/@user/video/<id>
+  author: string;   // @username, no @
+  videoId: string;
+  caption: string;  // the title field includes hashtags
+};
+
+/**
+ * Calls TikTok's oembed endpoint and returns the post's canonical URL,
+ * author, video id, and caption. This is the only public TikTok endpoint
+ * that works server-friendly (it's meant for embed previews on Twitter /
+ * Slack / etc.).
+ *
+ * Used for:
+ *  1. Resolving vt.tiktok.com short links to the canonical form before
+ *     handing them to Apify.
+ *  2. Synthetic fallback data when Apify's scraper can't find the post —
+ *     enough to validate caption + author and accept the clip with 0
+ *     initial views. The hourly worker fills in views later.
+ *
+ * Returns null when oembed itself fails (typically 400/429 from datacenter
+ * IPs or genuinely-deleted posts).
+ */
+async function oembedAttempt(url: string): Promise<TiktokOembed | null | "retry"> {
   try {
     const res = await fetch(
-      `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`
+      `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`,
+      {
+        headers: {
+          // Browser-like UA — TikTok rate-limits / 400s anonymous Node fetch
+          // from datacenter IPs.
+          "User-Agent":
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+          Accept: "application/json",
+        },
+      }
     );
     if (!res.ok) {
       console.error(`[tiktok] oembed http=${res.status} url=${url}`);
-      return url;
+      // 400 / 429 are typically transient rate limits — worth one retry.
+      return res.status === 400 || res.status === 429 ? "retry" : null;
     }
     const data = (await res.json()) as {
       author_unique_id?: string;
       embed_product_id?: string;
+      title?: string;
     };
-    if (data.author_unique_id && data.embed_product_id) {
-      const canonical = `https://www.tiktok.com/@${data.author_unique_id}/video/${data.embed_product_id}`;
-      console.log(`[tiktok] oembed resolved ${url} → ${canonical}`);
-      return canonical;
+    if (!data.author_unique_id || !data.embed_product_id) {
+      console.error(
+        `[tiktok] oembed missing fields url=${url} payload=${JSON.stringify(data).slice(0, 200)}`
+      );
+      return null;
     }
-    console.error(`[tiktok] oembed missing fields url=${url} payload=${JSON.stringify(data).slice(0, 200)}`);
-    return url;
+    return {
+      canonical: `https://www.tiktok.com/@${data.author_unique_id}/video/${data.embed_product_id}`,
+      author: data.author_unique_id,
+      videoId: data.embed_product_id,
+      caption: data.title ?? "",
+    };
   } catch (e) {
     console.error(`[tiktok] oembed error url=${url} ${(e as Error).message}`);
-    return url;
+    return "retry";
   }
+}
+
+async function fetchTiktokOembed(url: string): Promise<TiktokOembed | null> {
+  if (!/^https?:\/\/((vt|vm)\.tiktok\.com|(www\.)?tiktok\.com\/@)/i.test(url)) {
+    return null;
+  }
+  // Normalize trailing slash — TikTok's oembed has been observed returning
+  // 400 on `vt.tiktok.com/<code>/` from some IPs.
+  const normalized = url.replace(/\/+$/, "");
+
+  let result = await oembedAttempt(normalized);
+  if (result === "retry") {
+    console.log(`[tiktok] oembed retry url=${normalized}`);
+    await new Promise((r) => setTimeout(r, 1200));
+    result = await oembedAttempt(normalized);
+  }
+  if (result && result !== "retry") {
+    console.log(`[tiktok] oembed ok ${normalized} → ${result.canonical}`);
+    return result;
+  }
+  return null;
 }
 
 type ApifyRunError = { ok: false; error: string; structural: boolean };
@@ -195,8 +253,11 @@ export async function scrapeTiktokBatch(
     return out;
   }
 
-  // 1. Resolve short links via TikTok's oembed.
-  const resolved = await Promise.all(urls.map(resolveTiktokShortLink));
+  // 1. Pull oembed metadata for every URL. Used for:
+  //    - resolving short links to canonical (so Apify can find them)
+  //    - synthetic fallback if Apify ends up returning nothing usable
+  const oembeds = await Promise.all(urls.map((u) => fetchTiktokOembed(u)));
+  const resolved = urls.map((u, i) => oembeds[i]?.canonical ?? u);
 
   // 2. Cheap path: scrape by postURLs.
   console.log(`[tiktok] postURLs scrape n=${resolved.length}`);
@@ -259,33 +320,63 @@ export async function scrapeTiktokBatch(
     }
   }
 
-  // 4. Build output.
+  // 4. Build output. If Apify gave us a real hit, use it. Otherwise fall
+  //    back to oembed data with 0 views — the hourly worker will refresh
+  //    views later. We only hard-fail when oembed also said nothing.
   for (let i = 0; i < urls.length; i++) {
     const u = urls[i];
     const item = matched[i];
-    if (!item) {
+    const oe = oembeds[i];
+    const apifyOk = item && !item.error;
+    if (apifyOk) {
+      out.set(u, {
+        ok: true,
+        views: typeof item.playCount === "number" ? item.playCount : 0,
+        caption: (item.text ?? "").trim(),
+        authorHandle: item.authorMeta?.name?.replace(/^@/, ""),
+        canonicalUrl: item.webVideoUrl ?? undefined,
+      });
+      continue;
+    }
+    if (oe) {
+      console.log(
+        `[tiktok] oembed fallback url=${u} apifyError=${item?.error ?? "no item"}`
+      );
+      out.set(u, {
+        ok: true,
+        views: 0,
+        caption: oe.caption.trim(),
+        authorHandle: oe.author,
+        canonicalUrl: oe.canonical,
+      });
+      continue;
+    }
+    // No item, no oembed. If the input was a short link, the user can
+    // paste the canonical URL or retry; signal that with a distinct phrase
+    // the validate route can pattern-match for a friendlier message.
+    const isShortLink = /^https?:\/\/(vt|vm)\.tiktok\.com\//i.test(u);
+    if (isShortLink) {
       out.set(u, {
         ok: false,
-        error: "Apify returned no results for that TikTok URL.",
+        error:
+          "Short link unresolved — TikTok rate limit. Paste the full link or retry in a minute.",
         structural: true,
       });
       continue;
     }
-    if (item.error) {
+    if (item?.error) {
       out.set(u, {
         ok: false,
         error: `Apify scraper: ${item.error}`,
         structural: true,
       });
-      continue;
+    } else {
+      out.set(u, {
+        ok: false,
+        error: "Apify returned no results for that TikTok URL.",
+        structural: true,
+      });
     }
-    out.set(u, {
-      ok: true,
-      views: typeof item.playCount === "number" ? item.playCount : 0,
-      caption: (item.text ?? "").trim(),
-      authorHandle: item.authorMeta?.name?.replace(/^@/, ""),
-      canonicalUrl: item.webVideoUrl ?? undefined,
-    });
   }
   return out;
 }

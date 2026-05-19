@@ -35,6 +35,7 @@ type Ok = {
  */
 type ErrCode =
   | "post_not_found"
+  | "short_link_unresolved"
   | "code_missing"
   | "rate_limited"
   | "network_error"
@@ -96,7 +97,9 @@ export async function POST(req: Request): Promise<NextResponse<Ok | Err>> {
   if (!result.ok) {
     const msg = result.error.toLowerCase();
     let code: ErrCode = "scraper_unknown";
-    if (
+    if (msg.includes("short link unresolved")) {
+      code = "short_link_unresolved";
+    } else if (
       msg.includes("post not found") ||
       msg.includes("private") ||
       msg.includes("blob not found") ||

@@ -185,6 +185,8 @@ const en = {
       "Couldn't verify the post. Check your connection and try again.",
     errPostNotFound:
       "We couldn't find that post on TikTok. Make sure it's public and the link is correct.",
+    errShortLinkUnresolved:
+      "We couldn't read your TikTok link right now. Try again in a minute, or paste the full URL from your video's address bar (https://www.tiktok.com/@you/video/...).",
     errTrackingCodeMissing:
       "Your code {code} isn't in the caption. Edit your post to include it, then try again.",
     errScraperTimeout:
