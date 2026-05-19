@@ -343,6 +343,8 @@ function ClipRow({
                 <a
                   href={clip.featuredVideoUrl}
                   download={`${clip.id}.mp4`}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-md border-2 border-ink bg-lime px-3 py-1.5 font-display text-[0.7rem] font-bold uppercase tracking-wider shadow-sticker transition-transform hover:-translate-y-[1px] hover:shadow-sticker-lg active:translate-y-0"
                 >
                   <Download className="size-3.5" />
