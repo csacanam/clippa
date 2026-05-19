@@ -51,10 +51,11 @@ export async function POST(req: Request): Promise<NextResponse<Ok | Err>> {
     );
   }
 
-  const result = await scrapePost(body.platform, body.postUrl);
-
-  // Soft-pass when the scraper isn't wired for that platform yet (Instagram).
-  if (!result.ok && body.platform === "instagram") {
+  // Instagram: short-circuit. Apify's IG scraper uses a headless browser
+  // and takes 30-120 s; the user was watching "Verifying..." for the whole
+  // run only to land on manual review anyway. Skip the scrape entirely —
+  // every IG submission goes straight to manual review.
+  if (body.platform === "instagram") {
     return NextResponse.json({
       ok: true,
       views: 0,
@@ -64,6 +65,8 @@ export async function POST(req: Request): Promise<NextResponse<Ok | Err>> {
         "We can't verify Instagram posts automatically yet. Your clip will go to manual review.",
     });
   }
+
+  const result = await scrapePost(body.platform, body.postUrl);
 
   if (!result.ok) {
     // Map scraper errors to user-friendly messages.

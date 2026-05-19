@@ -239,8 +239,8 @@ export async function submitClip(
     platform: Platform;
     postUrl: string;
     trackingCode: string;
-    /** Public URL of the MP4 already uploaded via uploadClipVideo. Required —
-     *  the brand needs to be able to download the original clip. */
+    /** Public URL of the MP4 already uploaded via the signed-upload flow.
+     *  Required — the brand needs to be able to download the original clip. */
     featuredVideoUrl: string;
   }
 ): Promise<{ ok: true; clip: Clip } | { ok: false; error: string }> {
@@ -438,74 +438,51 @@ export async function rejectClip(
 }
 
 const STORAGE_BUCKET = "featured_clips";
-const MAX_VIDEO_BYTES = 25 * 1024 * 1024; // 25 MB
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * Uploads a clip's video file to Storage and returns the public URL. The
- * caller must pre-generate the clipId (UUID) so the filename matches the
- * eventual DB row id — that way `sync-featured-videos` and the brand
- * download flow find the file by id without any join table.
+ * Mints a one-shot signed upload URL the browser can PUT the video to
+ * directly. Going browser → Supabase Storage (instead of browser → Vercel
+ * → Supabase) sidesteps the Vercel function body buffer + execution
+ * timeout that was hanging 20 MB uploads.
  *
- * Goes through the service-role key — the bucket is public read but only
- * the server can write, which keeps anonymous spam out.
+ * The caller must pre-generate the clipId (UUID) so the filename matches
+ * the eventual DB row id — `sync-featured-videos` and the brand download
+ * flow find the file by id without any join table.
+ *
+ * The signed URL is upsert-enabled so a creator can re-pick a file before
+ * submitting without colliding on a stale upload.
  */
-export async function uploadClipVideo(
+export async function getClipVideoUploadAuthorization(
   identityToken: string,
-  clipId: string,
-  formData: FormData
-): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
+  clipId: string
+): Promise<
+  | { ok: true; uploadUrl: string; publicUrl: string }
+  | { ok: false; error: string }
+> {
   await requireCreator(identityToken);
   if (!UUID_RE.test(clipId)) return { ok: false, error: "Invalid clip id." };
 
-  const file = formData.get("file");
-  if (!(file instanceof File)) {
-    return { ok: false, error: "No video file provided." };
-  }
-  if (file.size === 0) return { ok: false, error: "Video file is empty." };
-  if (file.size > MAX_VIDEO_BYTES) {
-    return {
-      ok: false,
-      error: `Video is too large (max ${Math.round(MAX_VIDEO_BYTES / 1024 / 1024)}MB).`,
-    };
-  }
-  if (!file.type.startsWith("video/")) {
-    return { ok: false, error: "File must be a video." };
-  }
-
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const secret = process.env.SUPABASE_SECRET_KEY;
-  if (!supabaseUrl || !secret) {
+  if (!supabaseUrl || !process.env.SUPABASE_SECRET_KEY) {
     return { ok: false, error: "Storage is not configured." };
   }
 
+  const sb = createServerClient();
   const filename = `${clipId}.mp4`;
-  const uploadUrl = `${supabaseUrl}/storage/v1/object/${STORAGE_BUCKET}/${filename}`;
-  const buf = await file.arrayBuffer();
-
-  // upsert: true so the creator can re-submit / replace if their first
-  // upload was corrupted before they ever called submitClip.
-  const res = await fetch(uploadUrl, {
-    method: "POST",
-    headers: {
-      apikey: secret,
-      Authorization: `Bearer ${secret}`,
-      "Content-Type": file.type || "video/mp4",
-      "x-upsert": "true",
-    },
-    body: buf,
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
+  const { data, error } = await sb.storage
+    .from(STORAGE_BUCKET)
+    .createSignedUploadUrl(filename, { upsert: true });
+  if (error || !data?.signedUrl) {
     return {
       ok: false,
-      error: `Upload failed (${res.status}): ${text.slice(0, 200)}`,
+      error: `Authorization failed: ${error?.message ?? "no signed URL"}`,
     };
   }
 
   const publicUrl = `${supabaseUrl}/storage/v1/object/public/${STORAGE_BUCKET}/${filename}`;
-  return { ok: true, url: publicUrl };
+  return { ok: true, uploadUrl: data.signedUrl, publicUrl };
 }
 
 /**

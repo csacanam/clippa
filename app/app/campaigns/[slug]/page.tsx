@@ -22,7 +22,10 @@ import {
   getCampaignStats,
   type CampaignStats,
 } from "@/lib/actions/campaigns";
-import { submitClip, uploadClipVideo } from "@/lib/actions/clips";
+import {
+  getClipVideoUploadAuthorization,
+  submitClip,
+} from "@/lib/actions/clips";
 import { getOrCreateTrackingCode } from "@/lib/actions/tracking-codes";
 import {
   budgetPercentSpent,
@@ -219,11 +222,29 @@ function CampaignDetail() {
     const clipId = crypto.randomUUID();
 
     setUploadingStage("uploading");
-    const formData = new FormData();
-    formData.set("file", videoFile);
-    const upload = await uploadClipVideo(identityToken, clipId, formData);
-    if (!upload.ok) {
-      setError(upload.error);
+    // Get a signed Supabase Storage URL and upload directly from the browser.
+    // Going through Vercel was timing out on bigger files.
+    const auth = await getClipVideoUploadAuthorization(identityToken, clipId);
+    if (!auth.ok) {
+      setError(auth.error);
+      setUploadingStage("idle");
+      setSubmitting(false);
+      return;
+    }
+    try {
+      const putRes = await fetch(auth.uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": videoFile.type || "video/mp4" },
+        body: videoFile,
+      });
+      if (!putRes.ok) {
+        setError(`Upload failed (${putRes.status}).`);
+        setUploadingStage("idle");
+        setSubmitting(false);
+        return;
+      }
+    } catch {
+      setError(t("campaign.errCouldntVerify"));
       setUploadingStage("idle");
       setSubmitting(false);
       return;
@@ -236,7 +257,7 @@ function CampaignDetail() {
       platform,
       postUrl: finalUrl,
       trackingCode,
-      featuredVideoUrl: upload.url,
+      featuredVideoUrl: auth.publicUrl,
     });
     setSubmitting(false);
     setUploadingStage("idle");
