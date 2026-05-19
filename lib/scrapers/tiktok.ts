@@ -5,8 +5,14 @@
  * the proxy rotation, HTML changes, and soft rate-limits that broke our
  * previous direct-fetch approach.
  *
- * Scraping is batched: one actor run handles every URL at once. Firing one
- * run per clip blew Apify's concurrent-memory limit (8 GB across all runs).
+ * Two-pass strategy:
+ *   1. Cheap path — call the actor with `postURLs`. One result per input,
+ *      ~$0.0004 per call.
+ *   2. Fallback — for posts the actor returns "Post not found or private"
+ *      on (a real, known-broken edge case on the postURLs code path), we
+ *      retry via `profiles: [<author>]` and filter the returned posts to
+ *      the specific video id. Costs more (50-ish results per profile) but
+ *      only fires for the problem posts.
  *
  * Set APIFY_API_TOKEN in .env to enable.
  */
@@ -14,6 +20,12 @@
 import type { ScrapeResult } from "./types";
 
 const APIFY_TOKEN = process.env.APIFY_API_TOKEN;
+
+const APIFY_ENDPOINT = `https://api.apify.com/v2/acts/clockworks~tiktok-scraper/run-sync-get-dataset-items`;
+// Postpages-broken posts are almost always recent uploads, so the target
+// video lives at the top of the creator's profile. 5 covers the typical
+// case at 10× lower cost than a deeper scan.
+const PROFILE_FALLBACK_RESULTS = 5;
 
 type ApifyItem = {
   id?: string;
@@ -30,6 +42,130 @@ type ApifyItem = {
 function tiktokVideoId(url: string): string | null {
   const m = url.match(/\/video\/(\d+)/);
   return m ? m[1] : null;
+}
+
+/** Extracts the @username from a canonical TikTok URL. */
+function tiktokAuthor(url: string): string | null {
+  const m = url.match(/tiktok\.com\/@([^/?#]+)/i);
+  return m ? m[1] : null;
+}
+
+/**
+ * Short links (vt.tiktok.com/XXX, vm.tiktok.com/XXX) have to be resolved to
+ * the canonical `www.tiktok.com/@user/video/<id>` form before Apify can
+ * scrape them — the actor itself doesn't follow the redirect, and Vercel's
+ * datacenter IPs get 403'd if we try the redirect ourselves.
+ *
+ * TikTok's own oembed endpoint accepts any TikTok URL (short or canonical),
+ * returns metadata, and is unauthenticated / server-friendly because it's
+ * meant for embed previews on platforms like Twitter and Slack. We pull
+ * `author_unique_id` + `embed_product_id` from the response and rebuild the
+ * canonical URL ourselves.
+ *
+ * Already-canonical URLs are a no-op.
+ */
+async function resolveTiktokShortLink(url: string): Promise<string> {
+  if (tiktokVideoId(url)) return url;
+  if (!/^https?:\/\/(vt|vm)\.tiktok\.com\//i.test(url)) return url;
+  try {
+    const res = await fetch(
+      `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`
+    );
+    if (!res.ok) return url;
+    const data = (await res.json()) as {
+      author_unique_id?: string;
+      embed_product_id?: string;
+    };
+    if (data.author_unique_id && data.embed_product_id) {
+      return `https://www.tiktok.com/@${data.author_unique_id}/video/${data.embed_product_id}`;
+    }
+    return url;
+  } catch {
+    return url;
+  }
+}
+
+type ApifyRunError = { ok: false; error: string; structural: boolean };
+
+/** Calls the actor and returns its items, or a fatal error. */
+async function runApifyScraper(
+  input: Record<string, unknown>
+): Promise<{ ok: true; items: ApifyItem[] } | ApifyRunError> {
+  const endpoint = `${APIFY_ENDPOINT}?token=${encodeURIComponent(APIFY_TOKEN!)}`;
+  try {
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        shouldDownloadVideos: false,
+        shouldDownloadCovers: false,
+        shouldDownloadSubtitles: false,
+        shouldDownloadSlideshowImages: false,
+        ...input,
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      return {
+        ok: false,
+        error: `Apify ${res.status}: ${body.slice(0, 200)}`,
+        structural:
+          res.status === 401 || res.status === 402 || res.status === 403,
+      };
+    }
+    return { ok: true, items: (await res.json()) as ApifyItem[] };
+  } catch (e) {
+    return {
+      ok: false,
+      error: `Apify network error: ${(e as Error).message}`,
+      structural: false,
+    };
+  }
+}
+
+/**
+ * Match items returned by the postURLs path back to their input URLs. First
+ * by video id (the reliable case), then positional fallback for inputs we
+ * couldn't extract an id from — Apify returns results in input order.
+ */
+function matchByPostURLs(
+  urls: string[],
+  items: ApifyItem[]
+): (ApifyItem | undefined)[] {
+  const matched: (ApifyItem | undefined)[] = new Array(urls.length);
+  const claimed = new Set<number>();
+  for (let i = 0; i < urls.length; i++) {
+    const id = tiktokVideoId(urls[i]);
+    if (!id) continue;
+    for (let j = 0; j < items.length; j++) {
+      if (claimed.has(j)) continue;
+      const it = items[j];
+      const itemId = it.id ?? (it.webVideoUrl ? tiktokVideoId(it.webVideoUrl) : null);
+      if (itemId === id) {
+        matched[i] = it;
+        claimed.add(j);
+        break;
+      }
+    }
+  }
+  let cursor = 0;
+  for (let i = 0; i < urls.length; i++) {
+    if (matched[i]) continue;
+    while (cursor < items.length && claimed.has(cursor)) cursor++;
+    if (cursor < items.length) {
+      matched[i] = items[cursor];
+      claimed.add(cursor);
+      cursor++;
+    }
+  }
+  return matched;
+}
+
+/** True if the item failed in a way the profile fallback can recover from. */
+function isRecoverableFailure(item: ApifyItem | undefined): boolean {
+  if (!item) return true;
+  if (!item.error) return false;
+  return /post not found|private/i.test(item.error);
 }
 
 /**
@@ -52,76 +188,52 @@ export async function scrapeTiktokBatch(
     return out;
   }
 
-  const endpoint = `https://api.apify.com/v2/acts/clockworks~tiktok-scraper/run-sync-get-dataset-items?token=${encodeURIComponent(
-    APIFY_TOKEN
-  )}`;
+  // 1. Resolve short links via TikTok's oembed.
+  const resolved = await Promise.all(urls.map(resolveTiktokShortLink));
 
-  let items: ApifyItem[];
-  try {
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        postURLs: urls,
-        resultsPerPage: 1,
-        shouldDownloadVideos: false,
-        shouldDownloadCovers: false,
-        shouldDownloadSubtitles: false,
-        shouldDownloadSlideshowImages: false,
-      }),
-    });
-    if (!res.ok) {
-      const body = await res.text();
-      const err: ScrapeResult = {
-        ok: false,
-        error: `Apify ${res.status}: ${body.slice(0, 200)}`,
-        structural:
-          res.status === 401 || res.status === 402 || res.status === 403,
-      };
-      for (const u of urls) out.set(u, err);
-      return out;
-    }
-    items = (await res.json()) as ApifyItem[];
-  } catch (e) {
+  // 2. Cheap path: scrape by postURLs.
+  const primary = await runApifyScraper({
+    postURLs: resolved,
+    resultsPerPage: 1,
+  });
+  if (!primary.ok) {
     const err: ScrapeResult = {
       ok: false,
-      error: `Apify network error: ${(e as Error).message}`,
+      error: primary.error,
+      structural: primary.structural,
     };
     for (const u of urls) out.set(u, err);
     return out;
   }
+  const matched = matchByPostURLs(resolved, primary.items);
 
-  // Match each input URL to its result item. First pass: by video id.
-  // Second pass: positional fallback for short links (vt.tiktok.com/XXX)
-  // whose id we couldn't extract — Apify resolves them internally and
-  // returns the item in input order, so the next unclaimed item is the one.
-  const matched: (ApifyItem | undefined)[] = new Array(urls.length);
-  const claimedItem = new Set<number>();
+  // 3. Fallback: for inputs the postURLs path couldn't recover, scrape the
+  //    author's profile and filter by video id. Group inputs by author so
+  //    one profile scrape can cover multiple stuck inputs from the same
+  //    creator.
+  const byAuthor = new Map<string, number[]>();
   for (let i = 0; i < urls.length; i++) {
-    const id = tiktokVideoId(urls[i]);
-    if (!id) continue;
-    for (let j = 0; j < items.length; j++) {
-      if (claimedItem.has(j)) continue;
-      const it = items[j];
-      const itemId = it.id ?? (it.webVideoUrl ? tiktokVideoId(it.webVideoUrl) : null);
-      if (itemId === id) {
-        matched[i] = it;
-        claimedItem.add(j);
-        break;
-      }
-    }
+    if (!isRecoverableFailure(matched[i])) continue;
+    const author = tiktokAuthor(resolved[i]);
+    if (!author) continue;
+    if (!byAuthor.has(author)) byAuthor.set(author, []);
+    byAuthor.get(author)!.push(i);
   }
-  let cursor = 0;
-  for (let i = 0; i < urls.length; i++) {
-    if (matched[i]) continue;
-    while (cursor < items.length && claimedItem.has(cursor)) cursor++;
-    if (cursor < items.length) {
-      matched[i] = items[cursor];
-      claimedItem.add(cursor);
-      cursor++;
+  for (const [author, indices] of byAuthor) {
+    const profile = await runApifyScraper({
+      profiles: [author],
+      resultsPerPage: PROFILE_FALLBACK_RESULTS,
+    });
+    if (!profile.ok) continue; // best-effort — leave the primary error in place
+    for (const i of indices) {
+      const id = tiktokVideoId(resolved[i]);
+      if (!id) continue;
+      const found = profile.items.find((it) => it.id === id);
+      if (found) matched[i] = found;
     }
   }
 
+  // 4. Build output.
   for (let i = 0; i < urls.length; i++) {
     const u = urls[i];
     const item = matched[i];
@@ -146,7 +258,6 @@ export async function scrapeTiktokBatch(
       views: typeof item.playCount === "number" ? item.playCount : 0,
       caption: (item.text ?? "").trim(),
       authorHandle: item.authorMeta?.name?.replace(/^@/, ""),
-      // Apify resolves short links (vt.tiktok.com) to the full video URL.
       canonicalUrl: item.webVideoUrl ?? undefined,
     });
   }
