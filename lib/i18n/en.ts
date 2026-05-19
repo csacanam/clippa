@@ -187,6 +187,8 @@ const en = {
       "We couldn't find that post on TikTok. Make sure it's public and the link is correct.",
     errShortLinkUnresolved:
       "We couldn't read your TikTok link right now. Try again in a minute, or paste the full URL from your video's address bar (https://www.tiktok.com/@you/video/...).",
+    errTrackingUnavailable:
+      "We couldn't read this post. Sometimes this clears up after a few minutes, but some posts stay invisible to our tracker — if retrying doesn't help, submit a different clip.",
     errTrackingCodeMissing:
       "Your code {code} isn't in the caption. Edit your post to include it, then try again.",
     errScraperTimeout:

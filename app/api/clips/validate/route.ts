@@ -35,6 +35,7 @@ type Ok = {
  */
 type ErrCode =
   | "post_not_found"
+  | "tracking_unavailable"
   | "short_link_unresolved"
   | "code_missing"
   | "rate_limited"
@@ -99,6 +100,8 @@ export async function POST(req: Request): Promise<NextResponse<Ok | Err>> {
     let code: ErrCode = "scraper_unknown";
     if (msg.includes("short link unresolved")) {
       code = "short_link_unresolved";
+    } else if (msg.includes("tracking unavailable")) {
+      code = "tracking_unavailable";
     } else if (
       msg.includes("post not found") ||
       msg.includes("private") ||

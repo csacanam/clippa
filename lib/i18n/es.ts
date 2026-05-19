@@ -184,6 +184,8 @@ const es: Dict = {
       "No encontramos ese post en TikTok. Asegúrate de que sea público y el link esté bien.",
     errShortLinkUnresolved:
       "No pudimos leer tu link de TikTok ahora mismo. Prueba de nuevo en un minuto, o pega la URL completa desde la barra de direcciones del video (https://www.tiktok.com/@tucuenta/video/...).",
+    errTrackingUnavailable:
+      "No pudimos leer este post. A veces se arregla en unos minutos, pero algunos posts quedan invisibles a nuestro tracker — si reintentar no ayuda, sube otro clip distinto.",
     errTrackingCodeMissing:
       "Tu código {code} no está en la descripción. Edita el post para incluirlo y prueba de nuevo.",
     errScraperTimeout:

@@ -38,6 +38,74 @@ type ApifyItem = {
   error?: string;
 };
 
+type TikwmData = {
+  id?: string;
+  title?: string;
+  play_count?: number;
+  author?: { unique_id?: string };
+};
+
+/**
+ * TikWM is a free third-party TikTok metadata API. It accepts any TikTok
+ * URL (short or canonical) and returns caption, play count, author, and
+ * the canonical URL — covering cases where Apify can't see the post.
+ *
+ * Used as the primary data source. Apify is the backup.
+ */
+async function scrapeTiktokViaTikwm(url: string): Promise<ScrapeResult> {
+  try {
+    const res = await fetch(
+      `https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`,
+      {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+        },
+      }
+    );
+    if (!res.ok) {
+      console.error(`[tikwm] http=${res.status} url=${url}`);
+      return {
+        ok: false,
+        error: `TikWM HTTP ${res.status}`,
+        structural: res.status === 401 || res.status === 403 || res.status === 429,
+      };
+    }
+    const json = (await res.json()) as {
+      code?: number;
+      msg?: string;
+      data?: TikwmData;
+    };
+    if (json.code !== 0 || !json.data || !json.data.id) {
+      console.error(`[tikwm] no data url=${url} code=${json.code} msg=${json.msg}`);
+      return {
+        ok: false,
+        error: `TikWM: ${json.msg ?? "no data"}`,
+        structural: true,
+      };
+    }
+    const author = json.data.author?.unique_id ?? "";
+    console.log(
+      `[tikwm] ok url=${url} id=${json.data.id} views=${json.data.play_count}`
+    );
+    return {
+      ok: true,
+      views: typeof json.data.play_count === "number" ? json.data.play_count : 0,
+      caption: (json.data.title ?? "").trim(),
+      authorHandle: author || undefined,
+      canonicalUrl: author
+        ? `https://www.tiktok.com/@${author}/video/${json.data.id}`
+        : undefined,
+    };
+  } catch (e) {
+    console.error(`[tikwm] error url=${url} ${(e as Error).message}`);
+    return {
+      ok: false,
+      error: `TikWM error: ${(e as Error).message}`,
+    };
+  }
+}
+
 /** Extracts the numeric video id from a TikTok URL, used to match results. */
 function tiktokVideoId(url: string): string | null {
   const m = url.match(/\/video\/(\d+)/);
@@ -70,6 +138,48 @@ type TiktokOembed = {
   videoId: string;
   caption: string;  // the title field includes hashtags
 };
+
+/**
+ * Returns the base URL we use to call our own Edge endpoint internally.
+ * Vercel sets VERCEL_URL on every deployment; locally `next dev` runs on
+ * :3000.
+ */
+function appBaseUrl(): string {
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return "http://localhost:3000";
+}
+
+/**
+ * Resolves a TikTok short link via our Edge endpoint. Vercel's Edge
+ * runtime has different IP egress than the Node runtime (which sits on
+ * AWS Lambda and gets 403'd by TikTok). Returns the resolved canonical
+ * URL or null if the request failed.
+ */
+async function resolveTiktokViaEdge(url: string): Promise<string | null> {
+  if (!/^https?:\/\/(vt|vm)\.tiktok\.com\//i.test(url)) return null;
+  try {
+    const res = await fetch(
+      `${appBaseUrl()}/api/tiktok/resolve?url=${encodeURIComponent(url)}`,
+      { method: "GET" }
+    );
+    if (!res.ok) {
+      console.error(`[tiktok] edge resolver http=${res.status} url=${url}`);
+      return null;
+    }
+    const data = (await res.json()) as { ok: boolean; resolved?: string };
+    if (data.ok && data.resolved && tiktokVideoId(data.resolved)) {
+      // Strip TikTok's tracking params — they trip up oembed and Apify.
+      const clean = data.resolved.split("?")[0];
+      console.log(`[tiktok] edge resolved ${url} → ${clean}`);
+      return clean;
+    }
+    console.error(`[tiktok] edge resolver no video id url=${url} got=${data.resolved}`);
+    return null;
+  } catch (e) {
+    console.error(`[tiktok] edge resolver error url=${url} ${(e as Error).message}`);
+    return null;
+  }
+}
 
 /**
  * Calls TikTok's oembed endpoint and returns the post's canonical URL,
@@ -243,21 +353,56 @@ export async function scrapeTiktokBatch(
   const out = new Map<string, ScrapeResult>();
   if (urls.length === 0) return out;
 
+  // 1. TikWM first. Free, fast (~1.5s), accepts short and canonical URLs,
+  //    returns caption + play_count + author in one shot. Covers ~all
+  //    posts including the ones Apify's actor goes blind on. Apify stays
+  //    as fallback only.
+  const primaryResults = await Promise.all(urls.map(scrapeTiktokViaTikwm));
+  const stillNeeded: string[] = [];
+  for (let i = 0; i < urls.length; i++) {
+    if (primaryResults[i].ok) {
+      out.set(urls[i], primaryResults[i]);
+    } else {
+      stillNeeded.push(urls[i]);
+    }
+  }
+  if (stillNeeded.length === 0) return out;
+  console.log(
+    `[tiktok] tikwm covered ${urls.length - stillNeeded.length}/${urls.length}, falling back to apify for ${stillNeeded.length}`
+  );
+
   if (!APIFY_TOKEN) {
     const err: ScrapeResult = {
       ok: false,
       error: "TikTok scraping isn't configured. Set APIFY_API_TOKEN to enable.",
       structural: false,
     };
-    for (const u of urls) out.set(u, err);
+    for (const u of stillNeeded) out.set(u, err);
     return out;
   }
 
-  // 1. Pull oembed metadata for every URL. Used for:
-  //    - resolving short links to canonical (so Apify can find them)
-  //    - synthetic fallback if Apify ends up returning nothing usable
-  const oembeds = await Promise.all(urls.map((u) => fetchTiktokOembed(u)));
-  const resolved = urls.map((u, i) => oembeds[i]?.canonical ?? u);
+  // 2. Apify fallback. Same flow as before but only for URLs TikWM
+  //    couldn't handle. We reassign `urls` so the rest of the function
+  //    keeps working unchanged.
+  urls = stillNeeded;
+
+  // 2a. Resolve every short URL to canonical. Try the Edge endpoint first —
+  //     it has IP egress TikTok doesn't block. Fall back to oembed if the
+  //     Edge call fails. Canonical URLs are pass-through.
+  const resolved = await Promise.all(
+    urls.map(async (u) => {
+      if (tiktokVideoId(u)) return u;
+      const edge = await resolveTiktokViaEdge(u);
+      if (edge) return edge;
+      const oe = await fetchTiktokOembed(u);
+      return oe?.canonical ?? u;
+    })
+  );
+  // Also keep oembed-derived metadata as last-resort fallback for caption,
+  // author and views=0 when Apify can't see the post at all.
+  const oembeds = await Promise.all(
+    resolved.map((u) => fetchTiktokOembed(u))
+  );
 
   // 2. Cheap path: scrape by postURLs.
   console.log(`[tiktok] postURLs scrape n=${resolved.length}`);
@@ -351,32 +496,32 @@ export async function scrapeTiktokBatch(
       });
       continue;
     }
-    // No item, no oembed. If the input was a short link, the user can
-    // paste the canonical URL or retry; signal that with a distinct phrase
-    // the validate route can pattern-match for a friendlier message.
-    const isShortLink = /^https?:\/\/(vt|vm)\.tiktok\.com\//i.test(u);
-    if (isShortLink) {
+    // No Apify hit, no oembed. Even if we know the URL is real (Edge
+    // resolver succeeded), we can't track views — accepting the clip would
+    // be a broken promise to the creator. Surface a specific error so the
+    // validate route tells them to retry rather than silently dropping
+    // it into manual review.
+    const canonical = resolved[i];
+    if (tiktokVideoId(canonical)) {
+      console.error(
+        `[tiktok] tracking unavailable canonical=${canonical} apifyErr=${item?.error ?? "no item"} oembedOk=${oe ? "yes" : "no"}`
+      );
       out.set(u, {
         ok: false,
         error:
-          "Short link unresolved — TikTok rate limit. Paste the full link or retry in a minute.",
+          "Tracking unavailable — our scraper can't see this post yet. Retry in a few minutes.",
         structural: true,
       });
       continue;
     }
-    if (item?.error) {
-      out.set(u, {
-        ok: false,
-        error: `Apify scraper: ${item.error}`,
-        structural: true,
-      });
-    } else {
-      out.set(u, {
-        ok: false,
-        error: "Apify returned no results for that TikTok URL.",
-        structural: true,
-      });
-    }
+    console.error(`[tiktok] short link unresolved input=${u}`);
+    // Couldn't even resolve the short link.
+    out.set(u, {
+      ok: false,
+      error:
+        "Short link unresolved — TikTok rate limit. Paste the full link or retry in a minute.",
+      structural: true,
+    });
   }
   return out;
 }
