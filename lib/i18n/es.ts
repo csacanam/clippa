@@ -390,8 +390,11 @@ const es: Dict = {
 
     clipsTitle: "Clips en {campaign}",
     clipsSubtitle:
-      "Todos los clips enviados a tu campaña, ordenados por ganancias. Descarga los videos para reutilizarlos donde quieras.",
+      "Aprueba los pendientes, mira qué hay en vivo, descarga los videos para reutilizarlos donde quieras.",
     clipsEmpty: "Aún no hay clips en esta campaña.",
+    clipsSectionPending: "Pendientes de revisar",
+    clipsSectionLive: "En vivo",
+    clipsSectionInactive: "Inactivos",
     clipsDownload: "Descargar video",
     clipsNoVideo: "Sin archivo de video",
     clipsViewPost: "Ver post",

@@ -393,8 +393,11 @@ const en = {
 
     clipsTitle: "Clips on {campaign}",
     clipsSubtitle:
-      "Every clip submitted to your campaign, sorted by earnings. Download videos to repurpose them anywhere.",
+      "Approve the pending ones, see what's live, download videos to repurpose them anywhere.",
     clipsEmpty: "No clips on this campaign yet.",
+    clipsSectionPending: "Waiting for your review",
+    clipsSectionLive: "Live",
+    clipsSectionInactive: "Inactive",
     clipsDownload: "Download video",
     clipsNoVideo: "No video file",
     clipsViewPost: "View post",

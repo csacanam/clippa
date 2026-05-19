@@ -131,24 +131,111 @@ function ClipsPage() {
                   </CardContent>
                 </Card>
               ) : (
-                <div className="mt-6 flex flex-col gap-3">
-                  {data.clips.map((c, i) => (
-                    <ClipRow
-                      key={c.id}
-                      clip={c}
-                      index={i}
-                      statusLabel={statusLabel}
-                      identityToken={identityToken ?? ""}
-                      onChange={load}
-                    />
-                  ))}
-                </div>
+                <ClipsSections
+                  clips={data.clips}
+                  statusLabel={statusLabel}
+                  identityToken={identityToken ?? ""}
+                  onChange={load}
+                />
               )}
             </>
           )}
         </section>
       </div>
     </main>
+  );
+}
+
+function ClipsSections({
+  clips,
+  statusLabel,
+  identityToken,
+  onChange,
+}: {
+  clips: BrandCampaignClip[];
+  statusLabel: (s: BrandCampaignClip["status"]) => string;
+  identityToken: string;
+  onChange: () => void;
+}) {
+  const { t } = useTranslation();
+  // Bucket clips by intent: action-required first, then performing, then
+  // terminal states the brand can't do anything about.
+  const pending = clips.filter((c) => c.status === "pending");
+  const live = clips
+    .filter((c) => c.status === "tracking")
+    .sort((a, b) => b.verifiedViews - a.verifiedViews);
+  const inactive = clips.filter(
+    (c) =>
+      c.status === "rejected" ||
+      c.status === "paused" ||
+      c.status === "maxed_out"
+  );
+
+  let runningIndex = 0;
+  const next = () => runningIndex++;
+
+  return (
+    <div className="mt-6 flex flex-col gap-8">
+      {pending.length > 0 && (
+        <section>
+          <h2 className="mb-3 inline-flex items-center gap-2 font-display text-xs font-bold uppercase tracking-wider text-magenta">
+            ⚡ {t("brand.clipsSectionPending")} ({pending.length})
+          </h2>
+          <div className="flex flex-col gap-3">
+            {pending.map((c) => (
+              <ClipRow
+                key={c.id}
+                clip={c}
+                index={next()}
+                statusLabel={statusLabel}
+                identityToken={identityToken}
+                onChange={onChange}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {live.length > 0 && (
+        <section>
+          <h2 className="mb-3 font-display text-xs font-bold uppercase tracking-wider text-ink-soft">
+            {t("brand.clipsSectionLive")} ({live.length})
+          </h2>
+          <div className="flex flex-col gap-3">
+            {live.map((c) => (
+              <ClipRow
+                key={c.id}
+                clip={c}
+                index={next()}
+                statusLabel={statusLabel}
+                identityToken={identityToken}
+                onChange={onChange}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {inactive.length > 0 && (
+        <section>
+          <h2 className="mb-3 font-display text-xs font-bold uppercase tracking-wider text-ink-soft">
+            {t("brand.clipsSectionInactive")} ({inactive.length})
+          </h2>
+          <div className="flex flex-col gap-3">
+            {inactive.map((c) => (
+              <ClipRow
+                key={c.id}
+                clip={c}
+                index={next()}
+                statusLabel={statusLabel}
+                identityToken={identityToken}
+                onChange={onChange}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
   );
 }
 
