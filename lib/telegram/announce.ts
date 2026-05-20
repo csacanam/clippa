@@ -74,7 +74,7 @@ function renderEs(entries: DigestEntry[], total: number): string {
 Pagos de hoy:
 ${renderLines(entries, "un creador")}
 
-Haz clips. Recibe pagos.
+Haz clips. Gana dinero.
 
 <a href="${APP_URL}">clippa.fun</a>`;
 }
@@ -115,7 +115,7 @@ export async function announcePendingPayouts(): Promise<{
 
   const { data, error } = await sb
     .from("payouts")
-    .select("id, amount_usd, clips!inner(post_url)")
+    .select("id, amount_usd, clips!inner(post_url, author_handle)")
     .eq("status", "sent")
     .is("announced_at", null);
   if (error) {
@@ -125,11 +125,13 @@ export async function announcePendingPayouts(): Promise<{
   const rows = (data ?? []) as unknown as Array<{
     id: string;
     amount_usd: string | number;
-    clips: { post_url: string };
+    clips: { post_url: string; author_handle: string | null };
   }>;
   if (rows.length === 0) return { announced: 0, totalUsd: 0, posted: false };
 
   // One line per paid clip — each links to the clip that earned the money.
+  // Prefer the stored author handle (the only source for Instagram, whose
+  // URLs carry no username); fall back to parsing the TikTok URL.
   let total = 0;
   const entries: DigestEntry[] = rows
     .map((r) => {
@@ -139,7 +141,8 @@ export async function announcePendingPayouts(): Promise<{
           : r.amount_usd;
       total += amt;
       return {
-        handle: handleFromPostUrl(r.clips.post_url),
+        handle:
+          r.clips.author_handle ?? handleFromPostUrl(r.clips.post_url),
         amountUsd: amt,
         postUrl: r.clips.post_url,
       };

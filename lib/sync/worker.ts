@@ -125,6 +125,11 @@ export async function runSyncBatch(batchSize: number): Promise<SyncBatchResult> 
           earnings_usd: earnings,
           last_scraped_at: new Date().toISOString(),
           last_caption: result.caption,
+          // Persist the author handle — Instagram URLs don't carry it, so
+          // this is the only place the payout digest can get it from.
+          ...(result.authorHandle
+            ? { author_handle: result.authorHandle }
+            : {}),
           // Scrape succeeded — clear the consecutive-failure counter.
           sync_attempts: 0,
           sync_locked_until: null,
