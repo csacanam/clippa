@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { isAdmin } from "@/lib/admin";
 import { listActiveCampaigns } from "@/lib/actions/campaigns";
+import { TELEGRAM_URL } from "@/lib/community";
 import { listMyClips, getOperatorStats } from "@/lib/actions/clips";
 import { getMyOnboarding } from "@/lib/actions/onboarding";
 import { getMyWalletBalance, listMyPayouts } from "@/lib/actions/payouts";
@@ -108,6 +109,14 @@ function AppHome() {
                 </Badge>
               </Link>
             )}
+            <a
+              href={TELEGRAM_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-body text-xs font-medium text-ink-soft underline-offset-4 hover:text-ink hover:underline"
+            >
+              {t("common.support")}
+            </a>
             <LocaleToggle />
             <span className="hidden font-body text-xs text-ink-soft md:inline">
               {email}
@@ -209,41 +218,12 @@ function AppHome() {
           </Card>
         </motion.div>
 
+        {/* Live campaigns first — discovering new work is the action that
+            makes money; it shouldn't sit below a long list of past clips. */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: "easeOut", delay: 0.07 }}
-          className="mt-4"
-        >
-          <CommunityCard />
-        </motion.div>
-
-        {clips.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut", delay: 0.08 }}
-            className="mt-10"
-          >
-            <h2 className="font-display text-xl font-bold tracking-tight">
-              {t("home.yourClips")}
-            </h2>
-            <div className="mt-4 flex flex-col gap-3">
-              {clips.map((clip) => (
-                <MyClipCard
-                  key={clip.id}
-                  clip={clip}
-                  onRemoved={reloadClips}
-                />
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
           className="mt-10"
         >
           <h2 className="font-display text-xl font-bold tracking-tight">
@@ -266,6 +246,37 @@ function AppHome() {
               ))}
             </div>
           )}
+        </motion.div>
+
+        {clips.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut", delay: 0.09 }}
+            className="mt-10"
+          >
+            <h2 className="font-display text-xl font-bold tracking-tight">
+              {t("home.yourClips")}
+            </h2>
+            <div className="mt-4 flex flex-col gap-3">
+              {clips.map((clip) => (
+                <MyClipCard
+                  key={clip.id}
+                  clip={clip}
+                  onRemoved={reloadClips}
+                />
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut", delay: 0.11 }}
+          className="mt-10"
+        >
+          <CommunityCard />
         </motion.div>
         </section>
       </div>

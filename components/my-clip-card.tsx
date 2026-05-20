@@ -41,7 +41,22 @@ export function MyClipCard({
   const router = useRouter();
   const { t } = useTranslation();
   const identityToken = useAccessToken();
-  const badge = statusInfo(clip.status);
+  // A tracking clip on a non-active campaign isn't earning anymore — show
+  // the campaign state instead of a misleading "Live" badge.
+  const campaignInactive =
+    clip.status === "tracking" &&
+    !!clip.campaignStatus &&
+    clip.campaignStatus !== "active";
+  const badge: { key: string; variant: "live" | "review" | "rejected" | "muted" } =
+    campaignInactive
+      ? {
+          key:
+            clip.campaignStatus === "paused"
+              ? "common.statusCampaignPaused"
+              : "common.statusCampaignEnded",
+          variant: "muted",
+        }
+      : statusInfo(clip.status);
   const [confirming, setConfirming] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [error, setError] = useState<string | null>(null);

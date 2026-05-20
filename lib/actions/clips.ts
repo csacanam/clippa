@@ -20,6 +20,7 @@ type Row = {
   campaign_id: string;
   campaign_slug: string;
   campaign_name: string;
+  campaign_status?: Clip["campaignStatus"];
   creator_email?: string;
   platform: Platform;
   post_url: string;
@@ -45,6 +46,7 @@ function rowToClip(r: Row): Clip {
     id: r.id,
     campaignSlug: r.campaign_slug,
     campaignName: r.campaign_name,
+    campaignStatus: r.campaign_status,
     creatorEmail: r.creator_email,
     platform: r.platform,
     postUrl: r.post_url,
@@ -66,11 +68,15 @@ const CLIP_SELECT = `
   id, creator_id, campaign_id, platform, post_url, tracking_code,
   status, rejection_reason, approved_at, verified_views, paid_views,
   earnings_usd, paid_out_usd, last_scraped_at, created_at, featured_video_url,
-  campaigns!inner(slug, product_name)
+  campaigns!inner(slug, product_name, status)
 `;
 
 type RawJoinRow = Omit<Row, "campaign_slug" | "campaign_name"> & {
-  campaigns: { slug: string; product_name: string };
+  campaigns: {
+    slug: string;
+    product_name: string;
+    status: Clip["campaignStatus"];
+  };
 };
 
 function joinRowToClip(r: RawJoinRow): Clip {
@@ -78,6 +84,7 @@ function joinRowToClip(r: RawJoinRow): Clip {
     ...r,
     campaign_slug: r.campaigns.slug,
     campaign_name: r.campaigns.product_name,
+    campaign_status: r.campaigns.status,
   });
 }
 
@@ -87,7 +94,7 @@ const ADMIN_CLIP_SELECT = `
   id, creator_id, campaign_id, platform, post_url, tracking_code,
   status, rejection_reason, approved_at, verified_views, paid_views,
   earnings_usd, paid_out_usd, last_scraped_at, created_at, featured_video_url,
-  campaigns!inner(slug, product_name),
+  campaigns!inner(slug, product_name, status),
   users!inner(email)
 `;
 
@@ -98,6 +105,7 @@ function adminJoinRowToClip(r: AdminRawJoinRow): Clip {
     ...r,
     campaign_slug: r.campaigns.slug,
     campaign_name: r.campaigns.product_name,
+    campaign_status: r.campaigns.status,
     creator_email: r.users.email,
   });
 }

@@ -12,10 +12,20 @@ export type ClipStatus =
   | "paused"
   | "maxed_out";
 
+/** Campaign status as far as a clip needs to know — only "active" earns. */
+export type ClipCampaignStatus =
+  | "pending_funding"
+  | "active"
+  | "paused"
+  | "ended";
+
 export type Clip = {
   id: string;
   campaignSlug: string;
   campaignName: string; // joined from campaigns table for display
+  /** Campaign status — a tracking clip on a non-active campaign isn't
+   *  earning, even though its own status is still "tracking". */
+  campaignStatus?: ClipCampaignStatus;
   creatorEmail?: string; // joined from creators table — admin views only
   platform: Platform;
   postUrl: string;
