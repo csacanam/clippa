@@ -796,6 +796,75 @@ export async function listClipsForBrandCampaign(
   };
 }
 
+/** One day of a campaign's cumulative view total. */
+export type CampaignViewsPoint = { day: string; views: number };
+
+/**
+ * Daily view-total time series for a campaign the current user owns —
+ * powers the "views over time" chart on the brand dashboard.
+ *
+ * Built from `view_snapshots`: walking every snapshot chronologically and
+ * keeping a running per-clip latest, the campaign total at the end of each
+ * UTC day is the sum of all clips' latest counts. Throws if the campaign
+ * isn't the caller's (the chart is non-critical — callers should catch).
+ */
+export async function getCampaignViewsTimeseries(
+  identityToken: string,
+  slug: string
+): Promise<CampaignViewsPoint[]> {
+  const user = await requireUser(identityToken);
+  const sb = createServerClient();
+
+  const camp = await sb
+    .from("campaigns")
+    .select("id, created_by_user_id")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (camp.error) throw camp.error;
+  if (!camp.data) throw new Error("Campaign not found.");
+  const campaign = camp.data as { id: string; created_by_user_id: string | null };
+  if (campaign.created_by_user_id !== user.id) {
+    throw new Error("Not your campaign.");
+  }
+
+  const clipRows = await sb
+    .from("clips")
+    .select("id")
+    .eq("campaign_id", campaign.id);
+  if (clipRows.error) throw clipRows.error;
+  const clipIds = (clipRows.data ?? []).map((r) => (r as { id: string }).id);
+  if (clipIds.length === 0) return [];
+
+  const snaps = await sb
+    .from("view_snapshots")
+    .select("clip_id, views, scraped_at")
+    .in("clip_id", clipIds)
+    .order("scraped_at", { ascending: true });
+  if (snaps.error) throw snaps.error;
+
+  const rows = (snaps.data ?? []) as Array<{
+    clip_id: string;
+    views: number;
+    scraped_at: string;
+  }>;
+
+  // Walk chronologically, keep a running campaign total (delta-updated per
+  // clip), and record it at the end of each UTC day.
+  const latestByClip = new Map<string, number>();
+  let runningTotal = 0;
+  const byDay = new Map<string, number>();
+  for (const s of rows) {
+    const prev = latestByClip.get(s.clip_id) ?? 0;
+    runningTotal += s.views - prev;
+    latestByClip.set(s.clip_id, s.views);
+    byDay.set(s.scraped_at.slice(0, 10), runningTotal);
+  }
+
+  return [...byDay.entries()]
+    .map(([day, views]) => ({ day, views }))
+    .sort((a, b) => a.day.localeCompare(b.day));
+}
+
 /**
  * Checks if a slug is available. Cheap pre-check so the form can show
  * inline feedback before submit.

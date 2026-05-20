@@ -399,6 +399,10 @@ const es: Dict = {
     clipsSectionPending: "Pendientes de revisar",
     clipsSectionLive: "En vivo",
     clipsSectionInactive: "Inactivos",
+    viewsChartTitle: "Visualizaciones en el tiempo",
+    viewsChartSubtitle:
+      "Visualizaciones verificadas totales de todos los clips de esta campaña.",
+    viewsChartLabel: "visualizaciones",
     clipsDownload: "Descargar video",
     clipsNoVideo: "Sin archivo de video",
     clipsViewPost: "Ver post",

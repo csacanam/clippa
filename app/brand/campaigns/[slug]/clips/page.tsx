@@ -7,6 +7,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { AuthGuard } from "@/components/auth-guard";
+import { CampaignViewsChart } from "@/components/campaign-views-chart";
 import { ClippaLogo } from "@/components/clippa-logo";
 import { useTranslation } from "@/components/locale-provider";
 import { ModeBar } from "@/components/mode-bar";
@@ -131,12 +132,18 @@ function ClipsPage() {
                   </CardContent>
                 </Card>
               ) : (
-                <ClipsSections
-                  clips={data.clips}
-                  statusLabel={statusLabel}
-                  identityToken={identityToken ?? ""}
-                  onChange={load}
-                />
+                <>
+                  <CampaignViewsChart
+                    identityToken={identityToken ?? ""}
+                    slug={slug}
+                  />
+                  <ClipsSections
+                    clips={data.clips}
+                    statusLabel={statusLabel}
+                    identityToken={identityToken ?? ""}
+                    onChange={load}
+                  />
+                </>
               )}
             </>
           )}
