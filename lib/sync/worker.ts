@@ -82,10 +82,26 @@ export async function runSyncBatch(batchSize: number): Promise<SyncBatchResult> 
     for (const [url, result] of results) scraped.set(url, result);
   }
 
-  // 4. Apply results. Release the lease on every clip either way: succeeded
-  //    clips also get a fresh last_scraped_at (moves them to the back of the
-  //    queue); failed clips keep their old timestamp so they're retried
-  //    next cycle.
+  // 4. Apply results. Release the lease on every clip either way; succeeded
+  //    and failed clips both get a fresh last_scraped_at so the queue keeps
+  //    rotating.
+  //
+  //    Mass failure (most of the batch failed) = a scraper outage, not the
+  //    clips' fault. In that case we do NOT bump sync_attempts — otherwise
+  //    a multi-hour TikWM outage would push every clip past max_failures and
+  //    silently empty the whole queue. sync_attempts only counts failures
+  //    that are specific to a clip.
+  const failedCount = clips.filter((c) => {
+    const r = scraped.get(c.post_url);
+    return !r || !r.ok;
+  }).length;
+  const massFailure = failedCount > clips.length / 2;
+  if (massFailure) {
+    console.warn(
+      `[sync-worker] mass failure ${failedCount}/${clips.length} — not counting sync_attempts`
+    );
+  }
+
   let updated = 0;
   let failed = 0;
   let firstError: string | undefined;
@@ -98,17 +114,16 @@ export async function runSyncBatch(batchSize: number): Promise<SyncBatchResult> 
         if (!firstError) {
           firstError = `${c.platform}: ${result?.error ?? "no scrape result"}`;
         }
-        // Bump last_scraped_at even on failure so the clip rotates to the
-        // back of the queue, and increment sync_attempts (consecutive
-        // failures). Once it crosses claim_sync_batch's max_failures the
-        // clip drops out of the queue entirely — the daily health check
-        // then surfaces it for review.
+        // Bump last_scraped_at so the clip rotates to the back of the
+        // queue. Increment sync_attempts only on a non-mass failure — a
+        // clip past max_failures drops out of the queue (surfaced by the
+        // daily health check); an outage shouldn't trigger that.
         await sb
           .from("clips")
           .update({
             last_scraped_at: new Date().toISOString(),
-            sync_attempts: c.sync_attempts + 1,
             sync_locked_until: null,
+            ...(massFailure ? {} : { sync_attempts: c.sync_attempts + 1 }),
           })
           .eq("id", c.id);
         return;
