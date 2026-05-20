@@ -2,11 +2,14 @@ import { NextResponse } from "next/server";
 
 import type { Platform } from "@/lib/campaigns";
 import { scrapePost } from "@/lib/scrapers";
+import { sendAdminAlert } from "@/lib/telegram/send";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-// Scrapes the post via Apify before validating — can take 10-60s.
-export const maxDuration = 60;
+// Scrapes the post before validating. TikTok (TikWM) is ~2s; Instagram goes
+// through Apify's headless-browser scraper which can take 30-120s — hence
+// the generous ceiling.
+export const maxDuration = 180;
 
 type Body = {
   platform: Platform;
@@ -22,10 +25,6 @@ type Ok = {
   /** Canonical post URL — short links (vt.tiktok.com) resolve to the full
    *  form. The frontend should submit THIS, not the raw pasted URL. */
   canonicalUrl?: string;
-  /** When true, scraping couldn't verify the post (e.g. Instagram).
-   *  Frontend should still let it through but flag for admin review. */
-  needsManualReview?: boolean;
-  warning?: string;
 };
 
 /**
@@ -77,22 +76,9 @@ export async function POST(req: Request): Promise<NextResponse<Ok | Err>> {
     `[validate] in platform=${body.platform} url=${body.postUrl.slice(0, 80)} code=${body.trackingCode}`
   );
 
-  // Instagram: short-circuit. Apify's IG scraper uses a headless browser
-  // and takes 30-120 s; the user was watching "Verifying..." for the whole
-  // run only to land on manual review anyway. Skip the scrape entirely —
-  // every IG submission goes straight to manual review.
-  if (body.platform === "instagram") {
-    console.log("[validate] instagram → soft-pass to manual review");
-    return NextResponse.json({
-      ok: true,
-      views: 0,
-      caption: "",
-      needsManualReview: true,
-      warning:
-        "We can't verify Instagram posts automatically yet. Your clip will go to manual review.",
-    });
-  }
-
+  // Both platforms verify the same way: scrape the post, confirm we can read
+  // its views, confirm the tracking code is in the caption. If we can't
+  // verify it now, the creator finds out at submit — not days later.
   const result = await scrapePost(body.platform, body.postUrl);
 
   if (!result.ok) {
@@ -117,6 +103,13 @@ export async function POST(req: Request): Promise<NextResponse<Ok | Err>> {
     }
     console.error(
       `[validate] scrape failed code=${code} url=${body.postUrl} raw=${result.error}`
+    );
+    // Alert the admin on infrastructure-side failures — a creator did
+    // everything right and our scraping couldn't keep up. `code_missing`
+    // never reaches here; that's pure creator error and isn't alerted.
+    await sendAdminAlert(
+      `⚠️ <b>Submit fallido</b> (${body.platform}) — ${code}\n` +
+        `${body.postUrl}\n${result.error.slice(0, 200)}`
     );
     return NextResponse.json(
       { ok: false, code, error: result.error },

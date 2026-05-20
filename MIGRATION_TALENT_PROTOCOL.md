@@ -119,11 +119,56 @@ creators that haven't submitted a clip that day.
 Probably overkill unless we want to inflate DAU artificially — better to let
 real submissions be the natural pulse.
 
+## Payout efficiency — `recordPayoutBatch` (V2 must-have)
+
+Separate concern from Talent Protocol visibility, but the V2 contract has to
+solve it at the same time: today `recordPayout` is **one on-chain tx per
+clip**. At ~6–12 s per Celo tx, the payout worker tops out around ~30
+payouts per run even with self-chaining. That doesn't scale to thousands of
+creators.
+
+V2 needs `recordPayoutBatch(bytes32[] clipIds, bytes32[] payoutIds,
+address[] recipients, uint256[] amounts)` — **one transaction settles 100+
+payouts**. 1000 payouts → ~10 txs → minutes instead of hours. Same
+idempotency rule (a repeated payoutId reverts) applied per-entry.
+
+**How it coexists with Option A — they don't conflict, they divide the work:**
+
+- **Payouts stay operator-signed and batched.** `recordPayoutBatch` is
+  called by the operator. It does *not* credit creators in `tx.from` — and
+  that's fine, because payout efficiency and Talent Protocol movement are
+  different jobs.
+- **Creator on-chain movement comes from `submitClip`** (Option A). Every
+  creator signs their own `submitClip`, which is what Talent Protocol
+  counts. The money rail (payouts) stays cheap and operator-driven.
+
+So the V2 contract carries **both** functions on purpose:
+
+| Function            | Signer   | Purpose                                  |
+| ------------------- | -------- | ---------------------------------------- |
+| `submitClip`        | Creator  | Talent Protocol DAU — creator movement   |
+| `recordPayoutBatch` | Operator | Payout throughput — pay N creators per tx|
+| `createCampaign` / `fundCampaign` | Brand | Already exist; unchanged       |
+
+## V2 contract — full function set to design for
+
+Bundle everything the V2 redesign must carry so it's not missed:
+
+1. `submitClip(campaignId, clipId, postUrl)` — creator-signed, emits an event.
+2. `recordPayoutBatch(...)` — operator-signed, batched payouts.
+3. Configurable **minimum funding** (e.g. $100, with a per-campaign override
+   for our own campaigns).
+4. Configurable **protocol fee** (the 20% taken from each deposit) — a setter,
+   not a hardcoded constant.
+5. Standard setters (`setPayer`, fee recipient, etc.).
+6. A migration path for the V1 escrow balances (Nerdos.fun is live on V1).
+
 ## Recommendation
 
-Ship **Option A** alongside the V2 contract work (already deferred — see
-`MVP_SPEC.md`). It gives the right metric, the smallest blast radius, no
-breaking changes for brands, and reuses existing stipend infra.
+Ship **Option A (`submitClip`) + `recordPayoutBatch`** together as the V2
+contract — they're complementary, not competing. Option A gives the right
+Talent Protocol metric; `recordPayoutBatch` is the payout scaling fix. Both
+reuse existing infra (stipend for Option A, the payout worker for the batch).
 
 Open before committing:
 
@@ -138,8 +183,7 @@ Open before committing:
 
 ## Out of scope here
 
-- The V2 contract redesign itself (min funding, 20% fee config). That's
-  tracked separately and is the right vehicle to ship this change.
-- Migration of existing campaign balances from V1 to V2.
 - Whether to also count brand `withdraw` activity (already counts; brand
   flows are not the bottleneck).
+- The exact V1→V2 escrow migration mechanics (listed as a V2 must-have
+  above, but the step-by-step migration is its own doc).

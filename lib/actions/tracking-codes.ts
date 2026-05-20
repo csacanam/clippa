@@ -5,9 +5,14 @@ import { getCampaignIdBySlug } from "@/lib/actions/campaigns";
 import { createServerClient } from "@/lib/supabase/server";
 
 const ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // 30 unambiguous chars
+// 6 chars → 30^6 ≈ 729M codes per campaign. With the retry loop below, a
+// single campaign comfortably handles millions of creators with no
+// practical collision risk. Existing 4-char codes are untouched —
+// getOrCreateTrackingCode returns a creator's existing code as-is.
+const CODE_LENGTH = 6;
 
 function generateCode(): string {
-  const buf = new Uint8Array(4);
+  const buf = new Uint8Array(CODE_LENGTH);
   crypto.getRandomValues(buf);
   let out = "";
   for (const b of buf) out += ALPHABET[b % ALPHABET.length];
