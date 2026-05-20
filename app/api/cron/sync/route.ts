@@ -1,23 +1,21 @@
+import { after } from "next/server";
+
 import { requireAdmin } from "@/lib/auth-server";
 import { runSyncBatch } from "@/lib/sync/worker";
 import { sendAdminAlert } from "@/lib/telegram/send";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-// Drains the whole view-sync queue in one invocation. Scraping is parallel
-// (bounded), so a batch is fast — the full Pro-plan ceiling lets one run
-// sweep thousands of clips.
+// The drain runs in `after()` (post-response), so it gets the full ceiling
+// while the trigger itself returns instantly.
 export const maxDuration = 300;
 
-// Clips claimed per batch. The route loops batches until the queue is
-// empty or the time budget runs out.
 const BATCH_SIZE = 40;
-// Stop starting new batches past this point so the function returns first.
 const TIME_BUDGET_MS = 260_000;
 
 /**
- * Authorizes the request: Vercel Cron secret, or an admin Privy token
- * (the dashboard's "Sync" button).
+ * Authorizes the request: Vercel Cron secret / external-cron secret, or an
+ * admin Privy token (the dashboard's "Sync" button).
  */
 async function authorize(req: Request): Promise<boolean> {
   const secret = process.env.CRON_SECRET;
@@ -34,20 +32,8 @@ async function authorize(req: Request): Promise<boolean> {
   }
 }
 
-/**
- * View-sync worker. Triggered hourly by Vercel Cron; also called by the
- * admin dashboard's "Sync" button.
- *
- * Drains the entire sync queue: loops bounded batches until the queue is
- * empty. Scraping inside a batch is parallel with a concurrency cap, so a
- * single invocation comfortably sweeps thousands of clips. If the time
- * budget is hit first, the leftover clips stay queued for the next run.
- */
-export async function GET(req: Request): Promise<Response> {
-  if (!(await authorize(req))) {
-    return Response.json({ ok: false, error: "unauthorized" }, { status: 401 });
-  }
-
+/** Drains the whole view-sync queue, looping bounded batches. */
+async function drainSyncQueue(): Promise<void> {
   const startedAt = Date.now();
   let processed = 0;
   let updated = 0;
@@ -64,7 +50,6 @@ export async function GET(req: Request): Promise<Response> {
       updated += r.updated;
       failed += r.failed;
       if (r.firstError && !firstError) firstError = r.firstError;
-
       if (r.processed < BATCH_SIZE) {
         drained = true;
         break;
@@ -74,31 +59,34 @@ export async function GET(req: Request): Promise<Response> {
         break;
       }
     }
-
     console.log(
       `[cron/sync] batches=${batches} processed=${processed} updated=${updated} failed=${failed} drained=${drained} ${firstError ?? ""}`
     );
-    // Alert the admin when a run had failures — a few transient ones self-
-    // heal next cycle; the daily health check catches the persistent ones.
     if (failed > 0) {
       await sendAdminAlert(
         `⚠️ <b>Sync</b>: ${failed} de ${processed} clips fallaron al scrapear.\n` +
           `Primer error: ${firstError ?? "desconocido"}`
       );
     }
-    return Response.json({
-      ok: true,
-      drained,
-      batches,
-      processed,
-      updated,
-      failed,
-      firstError,
-    });
   } catch (e) {
     const msg = (e as Error).message;
     console.error(`[cron/sync] error ${msg}`);
     await sendAdminAlert(`🚨 <b>El cron de sync crasheó</b>: ${msg}`);
-    return Response.json({ ok: false, error: msg }, { status: 500 });
   }
+}
+
+/**
+ * View-sync trigger. Hit every ~10 min by an external scheduler
+ * (cron-job.org) and also by the admin dashboard's "Sync" button.
+ *
+ * Responds instantly and drains the queue in `after()` — the sync is slow
+ * (TikWM is rate-limited to 1 req/s), so a synchronous response would blow
+ * the external scheduler's HTTP timeout and show false failures.
+ */
+export async function GET(req: Request): Promise<Response> {
+  if (!(await authorize(req))) {
+    return Response.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  }
+  after(drainSyncQueue);
+  return Response.json({ ok: true, started: true });
 }

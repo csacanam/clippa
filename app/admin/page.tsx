@@ -232,6 +232,8 @@ function GlobalActions({
   const [msg, setMsg] = useState<string | null>(null);
   const busy = syncing || paying;
 
+  // The sync route responds instantly and drains in the background, so the
+  // button just kicks it — it doesn't get a clip count back.
   const handleSync = async () => {
     if (!identityToken) return;
     setSyncing(true);
@@ -240,31 +242,12 @@ function GlobalActions({
       const res = await fetch("/api/cron/sync", {
         headers: { "x-identity-token": identityToken },
       });
-      const r = (await res.json()) as {
-        ok: boolean;
-        drained?: boolean;
-        processed?: number;
-        updated?: number;
-        failed?: number;
-        firstError?: string;
-        error?: string;
-      };
-      await onChange();
+      const r = (await res.json()) as { ok: boolean; error?: string };
       if (!r.ok) {
         setMsg(`Failed: ${r.error ?? "unknown error"}`);
         return;
       }
-      const processed = r.processed ?? 0;
-      const updated = r.updated ?? 0;
-      const failed = r.failed ?? 0;
-      if (processed === 0) {
-        setMsg("No live clips to sync.");
-      } else {
-        const parts = [`Synced ${updated} clip${updated === 1 ? "" : "s"}`];
-        if (failed > 0) parts.push(`${failed} failed: ${r.firstError ?? ""}`);
-        if (r.drained === false) parts.push("queue not fully drained");
-        setMsg(parts.join(" · "));
-      }
+      setMsg("Sync started — running in the background.");
     } catch (err) {
       setMsg(`Failed: ${(err as Error).message}`);
     } finally {
