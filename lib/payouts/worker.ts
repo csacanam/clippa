@@ -2,6 +2,9 @@ import "server-only";
 
 import crypto from "node:crypto";
 
+import { formatUsd } from "@/lib/campaigns";
+import { sendEmail } from "@/lib/email/send";
+import { localeFromCountry, renderPayoutSent } from "@/lib/email/templates";
 import {
   ensureGasStipend,
   explorerTxUrl,
@@ -70,16 +73,41 @@ export async function runPayoutBatch(
   if (clips.length === 0) return empty;
   console.log(`[payout-worker] claimed ${clips.length} clips`);
 
-  // 2. Fetch recipient wallets (the RPC returns clip columns only).
+  // 2. Fetch recipients (wallet for the tx; email + country for the
+  //    payout-sent notification) and campaign names (the RPC returns clip
+  //    columns only).
   const creatorIds = [...new Set(clips.map((c) => c.creator_id))];
   const { data: users } = await sb
     .from("users")
-    .select("id, wallet_address")
+    .select("id, wallet_address, email, country")
     .in("id", creatorIds);
-  const walletById = new Map<string, string>();
+  const creatorById = new Map<
+    string,
+    { wallet: string; email: string; country: string | null }
+  >();
   for (const u of users ?? []) {
-    const row = u as { id: string; wallet_address: string };
-    walletById.set(row.id, row.wallet_address);
+    const row = u as {
+      id: string;
+      wallet_address: string;
+      email: string;
+      country: string | null;
+    };
+    creatorById.set(row.id, {
+      wallet: row.wallet_address,
+      email: row.email,
+      country: row.country,
+    });
+  }
+
+  const campaignIds = [...new Set(clips.map((c) => c.campaign_id))];
+  const { data: campaignRows } = await sb
+    .from("campaigns")
+    .select("id, product_name")
+    .in("id", campaignIds);
+  const campaignNameById = new Map<string, string>();
+  for (const c of campaignRows ?? []) {
+    const row = c as { id: string; product_name: string };
+    campaignNameById.set(row.id, row.product_name);
   }
 
   let paid = 0;
@@ -115,9 +143,8 @@ export async function runPayoutBatch(
       continue;
     }
 
-    const recipient = walletById.get(clip.creator_id) as
-      | `0x${string}`
-      | undefined;
+    const creator = creatorById.get(clip.creator_id);
+    const recipient = creator?.wallet as `0x${string}` | undefined;
     if (!recipient) {
       failed++;
       if (!firstError) firstError = `No wallet for creator ${clip.creator_id}`;
@@ -189,6 +216,22 @@ export async function runPayoutBatch(
           `[payout-worker] gas stipend failed for ${recipient}:`,
           (e as Error).message
         );
+      }
+
+      // Best-effort payout-sent email — also must NOT undo the payout.
+      if (creator?.email) {
+        try {
+          const email = renderPayoutSent(localeFromCountry(creator.country), {
+            campaignName:
+              campaignNameById.get(clip.campaign_id) ?? "your campaign",
+            amount: formatUsd(delta, { decimals: 2 }),
+          });
+          await sendEmail({ to: creator.email, ...email });
+        } catch (e) {
+          console.error(
+            `[payout-worker] payout email failed: ${(e as Error).message}`
+          );
+        }
       }
     } else {
       await sb

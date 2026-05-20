@@ -5,6 +5,12 @@ import { getCampaignIdBySlug } from "@/lib/actions/campaigns";
 import type { Platform } from "@/lib/campaigns";
 import type { Clip, ClipStatus } from "@/lib/clips";
 import { validatePostUrl } from "@/lib/clips";
+import { sendEmail } from "@/lib/email/send";
+import {
+  localeFromCountry,
+  renderClipApproved,
+  renderClipRejected,
+} from "@/lib/email/templates";
 import { createServerClient } from "@/lib/supabase/server";
 
 type Row = {
@@ -383,6 +389,43 @@ async function requireClipModerator(
   return { user, isAdmin: false };
 }
 
+/**
+ * Best-effort email to the clip's creator after a moderation decision.
+ * Never throws — an email failure must not roll back the approve/reject.
+ */
+async function emailClipDecision(
+  clipId: string,
+  decision: "approved" | "rejected",
+  reason?: string
+): Promise<void> {
+  try {
+    const sb = createServerClient();
+    const { data } = await sb
+      .from("clips")
+      .select("users!inner(email, country), campaigns!inner(product_name)")
+      .eq("id", clipId)
+      .maybeSingle();
+    if (!data) return;
+    const row = data as unknown as {
+      users: { email: string; country: string | null };
+      campaigns: { product_name: string };
+    };
+    const lang = localeFromCountry(row.users.country);
+    const email =
+      decision === "approved"
+        ? renderClipApproved(lang, {
+            campaignName: row.campaigns.product_name,
+          })
+        : renderClipRejected(lang, {
+            campaignName: row.campaigns.product_name,
+            reason: reason ?? "",
+          });
+    await sendEmail({ to: row.users.email, ...email });
+  } catch (e) {
+    console.error(`[email] clip decision notify failed: ${(e as Error).message}`);
+  }
+}
+
 export async function approveClip(
   identityToken: string,
   clipId: string
@@ -409,6 +452,7 @@ export async function approveClip(
     .eq("status", "pending");
   if (error) return { ok: false, error: error.message };
   if (!count) return { ok: false, error: "Clip not pending." };
+  await emailClipDecision(clipId, "approved");
   return { ok: true };
 }
 
@@ -432,6 +476,7 @@ export async function rejectClip(
     .eq("status", "pending");
   if (error) return { ok: false, error: error.message };
   if (!count) return { ok: false, error: "Clip not pending." };
+  await emailClipDecision(clipId, "rejected", r);
   return { ok: true };
 }
 
