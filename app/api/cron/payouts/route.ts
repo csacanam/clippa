@@ -1,20 +1,24 @@
+import { after } from "next/server";
+
 import { requireAdmin } from "@/lib/auth-server";
 import { runPayoutBatch } from "@/lib/payouts/worker";
+import { announcePendingPayouts } from "@/lib/telegram/announce";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-// Each clip is a real Celo tx (~6-12 s). maxDuration gives the small batch
-// room to finish.
-export const maxDuration = 60;
+// Each clip is a Celo tx (~6-12 s) — give the run the full Pro ceiling.
+export const maxDuration = 300;
 
-// Tiny on purpose — on-chain txs are slow, so a batch of 4 stays well inside
-// maxDuration. To pay more, the caller loops (cron fires again; the admin
-// button drains in a client-side loop).
 const BATCH_SIZE = 4;
+// Stop starting batches past this point so the function returns in time.
+const TIME_BUDGET_MS = 240_000;
+// Self-chain depth cap — 80 links × ~28 payouts ≈ 2200 payouts before the
+// chain gives up and leaves the rest for the next daily run.
+const MAX_CHAIN = 80;
 
 /**
- * Authorizes the request: either the Vercel Cron secret, or an admin's
- * Privy identity token (the admin dashboard's "Run payouts" button).
+ * Authorizes the request: Vercel Cron secret, an admin Privy token (the
+ * dashboard's "Run payouts" button), or an internal self-chain hop.
  */
 async function authorize(req: Request): Promise<boolean> {
   const secret = process.env.CRON_SECRET;
@@ -32,26 +36,93 @@ async function authorize(req: Request): Promise<boolean> {
 }
 
 /**
- * Payout worker. Triggered by Vercel Cron; also called by the admin
- * dashboard's "Run payouts" button (which drains in a client-side loop).
+ * Payout worker — triggered once a day by Vercel Cron (also callable from
+ * the admin dashboard). Drains the entire payout queue.
  *
- * Each call claims and pays one bounded chunk. `likelyMore` is true when a
- * full batch came back — the caller keeps going until it's false.
+ * One invocation loops bounded batches until the queue is empty OR its
+ * time budget runs out. If the budget runs out first, it self-chains: it
+ * re-triggers itself so the next invocation continues — so a single daily
+ * trigger drains the whole queue no matter how large, without any single
+ * function call timing out.
+ *
+ * The community payout digest is posted only once the queue is fully
+ * drained (the real "all of today's payouts" moment). announcePendingPayouts
+ * is idempotent via payouts.announced_at.
  */
 export async function GET(req: Request): Promise<Response> {
   if (!(await authorize(req))) {
     return Response.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
+  const chain = Number(new URL(req.url).searchParams.get("chain") ?? "0");
+  const startedAt = Date.now();
+  let paid = 0;
+  let failed = 0;
+  let skippedForCap = 0;
+  let totalPaidUsd = 0;
+  let batches = 0;
+  let firstError: string | undefined;
+  let drained = false;
+
   try {
-    const r = await runPayoutBatch(BATCH_SIZE);
+    for (;;) {
+      const r = await runPayoutBatch(BATCH_SIZE);
+      batches++;
+      paid += r.paid;
+      failed += r.failed;
+      skippedForCap += r.skippedForCap;
+      totalPaidUsd += r.totalPaidUsd;
+      if (r.firstError && !firstError) firstError = r.firstError;
+
+      if (r.processed < BATCH_SIZE) {
+        drained = true;
+        break;
+      }
+      if (Date.now() - startedAt > TIME_BUDGET_MS) break;
+    }
+
+    let digestAnnounced = 0;
+    if (drained) {
+      // Queue empty — post the day's digest.
+      const digest = await announcePendingPayouts();
+      digestAnnounced = digest.announced;
+    } else if (chain < MAX_CHAIN) {
+      // Budget hit with clips still owed — re-trigger to continue the drain
+      // after this response is sent.
+      const next = new URL(req.url);
+      next.searchParams.set("chain", String(chain + 1));
+      const secret = process.env.CRON_SECRET;
+      after(async () => {
+        try {
+          await fetch(next.toString(), {
+            headers: secret ? { authorization: `Bearer ${secret}` } : {},
+          });
+        } catch (e) {
+          console.error(
+            `[cron/payouts] self-chain trigger failed: ${(e as Error).message}`
+          );
+        }
+      });
+    } else {
+      console.warn(
+        `[cron/payouts] chain cap ${MAX_CHAIN} hit — leftover waits for next run`
+      );
+    }
+
     console.log(
-      `[cron/payouts] processed=${r.processed} paid=${r.paid} failed=${r.failed} skipped=${r.skippedForCap} ${r.firstError ?? ""}`
+      `[cron/payouts] chain=${chain} batches=${batches} paid=${paid} failed=${failed} drained=${drained} digest=${digestAnnounced} ${firstError ?? ""}`
     );
     return Response.json({
       ok: true,
-      ...r,
-      likelyMore: r.processed === BATCH_SIZE,
+      chain,
+      drained,
+      batches,
+      paid,
+      failed,
+      skippedForCap,
+      totalPaidUsd,
+      digestAnnounced,
+      firstError,
     });
   } catch (e) {
     console.error(`[cron/payouts] error ${(e as Error).message}`);

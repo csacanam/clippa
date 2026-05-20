@@ -112,6 +112,29 @@ function tiktokVideoId(url: string): string | null {
   return m ? m[1] : null;
 }
 
+/**
+ * Runs `fn` over `items` one at a time, leaving at least `minGapMs` between
+ * the *start* of consecutive calls. TikWM's free tier caps at 1 request per
+ * second — firing in parallel just gets every call after the first rejected
+ * with "Free Api Limit: 1 request/second."
+ */
+async function mapRateLimited<T, R>(
+  items: T[],
+  minGapMs: number,
+  fn: (item: T) => Promise<R>
+): Promise<R[]> {
+  const results: R[] = [];
+  for (let i = 0; i < items.length; i++) {
+    const startedAt = Date.now();
+    results.push(await fn(items[i]));
+    if (i < items.length - 1) {
+      const wait = minGapMs - (Date.now() - startedAt);
+      if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+    }
+  }
+  return results;
+}
+
 /** Extracts the @username from a canonical TikTok URL. */
 function tiktokAuthor(url: string): string | null {
   const m = url.match(/tiktok\.com\/@([^/?#]+)/i);
@@ -278,6 +301,9 @@ async function runApifyScraper(
         shouldDownloadSlideshowImages: false,
         ...input,
       }),
+      // Cap the wait. Apify's run-sync legitimately takes 30-60s, so this
+      // is generous — it's only here so a hung run can't stall the batch.
+      signal: AbortSignal.timeout(75_000),
     });
     if (!res.ok) {
       const body = await res.text();
@@ -357,7 +383,8 @@ export async function scrapeTiktokBatch(
   //    returns caption + play_count + author in one shot. Covers ~all
   //    posts including the ones Apify's actor goes blind on. Apify stays
   //    as fallback only.
-  const primaryResults = await Promise.all(urls.map(scrapeTiktokViaTikwm));
+  // TikWM free tier is 1 req/sec — throttle to just over that.
+  const primaryResults = await mapRateLimited(urls, 1100, scrapeTiktokViaTikwm);
   const stillNeeded: string[] = [];
   for (let i = 0; i < urls.length; i++) {
     if (primaryResults[i].ok) {

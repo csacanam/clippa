@@ -97,9 +97,16 @@ export async function runSyncBatch(batchSize: number): Promise<SyncBatchResult> 
         if (!firstError) {
           firstError = `${c.platform}: ${result?.error ?? "no scrape result"}`;
         }
+        // Bump last_scraped_at even on failure so the clip rotates to the
+        // back of the queue — otherwise a permanently-unscrapeable clip
+        // stays at the front and a draining run loops on it forever.
+        // It's still retried next cycle; sync_attempts tracks the failures.
         await sb
           .from("clips")
-          .update({ sync_locked_until: null })
+          .update({
+            last_scraped_at: new Date().toISOString(),
+            sync_locked_until: null,
+          })
           .eq("id", c.id);
         return;
       }
