@@ -215,30 +215,23 @@ function PendingClipCard({
 
 const BUDGET_CARD_COLORS = ["bg-peach", "bg-lime", "bg-cream"] as const;
 
-function CampaignBudgetCard({
-  budget,
-  colorIndex,
+/**
+ * Global ops actions. Sync + payouts both drain queues that span every
+ * campaign, so they live in one place rather than repeated per campaign
+ * card. Both run on their own crons too — these are just manual triggers.
+ */
+function GlobalActions({
   identityToken,
   onChange,
 }: {
-  budget: AdminCampaignBudget;
-  colorIndex: number;
   identityToken: string;
   onChange: () => void | Promise<void>;
 }) {
-  const bg = BUDGET_CARD_COLORS[colorIndex % BUDGET_CARD_COLORS.length];
-  const { chain, owedNowUsd } = budget;
-  const shortfall = owedNowUsd - chain.balanceUsd;
-  // Underfunded only matters when there's actually something to pay.
-  const underfunded = owedNowUsd > 0 && shortfall > 0;
-  const fullyFunded = owedNowUsd > 0 && shortfall <= 0;
-
   const [syncing, setSyncing] = useState(false);
   const [paying, setPaying] = useState(false);
-  const [msg, setMsg] = useState<React.ReactNode | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+  const busy = syncing || paying;
 
-  // Runs the view-sync queue. The route drains the whole queue in one call
-  // (looping bounded, parallel-scraped batches server-side).
   const handleSync = async () => {
     if (!identityToken) return;
     setSyncing(true);
@@ -279,9 +272,6 @@ function CampaignBudgetCard({
     }
   };
 
-  // Runs the payout queue. The route drains the whole queue in one call
-  // (looping bounded batches server-side) and posts the community digest
-  // when the queue is fully emptied.
   const handlePay = async () => {
     if (!identityToken) return;
     setPaying(true);
@@ -330,16 +320,59 @@ function CampaignBudgetCard({
     }
   };
 
-  const busy = syncing || paying;
-  const payDisabled =
-    busy || owedNowUsd <= 0 || underfunded || !chain.exists || !identityToken;
-  const payTitle = !chain.exists
-    ? "Campaign not yet funded on-chain"
-    : owedNowUsd <= 0
-      ? "Nothing to pay out right now"
-      : underfunded
-        ? `Insufficient escrow balance (short ${formatUsd(shortfall)})`
-        : undefined;
+  return (
+    <Card className="bg-cream">
+      <CardContent className="flex flex-col gap-3">
+        <div>
+          <p className="font-display text-sm font-bold uppercase tracking-wider">
+            Operations
+          </p>
+          <p className="mt-0.5 font-body text-xs text-ink-soft">
+            Views sync every 10 min and payouts run daily on their own —
+            these are manual triggers.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            onClick={handleSync}
+            disabled={busy || !identityToken}
+            variant="indigo"
+            size="sm"
+          >
+            <RefreshCw
+              className={`size-3.5 ${syncing ? "animate-spin" : ""}`}
+            />
+            {syncing ? "Syncing..." : "Sync views"}
+          </Button>
+          <Button
+            onClick={handlePay}
+            disabled={busy || !identityToken}
+            variant="default"
+            size="sm"
+          >
+            <Coins className={`size-3.5 ${paying ? "animate-pulse" : ""}`} />
+            {paying ? "Paying..." : "Run payouts"}
+          </Button>
+        </div>
+        {msg && <p className="font-body text-xs text-ink-soft">{msg}</p>}
+      </CardContent>
+    </Card>
+  );
+}
+
+function CampaignBudgetCard({
+  budget,
+  colorIndex,
+}: {
+  budget: AdminCampaignBudget;
+  colorIndex: number;
+}) {
+  const bg = BUDGET_CARD_COLORS[colorIndex % BUDGET_CARD_COLORS.length];
+  const { chain, owedNowUsd } = budget;
+  const shortfall = owedNowUsd - chain.balanceUsd;
+  // Underfunded only matters when there's actually something to pay.
+  const underfunded = owedNowUsd > 0 && shortfall > 0;
+  const fullyFunded = owedNowUsd > 0 && shortfall <= 0;
 
   return (
     <Card className={bg}>
@@ -418,41 +451,12 @@ function CampaignBudgetCard({
           </span>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 border-t-2 border-ink/10 pt-3">
-          <Button
-            onClick={handleSync}
-            disabled={busy || !identityToken}
-            variant="indigo"
-            size="sm"
-          >
-            <RefreshCw className={`size-3.5 ${syncing ? "animate-spin" : ""}`} />
-            {syncing ? "Syncing..." : "Sync"}
-          </Button>
-          {paying ? (
-            <Button disabled variant="default" size="sm">
-              <Coins className="size-3.5 animate-pulse" />
-              Paying...
-            </Button>
-          ) : owedNowUsd <= 0 && chain.exists ? (
-            <Badge variant="live" className="px-2.5 py-1 text-[0.65rem]">
-              <Check className="size-3.5" />
-              All paid
-            </Badge>
-          ) : (
-            <Button
-              onClick={handlePay}
-              disabled={payDisabled}
-              variant="default"
-              size="sm"
-              title={payTitle}
-            >
-              <Coins className="size-3.5" />
-              Run payouts
-            </Button>
-          )}
-        </div>
-
-        {msg && <p className="font-body text-xs text-ink-soft">{msg}</p>}
+        {owedNowUsd <= 0 && chain.exists && (
+          <div className="flex items-center gap-1.5 border-t-2 border-ink/10 pt-2 text-[0.7rem] text-ink-soft">
+            <Check className="size-3.5" />
+            All paid
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -635,7 +639,14 @@ function AdminDashboard() {
             </Card>
           </div>
 
-          {/* Per-campaign budgets — sync + payouts live inside each card. */}
+          <div className="mt-6">
+            <GlobalActions
+              identityToken={identityToken ?? ""}
+              onChange={refresh}
+            />
+          </div>
+
+          {/* Per-campaign budgets — display only; sync + payouts are global. */}
           {budgets.length > 0 && (
             <div className="mt-6">
               <h2 className="font-display text-xl font-bold tracking-tight">
@@ -643,17 +654,10 @@ function AdminDashboard() {
               </h2>
               <p className="mt-1 font-body text-xs text-ink-soft">
                 On-chain escrow balance vs. what creators are owed right now.
-                Sync and pay out per campaign.
               </p>
               <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
                 {budgets.map((b, i) => (
-                  <CampaignBudgetCard
-                    key={b.slug}
-                    budget={b}
-                    colorIndex={i}
-                    identityToken={identityToken ?? ""}
-                    onChange={refresh}
-                  />
+                  <CampaignBudgetCard key={b.slug} budget={b} colorIndex={i} />
                 ))}
               </div>
             </div>

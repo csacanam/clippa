@@ -5,6 +5,7 @@ import { LOCALES, type Locale } from "@/lib/i18n/types";
 import { createServerClient } from "@/lib/supabase/server";
 import type { Campaign, CampaignChainState, Platform } from "@/lib/campaigns";
 import { getCampaignChainState } from "@/lib/payments/celo";
+import { sendAdminAlert } from "@/lib/telegram/send";
 import { translateCampaignFields } from "@/lib/translation";
 
 type CampaignRow = {
@@ -533,6 +534,23 @@ export async function markCampaignActive(
   if (error) return { ok: false, error: error.message };
   if (!count) return { ok: false, error: "Campaign not found or already active." };
 
+  // Best-effort activity ping — campaign is now live (funded + active).
+  try {
+    const { data: c } = await sb
+      .from("campaigns")
+      .select("product_name, total_budget_usd")
+      .eq("id", campaignId)
+      .maybeSingle();
+    if (c) {
+      const row = c as { product_name: string; total_budget_usd: string | number };
+      await sendAdminAlert(
+        `🚀 Campaña live: <b>${row.product_name}</b> — presupuesto $${n(row.total_budget_usd).toFixed(2)}`
+      );
+    }
+  } catch (e) {
+    console.error(`Admin alert failed for campaign ${campaignId}:`, e);
+  }
+
   // Best-effort: translate now so creators see the campaign in their language.
   // Failures don't block — the campaign is already active.
   try {
@@ -542,6 +560,38 @@ export async function markCampaignActive(
   }
 
   return { ok: true };
+}
+
+/**
+ * Best-effort admin notification that a brand topped up a campaign. Called
+ * by the fund-more dialog after the on-chain tx confirms. Never throws —
+ * silently no-ops if the caller doesn't own the campaign.
+ */
+export async function notifyCampaignTopUp(
+  identityToken: string,
+  campaignId: string,
+  amountUsd: number
+): Promise<void> {
+  try {
+    const user = await requireUser(identityToken);
+    const sb = createServerClient();
+    const { data } = await sb
+      .from("campaigns")
+      .select("product_name, created_by_user_id")
+      .eq("id", campaignId)
+      .maybeSingle();
+    if (!data) return;
+    const row = data as {
+      product_name: string;
+      created_by_user_id: string | null;
+    };
+    if (row.created_by_user_id !== user.id) return;
+    await sendAdminAlert(
+      `💰 <b>${row.product_name}</b> recibió $${amountUsd.toFixed(2)} de fondeo`
+    );
+  } catch (e) {
+    console.error(`notifyCampaignTopUp failed: ${(e as Error).message}`);
+  }
 }
 
 /**

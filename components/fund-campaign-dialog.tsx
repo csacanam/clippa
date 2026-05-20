@@ -13,6 +13,8 @@ import {
 } from "viem";
 import { celo } from "viem/chains";
 
+import { notifyCampaignTopUp } from "@/lib/actions/campaigns";
+import { useAccessToken } from "@/lib/hooks/use-access-token";
 import { useTranslation } from "@/components/locale-provider";
 import { Button } from "@/components/ui/button";
 import {
@@ -73,6 +75,7 @@ export function FundCampaignDialog({
 }) {
   const { wallets } = useWallets();
   const { t } = useTranslation();
+  const identityToken = useAccessToken();
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [stage, setStage] = useState<Stage>({ kind: "form" });
@@ -141,6 +144,9 @@ export function FundCampaignDialog({
       await publicClient.waitForTransactionReceipt({ hash: fundTx as Hex });
 
       setStage({ kind: "done", txHash: fundTx });
+      // Best-effort admin ping — fire-and-forget, the server action runs to
+      // completion regardless of whether we await it.
+      void notifyCampaignTopUp(identityToken ?? "", campaignId, numericAmount);
       onDone?.();
     } catch (e) {
       const raw = (e as Error).message ?? "Something went wrong.";

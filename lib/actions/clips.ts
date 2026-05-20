@@ -12,6 +12,7 @@ import {
   renderClipRejected,
 } from "@/lib/email/templates";
 import { createServerClient } from "@/lib/supabase/server";
+import { sendAdminAlert } from "@/lib/telegram/send";
 
 type Row = {
   id: string;
@@ -284,7 +285,12 @@ export async function submitClip(
     }
     return { ok: false, error: error.message };
   }
-  return { ok: true, clip: joinRowToClip(data as unknown as RawJoinRow) };
+  const clip = joinRowToClip(data as unknown as RawJoinRow);
+  // Best-effort activity ping to the admin.
+  await sendAdminAlert(
+    `📹 Clip nuevo en <b>${clip.campaignName}</b> (${input.platform}) — ${creator.email}`
+  );
+  return { ok: true, clip };
 }
 
 /**

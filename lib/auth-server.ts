@@ -4,6 +4,7 @@ import { verifyAccessToken } from "@privy-io/node";
 import { createRemoteJWKSet } from "jose";
 
 import { createServerClient } from "@/lib/supabase/server";
+import { sendAdminAlert } from "@/lib/telegram/send";
 
 const APP_ID = process.env.PRIVY_APP_ID!;
 const APP_SECRET = process.env.PRIVY_APP_SECRET!;
@@ -129,7 +130,12 @@ export async function requireUser(
     .select("*")
     .single();
   if (inserted.error) throw inserted.error;
-  return inserted.data as User;
+  const newUser = inserted.data as User;
+  // Best-effort signup ping to the admin (never throws).
+  await sendAdminAlert(
+    `🎉 Nuevo ${newUser.primary_role === "brand" ? "brand" : "creator"}: ${newUser.email}`
+  );
+  return newUser;
 }
 
 /** @deprecated Prefer `requireUser`. Kept for back-compat with creator-flow call sites. */
