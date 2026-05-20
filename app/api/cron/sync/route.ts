@@ -62,10 +62,14 @@ async function drainSyncQueue(): Promise<void> {
     console.log(
       `[cron/sync] batches=${batches} processed=${processed} updated=${updated} failed=${failed} drained=${drained} ${firstError ?? ""}`
     );
-    if (failed > 0) {
+    // Per-run alert fires only on a *mass* failure (most of the run) — a
+    // real incident like a scraper outage. A handful of dead clips would
+    // otherwise alert every 10 min; those are surfaced once a day by the
+    // health check instead (it tracks per-clip sync_attempts).
+    if (failed > 0 && failed > processed / 2) {
       await sendAdminAlert(
-        `⚠️ <b>Sync</b>: ${failed} de ${processed} clips fallaron al scrapear.\n` +
-          `Primer error: ${firstError ?? "desconocido"}`
+        `⚠️ <b>Sync</b>: ${failed} de ${processed} clips fallaron al scrapear ` +
+          `— posible caída del scraper.\nPrimer error: ${firstError ?? "desconocido"}`
       );
     }
   } catch (e) {
