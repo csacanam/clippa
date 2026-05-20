@@ -3,6 +3,7 @@ import { after } from "next/server";
 import { requireAdmin } from "@/lib/auth-server";
 import { runPayoutBatch } from "@/lib/payouts/worker";
 import { announcePendingPayouts } from "@/lib/telegram/announce";
+import { sendAdminAlert } from "@/lib/telegram/send";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -112,6 +113,15 @@ export async function GET(req: Request): Promise<Response> {
     console.log(
       `[cron/payouts] chain=${chain} batches=${batches} paid=${paid} failed=${failed} drained=${drained} digest=${digestAnnounced} ${firstError ?? ""}`
     );
+    // A failed payout means a creator didn't get paid — always worth an
+    // alert. (Reported once, from the chain's first link.)
+    if (failed > 0 && chain === 0) {
+      await sendAdminAlert(
+        `⚠️ <b>Pagos</b>: ${failed} pago(s) fallaron.\n` +
+          `Primer error: ${firstError ?? "desconocido"}\n` +
+          `Los clips quedan en cola y reintentan — revisa el balance del escrow.`
+      );
+    }
     return Response.json({
       ok: true,
       chain,
@@ -125,10 +135,9 @@ export async function GET(req: Request): Promise<Response> {
       firstError,
     });
   } catch (e) {
-    console.error(`[cron/payouts] error ${(e as Error).message}`);
-    return Response.json(
-      { ok: false, error: (e as Error).message },
-      { status: 500 }
-    );
+    const msg = (e as Error).message;
+    console.error(`[cron/payouts] error ${msg}`);
+    await sendAdminAlert(`🚨 <b>El cron de pagos crasheó</b>: ${msg}`);
+    return Response.json({ ok: false, error: msg }, { status: 500 });
   }
 }

@@ -8,8 +8,9 @@ import "server-only";
  * block the action that triggered it (a payout, a cron run).
  *
  * Env:
- *   TELEGRAM_BOT_TOKEN  — from @BotFather; absent ⇒ no-op
- *   TELEGRAM_CHAT_ID    — the supergroup id (negative, e.g. -1001234567890)
+ *   TELEGRAM_BOT_TOKEN      — from @BotFather; absent ⇒ no-op
+ *   TELEGRAM_CHAT_ID        — the community supergroup id (negative)
+ *   TELEGRAM_ADMIN_CHAT_ID  — the admin's personal chat, for ops alerts
  */
 
 export async function sendToTopic(
@@ -55,4 +56,22 @@ export async function sendToTopic(
     console.error(`[telegram] send failed: ${error}`);
     return { ok: false, error };
   }
+}
+
+/**
+ * Ops alert to the admin's personal Telegram chat (no topic). Used by the
+ * cron workers to flag failures the admin needs to know about — a sync run
+ * with errors, a failed payout, a crashed cron, a stuck clip.
+ *
+ * Best-effort and never throws.
+ */
+export async function sendAdminAlert(
+  text: string
+): Promise<{ ok: boolean; error?: string }> {
+  const adminChat = process.env.TELEGRAM_ADMIN_CHAT_ID;
+  if (!adminChat) {
+    console.warn("[telegram] TELEGRAM_ADMIN_CHAT_ID not set — alert skipped");
+    return { ok: false, error: "admin chat not configured" };
+  }
+  return sendToTopic(undefined, text, adminChat);
 }

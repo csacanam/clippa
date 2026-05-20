@@ -27,6 +27,7 @@ type ClaimedClip = {
   post_url: string;
   campaign_id: string;
   verified_views: number;
+  sync_attempts: number;
 };
 
 function n(v: string | number): number {
@@ -98,13 +99,15 @@ export async function runSyncBatch(batchSize: number): Promise<SyncBatchResult> 
           firstError = `${c.platform}: ${result?.error ?? "no scrape result"}`;
         }
         // Bump last_scraped_at even on failure so the clip rotates to the
-        // back of the queue — otherwise a permanently-unscrapeable clip
-        // stays at the front and a draining run loops on it forever.
-        // It's still retried next cycle; sync_attempts tracks the failures.
+        // back of the queue, and increment sync_attempts (consecutive
+        // failures). Once it crosses claim_sync_batch's max_failures the
+        // clip drops out of the queue entirely — the daily health check
+        // then surfaces it for review.
         await sb
           .from("clips")
           .update({
             last_scraped_at: new Date().toISOString(),
+            sync_attempts: c.sync_attempts + 1,
             sync_locked_until: null,
           })
           .eq("id", c.id);
@@ -122,6 +125,8 @@ export async function runSyncBatch(batchSize: number): Promise<SyncBatchResult> 
           earnings_usd: earnings,
           last_scraped_at: new Date().toISOString(),
           last_caption: result.caption,
+          // Scrape succeeded — clear the consecutive-failure counter.
+          sync_attempts: 0,
           sync_locked_until: null,
         })
         .eq("id", c.id);

@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/auth-server";
 import { runSyncBatch } from "@/lib/sync/worker";
+import { sendAdminAlert } from "@/lib/telegram/send";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -77,6 +78,14 @@ export async function GET(req: Request): Promise<Response> {
     console.log(
       `[cron/sync] batches=${batches} processed=${processed} updated=${updated} failed=${failed} drained=${drained} ${firstError ?? ""}`
     );
+    // Alert the admin when a run had failures — a few transient ones self-
+    // heal next cycle; the daily health check catches the persistent ones.
+    if (failed > 0) {
+      await sendAdminAlert(
+        `⚠️ <b>Sync</b>: ${failed} de ${processed} clips fallaron al scrapear.\n` +
+          `Primer error: ${firstError ?? "desconocido"}`
+      );
+    }
     return Response.json({
       ok: true,
       drained,
@@ -87,10 +96,9 @@ export async function GET(req: Request): Promise<Response> {
       firstError,
     });
   } catch (e) {
-    console.error(`[cron/sync] error ${(e as Error).message}`);
-    return Response.json(
-      { ok: false, error: (e as Error).message },
-      { status: 500 }
-    );
+    const msg = (e as Error).message;
+    console.error(`[cron/sync] error ${msg}`);
+    await sendAdminAlert(`🚨 <b>El cron de sync crasheó</b>: ${msg}`);
+    return Response.json({ ok: false, error: msg }, { status: 500 });
   }
 }
