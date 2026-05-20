@@ -29,14 +29,12 @@ import {
   getOperatorStats,
   listAllClips,
   listPendingClips,
-  refreshAllViews,
   rejectClip,
   setClipFeaturedVideo,
   type OperatorStats,
 } from "@/lib/actions/clips";
 import {
   listAllPayouts,
-  runPayouts,
   type PayoutHistoryRow,
 } from "@/lib/actions/payouts";
 import { formatUsd } from "@/lib/campaigns";
@@ -239,23 +237,49 @@ function CampaignBudgetCard({
   const [paying, setPaying] = useState(false);
   const [msg, setMsg] = useState<React.ReactNode | null>(null);
 
+  // Drains the global view-sync queue. Each request processes one bounded
+  // batch server-side; the loop here keeps calling until the queue is empty,
+  // so no single request can time out regardless of how many clips exist.
   const handleSync = async () => {
     if (!identityToken) return;
     setSyncing(true);
     setMsg(null);
     try {
-      const r = await refreshAllViews(identityToken, {
-        campaignSlug: budget.slug,
-      });
+      let updated = 0;
+      let failed = 0;
+      let processed = 0;
+      let firstError: string | undefined;
+      // Safety cap so a bug can't spin forever.
+      for (let i = 0; i < 500; i++) {
+        const res = await fetch("/api/cron/sync", {
+          headers: { "x-identity-token": identityToken },
+        });
+        const r = (await res.json()) as {
+          ok: boolean;
+          processed?: number;
+          updated?: number;
+          failed?: number;
+          firstError?: string;
+          likelyMore?: boolean;
+          error?: string;
+        };
+        if (!r.ok) {
+          firstError = firstError ?? r.error;
+          break;
+        }
+        processed += r.processed ?? 0;
+        updated += r.updated ?? 0;
+        failed += r.failed ?? 0;
+        if (r.firstError && !firstError) firstError = r.firstError;
+        if (!r.likelyMore) break;
+      }
       await onChange();
-      if (r.updated === 0 && r.failed === 0) {
+      if (processed === 0) {
         setMsg("No live clips to sync.");
-      } else if (r.failed === 0) {
-        setMsg(`Synced ${r.updated} clip${r.updated === 1 ? "" : "s"}.`);
+      } else if (failed === 0) {
+        setMsg(`Synced ${updated} clip${updated === 1 ? "" : "s"}.`);
       } else {
-        setMsg(
-          `Synced ${r.updated}, ${r.failed} failed. ${r.firstError ?? ""}`
-        );
+        setMsg(`Synced ${updated}, ${failed} failed. ${firstError ?? ""}`);
       }
     } catch (err) {
       setMsg(`Failed: ${(err as Error).message}`);
@@ -264,22 +288,56 @@ function CampaignBudgetCard({
     }
   };
 
+  // Drains the global payout queue. Each request pays one small bounded
+  // batch on-chain; the loop keeps going until the queue is empty. Closing
+  // the tab mid-drain is safe — the queue state lives in the DB and the
+  // payout cron picks up whatever's left.
   const handlePay = async () => {
     if (!identityToken) return;
     setPaying(true);
     setMsg(null);
     try {
-      const r = await runPayouts(identityToken, {
-        campaignSlug: budget.slug,
-      });
+      let paidCount = 0;
+      let totalPaidUsd = 0;
+      let failedCount = 0;
+      let skippedForCap = 0;
+      let firstError: string | undefined;
+      const paidTxs: { txHash: string; explorerUrl: string }[] = [];
+      for (let i = 0; i < 500; i++) {
+        const res = await fetch("/api/cron/payouts", {
+          headers: { "x-identity-token": identityToken },
+        });
+        const r = (await res.json()) as {
+          ok: boolean;
+          paid?: number;
+          totalPaidUsd?: number;
+          failed?: number;
+          skippedForCap?: number;
+          firstError?: string;
+          paidTxs?: { txHash: string; explorerUrl: string }[];
+          likelyMore?: boolean;
+          error?: string;
+        };
+        if (!r.ok) {
+          firstError = firstError ?? r.error;
+          break;
+        }
+        paidCount += r.paid ?? 0;
+        totalPaidUsd += r.totalPaidUsd ?? 0;
+        failedCount += r.failed ?? 0;
+        skippedForCap += r.skippedForCap ?? 0;
+        if (r.firstError && !firstError) firstError = r.firstError;
+        if (r.paidTxs) paidTxs.push(...r.paidTxs);
+        if (!r.likelyMore) break;
+      }
       await onChange();
       const parts: React.ReactNode[] = [];
-      if (r.paidCount === 1 && r.paidTxs[0]) {
+      if (paidCount === 1 && paidTxs[0]) {
         parts.push(
           <>
-            Paid {formatUsd(r.totalPaidUsd)} ·{" "}
+            Paid {formatUsd(totalPaidUsd)} ·{" "}
             <a
-              href={r.paidTxs[0].explorerUrl}
+              href={paidTxs[0].explorerUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-0.5 text-indigo hover:underline"
@@ -289,10 +347,10 @@ function CampaignBudgetCard({
             </a>
           </>
         );
-      } else if (r.paidCount > 1) {
+      } else if (paidCount > 1) {
         parts.push(
           <>
-            Paid {r.paidCount} clips ({formatUsd(r.totalPaidUsd)}) ·{" "}
+            Paid {paidCount} clips ({formatUsd(totalPaidUsd)}) ·{" "}
             <a
               href="#payout-history"
               className="text-indigo hover:underline"
@@ -302,13 +360,13 @@ function CampaignBudgetCard({
           </>
         );
       }
-      if (r.failedCount > 0) {
+      if (failedCount > 0) {
         parts.push(
-          `${r.failedCount} failed${r.firstError ? `: ${r.firstError}` : ""}`
+          `${failedCount} failed${firstError ? `: ${firstError}` : ""}`
         );
       }
-      if (r.skippedForCap > 0) {
-        parts.push(`${r.skippedForCap} skipped (daily cap)`);
+      if (skippedForCap > 0) {
+        parts.push(`${skippedForCap} skipped (payout cap)`);
       }
       if (parts.length === 0) {
         setMsg("Nothing to pay out.");

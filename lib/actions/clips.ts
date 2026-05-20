@@ -5,8 +5,6 @@ import { getCampaignIdBySlug } from "@/lib/actions/campaigns";
 import type { Platform } from "@/lib/campaigns";
 import type { Clip, ClipStatus } from "@/lib/clips";
 import { validatePostUrl } from "@/lib/clips";
-import { scrapePostsBatch } from "@/lib/scrapers";
-import type { ScrapeResult } from "@/lib/scrapers";
 import { createServerClient } from "@/lib/supabase/server";
 
 type Row = {
@@ -512,113 +510,6 @@ export async function setClipFeaturedVideo(
   if (error) return { ok: false, error: error.message };
   if (!count) return { ok: false, error: "Clip not found." };
   return { ok: true };
-}
-
-/**
- * Iterates all `tracking` clips, scrapes views, persists snapshot + max-views.
- * Returns counts and first error for UX feedback.
- */
-export async function refreshAllViews(
-  identityToken: string,
-  opts?: { campaignSlug?: string }
-): Promise<{
-  ok: true;
-  updated: number;
-  failed: number;
-  firstError?: string;
-}> {
-  await requireAdmin(identityToken);
-  const sb = createServerClient();
-
-  // Join campaign rate + cap so we can compute earnings on the fly.
-  let q = sb
-    .from("clips")
-    .select(
-      "id, platform, post_url, verified_views, campaigns!inner(rate_per_view_usd, max_payout_per_clip_usd)"
-    )
-    .eq("status", "tracking");
-  if (opts?.campaignSlug) {
-    const id = await getCampaignIdBySlug(opts.campaignSlug);
-    q = q.eq("campaign_id", id);
-  }
-  const { data: rows, error } = await q;
-  if (error) throw error;
-
-  const live = (rows ?? []) as unknown as Array<{
-    id: string;
-    platform: Platform;
-    post_url: string;
-    verified_views: number;
-    campaigns: {
-      rate_per_view_usd: string | number;
-      max_payout_per_clip_usd: string | number;
-    };
-  }>;
-
-  if (live.length === 0) return { ok: true, updated: 0, failed: 0 };
-
-  let updated = 0;
-  let failed = 0;
-  let firstError: string | undefined;
-
-  // Scrape in one Apify run per platform, not one per clip. N parallel runs
-  // blew Apify's 8 GB concurrent-memory limit. Platforms run sequentially so
-  // only one actor run holds memory at a time.
-  const byPlatform = new Map<Platform, string[]>();
-  for (const c of live) {
-    const urls = byPlatform.get(c.platform) ?? [];
-    urls.push(c.post_url);
-    byPlatform.set(c.platform, urls);
-  }
-  const scraped = new Map<string, ScrapeResult>();
-  for (const [platform, urls] of byPlatform) {
-    const results = await scrapePostsBatch(platform, urls);
-    for (const [url, result] of results) scraped.set(url, result);
-  }
-
-  await Promise.all(
-    live.map(async (c) => {
-      const result = scraped.get(c.post_url);
-      if (!result || !result.ok) {
-        failed++;
-        if (!firstError) {
-          firstError = `${c.platform}: ${result?.error ?? "no scrape result"}`;
-        }
-        return;
-      }
-      const newViews = Math.max(c.verified_views, result.views);
-
-      // earnings = views * rate, capped at the campaign's max payout per clip.
-      const rate = n(c.campaigns.rate_per_view_usd);
-      const maxPayout = n(c.campaigns.max_payout_per_clip_usd);
-      const earnings = Math.min(newViews * rate, maxPayout);
-
-      const now = new Date().toISOString();
-      const upd = await sb
-        .from("clips")
-        .update({
-          verified_views: newViews,
-          earnings_usd: earnings,
-          last_scraped_at: now,
-          last_caption: result.caption,
-        })
-        .eq("id", c.id);
-      if (upd.error) {
-        failed++;
-        if (!firstError) firstError = upd.error.message;
-        return;
-      }
-      // Audit snapshot
-      await sb.from("view_snapshots").insert({
-        clip_id: c.id,
-        views: newViews,
-        raw_payload: { caption: result.caption, authorHandle: result.authorHandle },
-      });
-      updated++;
-    })
-  );
-
-  return { ok: true, updated, failed, firstError };
 }
 
 // ============================================================
