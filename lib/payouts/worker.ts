@@ -8,6 +8,7 @@ import { localeFromCountry, renderPayoutSent } from "@/lib/email/templates";
 import {
   ensureGasStipend,
   explorerTxUrl,
+  getCampaignChainState,
   recordPayout,
   usdToBaseUnits,
 } from "@/lib/payments/celo";
@@ -25,14 +26,28 @@ import { createServerClient } from "@/lib/supabase/server";
  * Idempotency: the contract rejects a repeated payoutId, so a crashed-and-
  * retried run can't double-pay even if the lease logic somehow failed.
  */
+/** One campaign that ran short of escrow during this run. */
+export type UnderfundedCampaign = {
+  campaignId: string;
+  productName: string;
+  /** On-chain escrow balance at the start of the run. */
+  balanceUsd: number;
+  /** Sum of payouts we couldn't attempt because the balance wouldn't cover. */
+  oweUsd: number;
+};
+
 export type PayoutBatchResult = {
   processed: number;
   paid: number;
   failed: number;
   skippedForCap: number;
+  /** Clips skipped because the campaign's on-chain escrow can't cover the
+   *  payout — distinct from `failed` (which we attempted on-chain). */
+  skippedUnderfunded: number;
   totalPaidUsd: number;
   firstError?: string;
   paidTxs: { txHash: string; explorerUrl: string }[];
+  underfunded: UnderfundedCampaign[];
 };
 
 type ClaimedClip = {
@@ -67,8 +82,10 @@ export async function runPayoutBatch(
     paid: 0,
     failed: 0,
     skippedForCap: 0,
+    skippedUnderfunded: 0,
     totalPaidUsd: 0,
     paidTxs: [],
+    underfunded: [],
   };
   if (clips.length === 0) return empty;
   console.log(`[payout-worker] claimed ${clips.length} clips`);
@@ -110,13 +127,35 @@ export async function runPayoutBatch(
     campaignNameById.set(row.id, row.product_name);
   }
 
+  // Read on-chain escrow per campaign. Used to skip payouts the contract
+  // would revert anyway with `InsufficientCampaignBalance` — avoids spamming
+  // failed payout rows and lets us surface a clean "subfondeada" alert.
+  // On RPC failure we default to Infinity (don't false-skip).
+  const balanceByCampaign = new Map<string, number>();
+  const originalBalance = new Map<string, number>();
+  await Promise.all(
+    campaignIds.map(async (id) => {
+      try {
+        const s = await getCampaignChainState(id);
+        balanceByCampaign.set(id, s.balanceUsd);
+        originalBalance.set(id, s.balanceUsd);
+      } catch {
+        balanceByCampaign.set(id, Infinity);
+        originalBalance.set(id, Infinity);
+      }
+    })
+  );
+
   let paid = 0;
   let failed = 0;
   let skippedForCap = 0;
+  let skippedUnderfunded = 0;
   let totalPaidUsd = 0;
   let firstError: string | undefined;
   const paidTxs: { txHash: string; explorerUrl: string }[] = [];
   const touchedCampaigns = new Set<string>();
+  // Sum of skipped deltas per campaign — used for the underfunded alert.
+  const oweByCampaign = new Map<string, number>();
 
   // 3. Pay each clip. Sequential — these are on-chain txs and we want a
   //    predictable, bounded run time.
@@ -140,6 +179,23 @@ export async function runPayoutBatch(
     if (totalPaidUsd + delta > cap) {
       skippedForCap++;
       await releaseLease(sb, clip.id);
+      continue;
+    }
+
+    // Pre-check on-chain escrow — `recordPayout` would revert with
+    // InsufficientCampaignBalance otherwise, polluting the payouts table
+    // with a failed row each time. Skip cleanly; the run alerts once at
+    // the end. We deliberately KEEP the lease so the route's drain loop
+    // doesn't immediately re-claim and re-skip the same clip — the lease
+    // expires in 5 min and the next cron run retries.
+    const campaignBalance =
+      balanceByCampaign.get(clip.campaign_id) ?? Infinity;
+    if (delta > campaignBalance) {
+      skippedUnderfunded++;
+      oweByCampaign.set(
+        clip.campaign_id,
+        (oweByCampaign.get(clip.campaign_id) ?? 0) + delta
+      );
       continue;
     }
 
@@ -203,6 +259,9 @@ export async function runPayoutBatch(
       paid++;
       totalPaidUsd += delta;
       touchedCampaigns.add(clip.campaign_id);
+      // Keep our in-memory escrow view in sync so the next clip in the
+      // batch sees the post-payout balance.
+      balanceByCampaign.set(clip.campaign_id, campaignBalance - delta);
       paidTxs.push({
         txHash: res.txHash,
         explorerUrl: explorerTxUrl(res.txHash),
@@ -258,17 +317,28 @@ export async function runPayoutBatch(
     await sb.from("campaigns").update({ spent_usd: spent }).eq("id", campaignId);
   }
 
+  const underfunded: UnderfundedCampaign[] = [...oweByCampaign.entries()].map(
+    ([campaignId, oweUsd]) => ({
+      campaignId,
+      productName: campaignNameById.get(campaignId) ?? "campaign",
+      balanceUsd: originalBalance.get(campaignId) ?? 0,
+      oweUsd,
+    })
+  );
+
   console.log(
-    `[payout-worker] done processed=${clips.length} paid=${paid} failed=${failed} skipped=${skippedForCap}`
+    `[payout-worker] done processed=${clips.length} paid=${paid} failed=${failed} skipped=${skippedForCap} underfunded=${skippedUnderfunded}`
   );
   return {
     processed: clips.length,
     paid,
     failed,
     skippedForCap,
+    skippedUnderfunded,
     totalPaidUsd,
     firstError,
     paidTxs,
+    underfunded,
   };
 }
 

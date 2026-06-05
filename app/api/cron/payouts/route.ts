@@ -1,7 +1,10 @@
 import { after } from "next/server";
 
 import { requireAdmin } from "@/lib/auth-server";
-import { runPayoutBatch } from "@/lib/payouts/worker";
+import {
+  runPayoutBatch,
+  type UnderfundedCampaign,
+} from "@/lib/payouts/worker";
 import { announcePendingPayouts } from "@/lib/telegram/announce";
 import { sendAdminAlert } from "@/lib/telegram/send";
 
@@ -60,10 +63,13 @@ export async function GET(req: Request): Promise<Response> {
   let paid = 0;
   let failed = 0;
   let skippedForCap = 0;
+  let skippedUnderfunded = 0;
   let totalPaidUsd = 0;
   let batches = 0;
   let firstError: string | undefined;
   let drained = false;
+  // Dedup by campaignId — same campaign across batches just overwrites.
+  const underfundedByCampaign = new Map<string, UnderfundedCampaign>();
 
   try {
     for (;;) {
@@ -72,8 +78,12 @@ export async function GET(req: Request): Promise<Response> {
       paid += r.paid;
       failed += r.failed;
       skippedForCap += r.skippedForCap;
+      skippedUnderfunded += r.skippedUnderfunded;
       totalPaidUsd += r.totalPaidUsd;
       if (r.firstError && !firstError) firstError = r.firstError;
+      for (const u of r.underfunded) {
+        underfundedByCampaign.set(u.campaignId, u);
+      }
 
       if (r.processed < BATCH_SIZE) {
         drained = true;
@@ -111,7 +121,7 @@ export async function GET(req: Request): Promise<Response> {
     }
 
     console.log(
-      `[cron/payouts] chain=${chain} batches=${batches} paid=${paid} failed=${failed} drained=${drained} digest=${digestAnnounced} ${firstError ?? ""}`
+      `[cron/payouts] chain=${chain} batches=${batches} paid=${paid} failed=${failed} underfunded=${skippedUnderfunded} drained=${drained} digest=${digestAnnounced} ${firstError ?? ""}`
     );
     // A failed payout means a creator didn't get paid — always worth an
     // alert. (Reported once, from the chain's first link.)
@@ -120,6 +130,20 @@ export async function GET(req: Request): Promise<Response> {
         `⚠️ <b>Pagos</b>: ${failed} pago(s) fallaron.\n` +
           `Primer error: ${firstError ?? "desconocido"}\n` +
           `Los clips quedan en cola y reintentan — revisa el balance del escrow.`
+      );
+    }
+    // Campaign-level underfunded alert — actionable: tells the brand
+    // exactly how much to top up. (Once per chain.)
+    if (underfundedByCampaign.size > 0 && chain === 0) {
+      const lines = [...underfundedByCampaign.values()].map((u) => {
+        const shortfall = (u.oweUsd - u.balanceUsd).toFixed(2);
+        return (
+          `• <b>${u.productName}</b> — escrow $${u.balanceUsd.toFixed(2)}, ` +
+          `pendiente $${u.oweUsd.toFixed(2)} (faltan al menos $${shortfall})`
+        );
+      });
+      await sendAdminAlert(
+        `💸 <b>Campaña(s) subfondeada(s)</b> — necesitan top-up:\n${lines.join("\n")}`
       );
     }
     return Response.json({
