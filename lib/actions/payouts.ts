@@ -1,7 +1,11 @@
 "use server";
 
-import { requireAdmin, requireCreator } from "@/lib/auth-server";
-import { explorerTxUrl, getUsdtBalance } from "@/lib/payments/celo";
+import { requireAdmin, requireCreator, requireUser } from "@/lib/auth-server";
+import {
+  ensureGasStipend,
+  explorerTxUrl,
+  getUsdtBalance,
+} from "@/lib/payments/celo";
 import { createServerClient } from "@/lib/supabase/server";
 
 function n(v: string | number): number {
@@ -98,4 +102,20 @@ export async function getMyWalletBalance(
 ): Promise<number> {
   const creator = await requireCreator(identityToken);
   return getUsdtBalance(creator.wallet_address);
+}
+
+/**
+ * Tops up the caller's Privy wallet with a tiny CELO stipend if it's running
+ * low. Privy embedded wallets can't pay gas in USDT (no CIP-64), so brands
+ * need a sliver of CELO to sign approve/createCampaign/fundCampaign. We cover
+ * it from the operator wallet so the brand never has to acquire CELO.
+ *
+ * Idempotent — silently no-ops if the wallet already has enough.
+ */
+export async function ensureMyGasStipend(
+  identityToken: string
+): Promise<{ sent: boolean }> {
+  const user = await requireUser(identityToken);
+  const res = await ensureGasStipend(user.wallet_address);
+  return { sent: res.sent };
 }

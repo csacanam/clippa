@@ -366,7 +366,7 @@ const en = {
     dashTitle: "Your campaigns",
     dashSubtitle: "Launch, fund, and track your creator campaigns.",
     walletTitle: "Your funding wallet",
-    walletSubtitle: "USDT here funds your campaigns. No CELO needed — gas is paid in USDT.",
+    walletSubtitle: "USDT here funds your campaigns. You don't need CELO — we cover gas for you.",
     walletBalanceLabel: "USDT balance",
     walletHint: "Send USDT on the Celo network to this address to top up. Funds will appear here within a minute — hit refresh.",
     walletRefresh: "Refresh balance",

@@ -27,6 +27,7 @@ import {
   markCampaignActive,
   type PendingCampaign,
 } from "@/lib/actions/campaigns";
+import { ensureMyGasStipend } from "@/lib/actions/payouts";
 import {
   CELO_USDT_ADDRESS,
   CLIPPA_CONTRACT_ADDRESS,
@@ -113,6 +114,13 @@ function FundCampaign() {
       });
       const publicClient = createPublicClient({ chain: celo, transport: http() });
 
+      // Brand pays in USDT — top up CELO for gas if their wallet is low.
+      try {
+        await ensureMyGasStipend(identityToken);
+      } catch {
+        /* ignore */
+      }
+
       const campaignId = uuidToBytes32(campaign.id);
       const fundUnits = usdToBaseUnits(campaign.totalBudgetUsd);
       const maxPayoutUnits = usdToBaseUnits(campaign.maxPayoutPerClipUsd);
@@ -161,8 +169,6 @@ function FundCampaign() {
           abi: erc20Abi,
           functionName: "approve",
           args: [CLIPPA_CONTRACT_ADDRESS, fundUnits],
-          // Celo CIP-64: pay gas in USDT so the brand never needs CELO.
-          feeCurrency: CELO_USDT_ADDRESS,
         });
         await publicClient.waitForTransactionReceipt({ hash: approveTx as Hex });
       }
@@ -175,7 +181,6 @@ function FundCampaign() {
           abi: CLIPPA_WRITE_ABI,
           functionName: "createCampaign",
           args: [campaignId, maxPayoutUnits],
-          feeCurrency: CELO_USDT_ADDRESS,
         });
         await publicClient.waitForTransactionReceipt({ hash: createTx as Hex });
       }
@@ -191,7 +196,6 @@ function FundCampaign() {
           abi: CLIPPA_WRITE_ABI,
           functionName: "fundCampaign",
           args: [campaignId, fundUnits],
-          feeCurrency: CELO_USDT_ADDRESS,
         });
         await publicClient.waitForTransactionReceipt({ hash: fundTxHash as Hex });
       }

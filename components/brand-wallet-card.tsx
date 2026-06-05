@@ -12,9 +12,8 @@ import { formatUsd } from "@/lib/campaigns";
 /**
  * Wallet panel for the brand dashboard — surfaces the embedded wallet's
  * address and USDT balance so the brand knows where to send funds. The
- * actual on-chain calls (approve / createCampaign / fundCampaign) use
- * Celo's CIP-64 fee abstraction, so USDT is the only token they ever
- * need; no CELO required for gas.
+ * brand only ever needs USDT: a tiny CELO gas stipend is auto-sent from
+ * the operator wallet by ensureMyGasStipend before each on-chain action.
  */
 export function BrandWalletCard({
   identityToken,

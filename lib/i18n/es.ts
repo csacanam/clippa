@@ -363,7 +363,7 @@ const es: Dict = {
     dashTitle: "Tus campañas",
     dashSubtitle: "Lanza, financia y monitorea tus campañas con creadores.",
     walletTitle: "Tu wallet de fondeo",
-    walletSubtitle: "Tu USDT acá fondea tus campañas. No necesitas CELO — el gas se paga en USDT.",
+    walletSubtitle: "Tu USDT acá fondea tus campañas. No necesitas CELO — nosotros cubrimos el gas.",
     walletBalanceLabel: "Saldo USDT",
     walletHint: "Envía USDT por la red Celo a este address para recargar. Los fondos aparecen acá en menos de un minuto — actualiza con el botón.",
     walletRefresh: "Actualizar saldo",
