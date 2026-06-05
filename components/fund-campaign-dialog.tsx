@@ -130,6 +130,8 @@ export function FundCampaignDialog({
           abi: erc20Abi,
           functionName: "approve",
           args: [CLIPPA_CONTRACT_ADDRESS, fundUnits],
+          // Celo CIP-64: pay gas in USDT so the brand never needs CELO.
+          feeCurrency: CELO_USDT_ADDRESS,
         });
         await publicClient.waitForTransactionReceipt({ hash: approveTx as Hex });
       }
@@ -140,6 +142,7 @@ export function FundCampaignDialog({
         abi: FUND_ABI,
         functionName: "fundCampaign",
         args: [campaignIdBytes, fundUnits],
+        feeCurrency: CELO_USDT_ADDRESS,
       });
       await publicClient.waitForTransactionReceipt({ hash: fundTx as Hex });
 

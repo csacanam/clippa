@@ -7,6 +7,7 @@ import { Coins, Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import { AuthGuard } from "@/components/auth-guard";
+import { BrandWalletCard } from "@/components/brand-wallet-card";
 import { ClippaLogo } from "@/components/clippa-logo";
 import { useTranslation } from "@/components/locale-provider";
 import { FundCampaignDialog } from "@/components/fund-campaign-dialog";
@@ -117,6 +118,8 @@ function BrandDashboard() {
             {t("brand.dashNewCampaign")}
           </Link>
         </motion.div>
+
+        <BrandWalletCard identityToken={identityToken} />
 
         {campaigns === null ? (
           <LoadingState />

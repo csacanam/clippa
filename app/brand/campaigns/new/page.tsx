@@ -271,6 +271,8 @@ function NewCampaignWizard() {
           abi: erc20Abi,
           functionName: "approve",
           args: [CLIPPA_CONTRACT_ADDRESS, fundUnits],
+          // Celo CIP-64: pay gas in USDT so the brand never needs CELO.
+          feeCurrency: CELO_USDT_ADDRESS,
         });
         await publicClient.waitForTransactionReceipt({ hash: approveTx as Hex });
       }
@@ -282,6 +284,7 @@ function NewCampaignWizard() {
         abi: CLIPPA_WRITE_ABI,
         functionName: "createCampaign",
         args: [campaignId, maxPayoutUnits],
+        feeCurrency: CELO_USDT_ADDRESS,
       });
       await publicClient.waitForTransactionReceipt({ hash: createTx as Hex });
 
@@ -292,6 +295,7 @@ function NewCampaignWizard() {
         abi: CLIPPA_WRITE_ABI,
         functionName: "fundCampaign",
         args: [campaignId, fundUnits],
+        feeCurrency: CELO_USDT_ADDRESS,
       });
       await publicClient.waitForTransactionReceipt({ hash: fundTx as Hex });
 
