@@ -8,12 +8,15 @@
  * Scraping is batched: one actor run handles every URL at once. Firing one
  * run per clip blew Apify's concurrent-memory limit (8 GB across all runs).
  *
- * Set APIFY_API_TOKEN in .env to enable.
+ * Set APIFY_API_TOKEN in .env to enable. APIFY_API_TOKEN_2, _3, etc. are
+ * picked up automatically as fallbacks when the primary's quota runs out.
  */
 
 import type { ScrapeResult } from "./types";
 
-const APIFY_TOKEN = process.env.APIFY_API_TOKEN;
+import { callApifyActor, hasApifyTokens } from "./apify-client";
+
+const APIFY_ACTOR = "apify~instagram-scraper/run-sync-get-dataset-items";
 
 type ApifyItem = {
   videoPlayCount?: number;
@@ -49,7 +52,7 @@ export async function scrapeInstagramBatch(
   const out = new Map<string, ScrapeResult>();
   if (urls.length === 0) return out;
 
-  if (!APIFY_TOKEN) {
+  if (!hasApifyTokens()) {
     const err: ScrapeResult = {
       ok: false,
       error:
@@ -60,34 +63,24 @@ export async function scrapeInstagramBatch(
     return out;
   }
 
-  const endpoint = `https://api.apify.com/v2/acts/apify~instagram-scraper/run-sync-get-dataset-items?token=${encodeURIComponent(
-    APIFY_TOKEN
-  )}`;
-
   let items: ApifyItem[];
   try {
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        directUrls: urls,
-        resultsType: "details",
-        resultsLimit: 1,
-        addParentData: false,
-      }),
+    const { status, body } = await callApifyActor(APIFY_ACTOR, {
+      directUrls: urls,
+      resultsType: "details",
+      resultsLimit: 1,
+      addParentData: false,
     });
-    if (!res.ok) {
-      const body = await res.text();
+    if (status < 200 || status >= 300) {
       const err: ScrapeResult = {
         ok: false,
-        error: `Apify ${res.status}: ${body.slice(0, 200)}`,
-        structural:
-          res.status === 401 || res.status === 402 || res.status === 403,
+        error: `Apify ${status}: ${body.slice(0, 200)}`,
+        structural: status === 401 || status === 402 || status === 403,
       };
       for (const u of urls) out.set(u, err);
       return out;
     }
-    items = (await res.json()) as ApifyItem[];
+    items = JSON.parse(body) as ApifyItem[];
   } catch (e) {
     const err: ScrapeResult = {
       ok: false,

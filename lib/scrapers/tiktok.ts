@@ -14,14 +14,14 @@
  *      the specific video id. Costs more (50-ish results per profile) but
  *      only fires for the problem posts.
  *
- * Set APIFY_API_TOKEN in .env to enable.
+ * Set APIFY_API_TOKEN in .env to enable. APIFY_API_TOKEN_2, _3, etc. are
+ * picked up automatically as fallbacks when the primary's quota runs out.
  */
 
 import type { ScrapeResult } from "./types";
+import { callApifyActor, hasApifyTokens } from "./apify-client";
 
-const APIFY_TOKEN = process.env.APIFY_API_TOKEN;
-
-const APIFY_ENDPOINT = `https://api.apify.com/v2/acts/clockworks~tiktok-scraper/run-sync-get-dataset-items`;
+const APIFY_ACTOR = "clockworks~tiktok-scraper/run-sync-get-dataset-items";
 // Postpages-broken posts are almost always recent uploads, so the target
 // video lives at the top of the creator's profile. 5 covers the typical
 // case at 10× lower cost than a deeper scan.
@@ -289,32 +289,28 @@ type ApifyRunError = { ok: false; error: string; structural: boolean };
 async function runApifyScraper(
   input: Record<string, unknown>
 ): Promise<{ ok: true; items: ApifyItem[] } | ApifyRunError> {
-  const endpoint = `${APIFY_ENDPOINT}?token=${encodeURIComponent(APIFY_TOKEN!)}`;
   try {
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    // Cap the wait. Apify's run-sync legitimately takes 30-60s, so this
+    // is generous — it's only here so a hung run can't stall the batch.
+    const { status, body } = await callApifyActor(
+      APIFY_ACTOR,
+      {
         shouldDownloadVideos: false,
         shouldDownloadCovers: false,
         shouldDownloadSubtitles: false,
         shouldDownloadSlideshowImages: false,
         ...input,
-      }),
-      // Cap the wait. Apify's run-sync legitimately takes 30-60s, so this
-      // is generous — it's only here so a hung run can't stall the batch.
-      signal: AbortSignal.timeout(75_000),
-    });
-    if (!res.ok) {
-      const body = await res.text();
+      },
+      { signal: AbortSignal.timeout(75_000) }
+    );
+    if (status < 200 || status >= 300) {
       return {
         ok: false,
-        error: `Apify ${res.status}: ${body.slice(0, 200)}`,
-        structural:
-          res.status === 401 || res.status === 402 || res.status === 403,
+        error: `Apify ${status}: ${body.slice(0, 200)}`,
+        structural: status === 401 || status === 402 || status === 403,
       };
     }
-    return { ok: true, items: (await res.json()) as ApifyItem[] };
+    return { ok: true, items: JSON.parse(body) as ApifyItem[] };
   } catch (e) {
     return {
       ok: false,
@@ -398,7 +394,7 @@ export async function scrapeTiktokBatch(
     `[tiktok] tikwm covered ${urls.length - stillNeeded.length}/${urls.length}, falling back to apify for ${stillNeeded.length}`
   );
 
-  if (!APIFY_TOKEN) {
+  if (!hasApifyTokens()) {
     const err: ScrapeResult = {
       ok: false,
       error: "TikTok scraping isn't configured. Set APIFY_API_TOKEN to enable.",
